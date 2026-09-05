@@ -111,7 +111,7 @@ define('CRM_LANGUAGE_BASE_DIR', DIRECTORY_SEPARATOR.'lang'.DIRECTORY_SEPARATOR);
      *
      * @return void
      */
-    private function __wakeup()
+    public function __wakeup()
     {
     }
     
