@@ -162,7 +162,7 @@
                         <div class="panel-body table" id="recording_table">
                             <legend>
                                 <?php $lh->translateText("carriers"); ?>
-                                <button type="button" class="btn btn-primary btn-sm pull-right" data-toggle="modal" data-target="#wizard-modal">
+                                <button type="button" class="btn btn-primary btn-sm pull-right open-add-carrier-modal" data-toggle="modal" data-target="#wizard-modal">
                                     <i class="fa fa-plus"></i> <?php $lh->translateText('add_new_carrier'); ?>
                                 </button>
                             </legend>
@@ -180,7 +180,7 @@
 			<?php print $ui->getRightSidebar($user->getUserId(), $user->getUserName(), $user->getUserAvatar()); ?>
         </div><!-- ./wrapper -->
 
-		<div class="action-button-circle <?php if ($perm->carriers_create == 'N') { echo "hidden"; } ?>" data-toggle="modal" data-target="#wizard-modal">
+		<div class="action-button-circle open-add-carrier-modal <?php if ($perm->carriers_create == 'N') { echo "hidden"; } ?>" data-toggle="modal" data-target="#wizard-modal">
 			<?php print $ui->getCircleButton("carriers", "plus"); ?>
 		</div>
 <?php
@@ -356,14 +356,18 @@
 
 		<!-- Forms and actions -->
 		<?php print $ui->standardizedThemeJS(); ?>
-		<!-- JQUERY STEPS-->
-  		<script src="js/dashboard/js/jquery.steps/build/jquery.steps.js"></script>
 		<script src="js/plugins/input-mask/jquery.inputmask.js" type="text/javascript"></script>
 		<script src="js/plugins/input-mask/jquery.inputmask.extensions.js" type="text/javascript"></script>
 		<script type="text/javascript">
 
 			$(document).ready(function() {
 				$('#carriers').dataTable();
+				
+				/* Open Add Carrier Modal */
+				$(document).on('click', '.open-add-carrier-modal, [data-target="#wizard-modal"]', function(e) {
+					e.preventDefault();
+					$('#wizard-modal').modal('show');
+				});
 				
 				/* Submit Carrier Form */
 				$("#create_form").on("submit", function(e) {
