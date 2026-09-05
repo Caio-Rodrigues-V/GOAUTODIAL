@@ -162,9 +162,9 @@
                         <div class="panel-body table" id="recording_table">
                             <legend>
                                 <?php $lh->translateText("carriers"); ?>
-                                <button type="button" class="btn btn-primary btn-sm pull-right open-add-carrier-modal" onclick="$('#wizard-modal').modal('show');" data-toggle="modal" data-target="#wizard-modal">
+                                <a href="addsettingscarrier.php" class="btn btn-primary btn-sm pull-right">
                                     <i class="fa fa-plus"></i> <?php $lh->translateText('add_new_carrier'); ?>
-                                </button>
+                                </a>
                             </legend>
 							<?php print $ui->getListAllCarriers($perm); ?>
                         </div>
@@ -180,9 +180,9 @@
 			<?php print $ui->getRightSidebar($user->getUserId(), $user->getUserName(), $user->getUserAvatar()); ?>
         </div><!-- ./wrapper -->
 
-		<div class="action-button-circle open-add-carrier-modal <?php if ($perm->carriers_create == 'N') { echo "hidden"; } ?>" onclick="$('#wizard-modal').modal('show');" data-toggle="modal" data-target="#wizard-modal">
+		<a href="addsettingscarrier.php" class="action-button-circle <?php if ($perm->carriers_create == 'N') { echo "hidden"; } ?>">
 			<?php print $ui->getCircleButton("carriers", "plus"); ?>
-		</div>
+		</a>
 <?php
 	/*
 	* MODAL
