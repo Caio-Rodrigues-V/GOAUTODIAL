@@ -23,6 +23,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
+	ini_set('display_errors', 1);
+	ini_set('display_startup_errors', 1);
+	error_reporting(E_ALL);
+
 	// check if Creamy has been installed.
 	require_once('./php/CRMDefaults.php');
 	require_once('./php/APIHandler.php');
