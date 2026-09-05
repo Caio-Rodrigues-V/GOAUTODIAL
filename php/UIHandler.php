@@ -2065,20 +2065,19 @@ error_reporting(E_ERROR | E_PARSE);
 				$rocketchatAnalytics .= '</ul></li>';
 			}
 
-			if ($userrole == CRM_DEFAULTS_USER_ROLE_ADMIN) {
+			if ($userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN")) {
 				$settings = '<li class="treeview"><a href="#"><i class="fa fa-gear"></i> <span>'.$this->lh->translationFor("settings").'</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
 				$settings .= $this-> getSidebarItem("./settingscalltimes.php", "list-ol", $this->lh->translationFor("call_times"));
 				$settings .= $this-> getSidebarItem("./settingsvoicemails.php", "envelope", $this->lh->translationFor("voice_mails"));
 				$settings .= $this-> getSidebarItem("./settingsusergroups.php", "users", $this->lh->translationFor("user_groups"));
 
-				if ($perms->carriers->carriers_read == 'R' || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN)
+				if ((isset($perms->carriers->carriers_read) && $perms->carriers->carriers_read == 'R') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN"))
 					$settings .= $this-> getSidebarItem("./settingscarriers.php", "signal", $this->lh->translationFor("carriers"));
 
-				if ($perms->servers->servers_read == 'R' || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN)
+				if ((isset($perms->servers->servers_read) && $perms->servers->servers_read == 'R') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN"))
 					$settings .= $this-> getSidebarItem("./settingsservers.php", "server", $this->lh->translationFor("servers"));
 
-				if ($userrole == CRM_DEFAULTS_USER_ROLE_ADMIN)
-					$settings .= $this-> getSidebarItem("./settingsadminlogs.php", "book", $this->lh->translationFor("admin_logs"));
+				$settings .= $this-> getSidebarItem("./settingsadminlogs.php", "book", $this->lh->translationFor("admin_logs"));
 
 				$settings .= '</ul></li>';
 			}
@@ -2086,7 +2085,7 @@ error_reporting(E_ERROR | E_PARSE);
 			$callreports = '<li class="treeview"><a href="#"><i class="fa fa-bar-chart-o"></i> <span>'.$this->lh->translationFor("call_reports").'</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
 			$callreports .= $this-> getSidebarItem("./callreports.php", "bar-chart", $this->lh->translationFor("reports_and_go_analytics"));
 
-			if ($perms->recordings->recordings_display == 'Y') {
+			if ((isset($perms->recordings->recordings_display) && $perms->recordings->recordings_display == 'Y') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN")) {
 				$callreports .= $this-> getSidebarItem("./callrecordings.php", "phone-square", $this->lh->translationFor("call_recordings"));
 			}
 
@@ -5974,6 +5973,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$js .= '<script src="js/dashboard/sweetalert/dist/sweetalert.min.js"></script>'."\n"; // sweetalert js
 		$js .= '<script src="js/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js" type="text/javascript"></script>'."\n"; // bootstrap 3 js
 		$js .= '<script src="adminlte/js/app.min.js" type="text/javascript"></script>'."\n"; // creamy app js
+		$js .= '<script src="adminlte/colorpicker/bootstrap-colorpicker.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/vue-avatar/vue.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/vue-avatar/vue-avatar.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/select2/select2.full.min.js" type="text/javascript" ></script>'."\n";
@@ -5989,6 +5989,25 @@ error_reporting(E_ERROR | E_PARSE);
 					new Vue(goOptions);
 				}
 			} catch(e) { console.warn('Avatar Vue init:', e); }
+
+			$(document).ready(function() {
+				$(document).off('click.goSidebar', '.sidebar-menu li.treeview > a').on('click.goSidebar', '.sidebar-menu li.treeview > a', function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					var \$parent = $(this).parent('li');
+					var \$menu = $(this).next('.treeview-menu');
+					if (\$menu.length > 0) {
+						if (\$menu.is(':visible')) {
+							\$menu.slideUp(200);
+							\$parent.removeClass('active menu-open');
+						} else {
+							\$parent.siblings('li.treeview').removeClass('active menu-open').find('.treeview-menu:visible').slideUp(200);
+							\$menu.slideDown(200);
+							\$parent.addClass('active menu-open');
+						}
+					}
+				});
+			});
 		</script>\n";
 
 		return $js;

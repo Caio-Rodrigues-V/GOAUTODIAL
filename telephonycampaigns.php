@@ -1786,9 +1786,9 @@
 			$('#dial_prefix').change(function(){
 				dialPrefix($(this).val());
 			});
-			$(".colorpicker").colorpicker();
+			if ($.fn.colorpicker) { $(".colorpicker").colorpicker(); }
 			$('#add_campaign').on('shown.bs.modal', function () {
-				$(".colorpicker").colorpicker();
+				if ($.fn.colorpicker) { $(".colorpicker").colorpicker(); }
 				$('#did-tfn-extension').autocomplete({
 					//source: "php/searchDID.php",
 					source: function(request,response) {
