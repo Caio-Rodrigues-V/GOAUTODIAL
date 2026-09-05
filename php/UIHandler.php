@@ -5991,21 +5991,6 @@ error_reporting(E_ERROR | E_PARSE);
 					new Vue(goOptions);
 				}
 			} catch(e) { console.warn('Avatar Vue init:', e); }
-
-			// Universal Sidebar TreeView Toggle
-			$(document).on('click', '.sidebar-menu li.treeview > a', function(e) {
-				e.preventDefault();
-				var \$menu = $(this).next('.treeview-menu');
-				var \$parent = $(this).parent('li');
-				if (\$menu.is(':visible')) {
-					\$menu.slideUp(200);
-					\$parent.removeClass('active menu-open');
-				} else {
-					$('.sidebar-menu .treeview-menu:visible').not(\$menu).slideUp(200).parent('li').removeClass('active menu-open');
-					\$menu.slideDown(200);
-					\$parent.addClass('active menu-open');
-				}
-			});
 		</script>\n";
 
 		return $js;
