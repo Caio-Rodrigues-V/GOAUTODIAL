@@ -62,6 +62,74 @@
 	
     	<!-- Wizard Form style -->
 		<link href="css/style.css" rel="stylesheet" type="text/css" />
+		<link href="css/app.css" rel="stylesheet" type="text/css" />
+		<style>
+		.wizard > .actions {
+		    display: block !important;
+		    text-align: right;
+		    padding: 15px 0;
+		}
+		.wizard > .actions ul {
+		    list-style: none;
+		    display: inline-block;
+		    padding: 0;
+		    margin: 0;
+		}
+		.wizard > .actions ul > li {
+		    display: inline-block;
+		    margin: 0 5px;
+		}
+		.wizard > .actions a {
+		    background: #3c8dbc;
+		    color: #fff !important;
+		    padding: 8px 18px;
+		    border-radius: 4px;
+		    text-decoration: none;
+		    display: inline-block;
+		    font-weight: bold;
+		}
+		.wizard > .actions a:hover {
+		    background: #286090;
+		}
+		.wizard > .actions .disabled a {
+		    background: #eee !important;
+		    color: #aaa !important;
+		}
+		.wizard > .steps {
+		    display: block;
+		    margin-bottom: 20px;
+		}
+		.wizard > .steps ul {
+		    display: table;
+		    width: 100%;
+		    table-layout: fixed;
+		    margin: 0;
+		    padding: 0;
+		    list-style: none;
+		}
+		.wizard > .steps li {
+		    display: table-cell;
+		    text-align: center;
+		}
+		.wizard > .steps a {
+		    display: block;
+		    padding: 10px;
+		    background: #eee;
+		    color: #555;
+		    border-radius: 4px;
+		    margin: 0 5px;
+		    text-decoration: none;
+		}
+		.wizard > .steps .current a {
+		    background: #3c8dbc !important;
+		    color: #fff !important;
+		    font-weight: bold;
+		}
+		.wizard > .steps .done a {
+		    background: #00a65a !important;
+		    color: #fff !important;
+		}
+		</style>
     </head>
 
     <?php print $ui->creamyBody(); ?>
@@ -92,7 +160,12 @@
                 <?php if ($perm->carriers_read !== 'N') { ?>
                     <div class="panel panel-default">
                         <div class="panel-body table" id="recording_table">
-                            <legend><?php $lh->translateText("carriers"); ?></legend>
+                            <legend>
+                                <?php $lh->translateText("carriers"); ?>
+                                <button type="button" class="btn btn-primary btn-sm pull-right" data-toggle="modal" data-target="#wizard-modal">
+                                    <i class="fa fa-plus"></i> <?php $lh->translateText('add_new_carrier'); ?>
+                                </button>
+                            </legend>
 							<?php print $ui->getListAllCarriers($perm); ?>
                         </div>
                     </div>
@@ -146,8 +219,8 @@
 								<label class="col-sm-3 control-label" for="carrier_type"><?php $lh->translateText('carrier_type'); ?></label>
 								<div class="col-sm-7">
 									<select id="carrier_type" class="form-control" name="carrier_type">
+										<option value="manual" selected>Manual</option>
 										<option value="justgo">GoAutodial - JustGoVoIP</option>
-										<option value="manual">Manual</option>
 										<option value="copy">Copy Carrier</option>
 									</select>
 								</div>
@@ -763,6 +836,30 @@ host=</textarea>
 					}
 				});
 				
+				$('#carrier_type').on('change', function() {
+					var carrier_type = $(this).val();
+					if(carrier_type == "manual" || carrier_type == "copy"){
+						$('.manual_copy_div').show();
+					}else{
+						$('.manual_copy_div').hide();
+					}
+					if(carrier_type == "manual"){
+						$('.manual_div').show();
+					}else{
+						$('.manual_div').hide();
+					}
+					if(carrier_type == "copy"){
+						$('.copy_div').show();
+					}else{
+						$('.copy_div').hide();
+					}
+					if(carrier_type == "justgo"){
+						$('.justgo_div').show();
+					}else{
+						$('.justgo_div').hide();
+					}
+				}).trigger('change');
+
 				/* on authorization change */
 				$('input[type=radio][name=authentication]').on('change', function() {
 				//  alert( this.value ); // or $(this).val()
