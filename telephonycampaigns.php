@@ -160,7 +160,12 @@
                 <section class="content">
                 	<div class="panel panel-default">
                 		<div class="panel-body">
-                			<legend><?php $lh->translateText("campaigns"); ?></legend>
+                			<legend>
+                 				<?php $lh->translateText("campaigns"); ?>
+                 				<button type="button" class="btn btn-primary btn-sm pull-right" data-toggle="modal" data-target="#add_campaign" onclick="$('#add_campaign').modal('show');">
+                 					<i class="fa fa-plus"></i> <?php $lh->translateText("add_campaign"); ?>
+                 				</button>
+                 			</legend>
 							<?php if ($perm->campaign->campaign_read !== 'N') { ?>
 							<?php
 
@@ -482,22 +487,24 @@
 									<?php
 									$menu = 4;
 									$menuHeight = '310px';
-									$hideInbound = '';
-									$hideIVR = '';
-									$hideDID = '';
-									if ($perm->campaign->campaign_create === 'N') {
+									$hideCampaign = '';
+									$hideDisposition = '';
+									$hideLeadRecycling = '';
+									$hideAreacode = '';
+									$isAdmin = ($user->getUserRole() == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === 'ADMIN'));
+									if (!$isAdmin && isset($perm->campaign->campaign_create) && $perm->campaign->campaign_create === 'N') {
 										$menu--;
 										$hideCampaign = ' hidden';
 									}
-									if ($perm->disposition->disposition_create === 'N') {
+									if (!$isAdmin && isset($perm->disposition->disposition_create) && $perm->disposition->disposition_create === 'N') {
 										$menu--;
 										$hideDisposition = ' hidden';
 									}
-									if ($perm->disposition->disposition_create === 'N') {
+									if (!$isAdmin && isset($perm->disposition->disposition_create) && $perm->disposition->disposition_create === 'N') {
 										$menu--;
 										$hideLeadRecycling = ' hidden';
 									}
-									if ($perm->disposition->disposition_create === 'N') {
+									if (!$isAdmin && isset($perm->disposition->disposition_create) && $perm->disposition->disposition_create === 'N') {
 										$menu--;
 										$hideAreacode = ' hidden';
 									}
