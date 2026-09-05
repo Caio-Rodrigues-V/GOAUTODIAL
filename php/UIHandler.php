@@ -99,7 +99,7 @@ error_reporting(E_ERROR | E_PARSE);
      *
      * @return void
      */
-    private function __wakeup()
+    public function __wakeup()
     {
     }
 
