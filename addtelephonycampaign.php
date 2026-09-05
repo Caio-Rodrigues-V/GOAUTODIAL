@@ -164,7 +164,7 @@ $sess_group = isset($_SESSION['usergroup']) ? $_SESSION['usergroup'] : '';
 <script type="text/javascript">
     $(document).ready(function() {
         $('#campaign_id').bind('keypress', function (event) {
-            var regex = new RegExp('^[a-zA-Z0-9]+$');
+            var regex = new RegExp('^[a-zA-Z0-9_]+$');
             var key = String.fromCharCode(!event.charCode ? event.which : event.charCode);
             if (!regex.test(key)) {
                event.preventDefault();
@@ -184,7 +184,7 @@ $sess_group = isset($_SESSION['usergroup']) ? $_SESSION['usergroup'] : '';
                 dataType: 'json',
                 success: function(data) {
                     btn.html('<i class="fa fa-save"></i> Criar Campanha').prop('disabled', false);
-                    if (data == 1 || data.status == 1 || data.result == 'success') {
+                    if (data == 1 || data == '1' || (data && data.status == 1) || (data && data.result == 'success')) {
                         swal({
                             title: 'Sucesso!',
                             text: 'Campanha criada com sucesso!',

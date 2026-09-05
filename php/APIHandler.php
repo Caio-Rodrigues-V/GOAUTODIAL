@@ -1369,9 +1369,10 @@
 				  PRIMARY KEY (`campaign_id`)
 				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
 
+				$cid = substr($postfields['campaign_id'], 0, 8);
 				$data = array(
-					'campaign_id' => substr($postfields['campaign_id'], 0, 8),
-					'campaign_name' => !empty($postfields['campaign_name']) ? $postfields['campaign_name'] : $postfields['campaign_id'],
+					'campaign_id' => $cid,
+					'campaign_name' => !empty($postfields['campaign_name']) ? $postfields['campaign_name'] : $cid,
 					'campaign_description' => isset($postfields['description']) ? $postfields['description'] : '',
 					'active' => isset($postfields['status']) ? $postfields['status'] : 'Y',
 					'dial_method' => !empty($postfields['dial_method']) ? $postfields['dial_method'] : 'RATIO',
@@ -1379,7 +1380,13 @@
 					'dial_prefix' => !empty($postfields['dial_prefix']) ? $postfields['dial_prefix'] : '9',
 					'user_group' => !empty($postfields['user_group']) ? $postfields['user_group'] : '---ALL---'
 				);
-				$db->replace('vicidial_campaigns', $data);
+				$db->where('campaign_id', $cid);
+				if ($db->has('vicidial_campaigns')) {
+					$db->where('campaign_id', $cid);
+					$db->update('vicidial_campaigns', $data);
+				} else {
+					$db->insert('vicidial_campaigns', $data);
+				}
 				$obj = new \stdClass();
 				$obj->result = "success";
 				$obj->data = "Campaign added successfully";
