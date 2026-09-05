@@ -122,7 +122,10 @@ class DatabaseConnectorFactory {
     public function getDatabaseConnectorOfTypeAsterisk($type, $dbhost = null, $dbname = null, $dbuser = null, $dbpass = null, $dbport = null) {
 	    
 	    if (empty($dbhost) && defined('DB_HOST')) { $dbhost = DB_HOST; }	    
-	    if (empty($dbname) && defined('DB_NAME_ASTERISK')) { $dbname = DB_NAME_ASTERISK; }	    
+	    if (empty($dbname)) {
+		    if (defined('DB_NAME_ASTERISK')) { $dbname = DB_NAME_ASTERISK; }
+		    elseif (defined('DB_NAME')) { $dbname = DB_NAME; }
+	    }	    
 	    if (empty($dbuser) && defined('DB_USERNAME')) { $dbuser = DB_USERNAME; }	    
 	    if (empty($dbpass) && defined('DB_PASSWORD')) { $dbpass = DB_PASSWORD; }	    
 	    if (empty($dbport) && defined('DB_PORT')) { $dbport = DB_PORT; }	    
@@ -132,21 +135,9 @@ class DatabaseConnectorFactory {
 		    try {
 			    @$mysqldb = new \MysqliDb($dbhost, $dbuser, $dbpass, $dbname, $dbport);
 			    if (empty($mysqldb)) { throw new \Exception("Database access failed. Incorrect credentials or missing parameters."); return null; }
-			    // try to set the timezone (for dates).
-				//$mysqldb->where("setting", CRM_SETTING_TIMEZONE);
-				//$mysqldb->where("context", CRM_SETTING_CONTEXT_CREAMY);
-				//if ($result = $mysqldb->getOne(CRM_SETTINGS_TABLE_NAME)) {
-				//	$timezone = $result["value"];
-				//	if (isset($timezone)) { date_default_timezone_set($timezone); } 
-				//} else { // fallback.
-				//	if (defined('CRM_TIMEZONE')) { $timezone = CRM_TIMEZONE; }
-				//	if (defined('CRM_LOCALE')) { date_default_timezone_set($timezone); }			
-				//}
-			    // return MySQL database connector
 			    return $mysqldb;
-		    } catch (\Exception $e) {
-		    	throw new \Exception("Incorrect credentials. Access denied or incorrect parameters.");
-		    	return null;
+		    } catch (\Throwable $e) {
+		    	throw new \Exception($e->getMessage());
 		    }
 		    
 	    } else {
@@ -157,32 +148,35 @@ class DatabaseConnectorFactory {
     /** Returns the given database connector for a given database connector type */
     public function getDatabaseConnectorOfTypeKamailio($type, $dbhost = null, $dbname = null, $dbuser = null, $dbpass = null, $dbport = null) {
 	    
-	    if (empty($dbhost) && defined('DB_HOST_KAMAILIO')) { $dbhost = DB_HOST_KAMAILIO; }	    
-	    if (empty($dbname) && defined('DB_NAME_KAMAILIO')) { $dbname = DB_NAME_KAMAILIO; }	    
-	    if (empty($dbuser) && defined('DB_USERNAME_KAMAILIO')) { $dbuser = DB_USERNAME_KAMAILIO; }	    
-	    if (empty($dbpass) && defined('DB_PASSWORD_KAMAILIO')) { $dbpass = DB_PASSWORD_KAMAILIO; }	    
-	    if (empty($dbport) && defined('DB_PORT_KAMAILIO')) { $dbport = DB_PORT_KAMAILIO; }	    
+	    if (empty($dbhost)) {
+		    if (defined('DB_HOST_KAMAILIO')) { $dbhost = DB_HOST_KAMAILIO; }
+		    elseif (defined('DB_HOST')) { $dbhost = DB_HOST; }
+	    }	    
+	    if (empty($dbname)) {
+		    if (defined('DB_NAME_KAMAILIO')) { $dbname = DB_NAME_KAMAILIO; }
+		    elseif (defined('DB_NAME')) { $dbname = DB_NAME; }
+	    }	    
+	    if (empty($dbuser)) {
+		    if (defined('DB_USERNAME_KAMAILIO')) { $dbuser = DB_USERNAME_KAMAILIO; }
+		    elseif (defined('DB_USERNAME')) { $dbuser = DB_USERNAME; }
+	    }	    
+	    if (empty($dbpass)) {
+		    if (defined('DB_PASSWORD_KAMAILIO')) { $dbpass = DB_PASSWORD_KAMAILIO; }
+		    elseif (defined('DB_PASSWORD')) { $dbpass = DB_PASSWORD; }
+	    }	    
+	    if (empty($dbport)) {
+		    if (defined('DB_PORT_KAMAILIO')) { $dbport = DB_PORT_KAMAILIO; }
+		    elseif (defined('DB_PORT')) { $dbport = DB_PORT; }
+	    }	    
 
 	    if ($type == CRM_DB_CONNECTOR_TYPE_MYSQL) { // MySQL Database connector
 		    require_once("db_connectors/MysqliDb.php");
 		    try {
 			    @$mysqldb = new \MysqliDb($dbhost, $dbuser, $dbpass, $dbname, $dbport);
 			    if (empty($mysqldb)) { throw new \Exception("Database access failed. Incorrect credentials or missing parameters."); return null; }
-			    // try to set the timezone (for dates).
-				$mysqldb->where("setting", CRM_SETTING_TIMEZONE);
-				$mysqldb->where("context", CRM_SETTING_CONTEXT_CREAMY);
-				if ($result = $mysqldb->getOne(CRM_SETTINGS_TABLE_NAME)) {
-					$timezone = $result["value"];
-					if (isset($timezone)) { date_default_timezone_set($timezone); } 
-				} else { // fallback.
-					if (defined('CRM_TIMEZONE')) { $timezone = CRM_TIMEZONE; }
-					if (defined('CRM_LOCALE')) { date_default_timezone_set($timezone); }			
-				}
-			    // return MySQL database connector
 			    return $mysqldb;
-		    } catch (\Exception $e) {
-		    	throw new \Exception("Incorrect credentials. Access denied or incorrect parameters.");
-		    	return null;
+		    } catch (\Throwable $e) {
+		    	throw new \Exception($e->getMessage());
 		    }
 		    
 	    } else {
