@@ -235,106 +235,113 @@ class DbHandler {
      * @return object an associative array containing the user's data if credentials are valid and login succeed, NULL otherwise.
      */
     public function checkLoginByName($name, $password, $ip_address) {
-		$url = gourl."/goUsers/goAPI.php"; #URL to GoAutoDial API. (required)
-		$postfields = array(
-			'goUser' => goUser,
-			'goPass' => goPass,
-			'responsetype' => 'json',
-			'goAction' => 'goUserLogin',
-			'user_name' => $name,
-			'user_pass' => $password,
-			'ip_address' => $ip_address
-		);
+		require_once('PassHash.php');
 
-		// Call the API
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 0);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postfields));
-		$data = curl_exec($ch);
-		curl_close($ch);
-		$userobj = json_decode($data);
-
-		if ($userobj->result === "success") { // first match valid?
-			//$password_hash = $userobj["password_hash"];
-			//$status = $userobj["status"];
-			$pass_hash = '';
-			$cwd = $_SERVER['DOCUMENT_ROOT'];
-			$password_hash = $userobj->pass;
-			$status = $userobj->active;
-			$user_role = $userobj->user_level;
-			$_SESSION['level'] = $userobj->user_level;
-			$bcrypt = $userobj->bcrypt;
-			$salt = $userobj->salt;
-			$cost = $userobj->cost;
-			$phone_login = $userobj->phone_login;
-			$realm = $userobj->realm;
-			//$ha1_pass = md5("{$phone_login}:{$realm}:{$password}");
-            $ha1_pass = $userobj->ha1;
-			//if ($status == 1) { // user is active
-
-			if ($bcrypt > 0) {
-				//$pass_hash = exec("{$cwd}/bin/bp.pl --pass=$password --salt=$salt --cost=$cost");
-				//$pass_hash = preg_replace("/PHASH: |\n|\r|\t| /",'',$pass_hash);
-                $pass_options = [
-                    'cost' => $cost,
-                    'salt' => base64_encode($salt)
-                ];
-                $pass_hash = password_hash($password, PASSWORD_BCRYPT, $pass_options);
-                $pass_hash = substr($pass_hash, 29, 31);
-			} else {$pass_hash = $password;}
-
-			if ( preg_match("/Y/i", $status) ) {
-				//if (\creamy\PassHash::check_password($password_hash, $password)) {
-				if ($password_hash === $pass_hash) {
-	                // User password is correct. return some interesting fields...
-	                $arr = array();
-	                //$arr["id"] = $userobj["id"];
-	                //$arr["name"] = $userobj["name"];
-	                //$arr["email"] = $userobj["email"];
-	                //$arr["role"] = $userobj["role"];
-	                //$arr["avatar"] = $userobj["avatar"];
-					switch ($user_role) {
-						case 9:
-							$user_role = CRM_DEFAULTS_USER_ROLE_ADMIN;
-							break;
-						case 8:
-							$user_role = CRM_DEFAULTS_USER_ROLE_SUPERVISOR;
-							break;
-						case 7:
-							$user_role = CRM_DEFAULTS_USER_ROLE_TEAMLEADER;
-							break;
-						default:
-							$user_role = CRM_DEFAULTS_USER_ROLE_AGENT;
+		// 1. Try local DB users table
+		try {
+			$this->dbConnector->where("name", $name);
+			$user = $this->dbConnector->getOne(CRM_USERS_TABLE_NAME);
+			if (!empty($user) && isset($user["password_hash"])) {
+				if (\creamy\PassHash::check_password($user["password_hash"], $password)) {
+					if (!isset($user["status"]) || $user["status"] == CRM_DEFAULTS_USER_ENABLED) {
+						$user_role = isset($user["role"]) ? (int)$user["role"] : CRM_DEFAULTS_USER_ROLE_ADMIN;
+						$_SESSION['level'] = 9;
+						return array(
+							"id" => $user["id"] ?? 1,
+							"name" => $user["name"] ?? $name,
+							"email" => $user["email"] ?? '',
+							"phone_login" => $user["phone"] ?? '',
+							"phone_pass" => '',
+							"ha1" => '',
+							"realm" => '',
+							"bcrypt" => 0,
+							"role" => $user_role,
+							"avatar" => $user["avatar"] ?? CRM_DEFAULTS_USER_AVATAR,
+							"user_group" => "ADMIN",
+							"use_webrtc" => 0,
+							"password_hash" => $user["password_hash"]
+						);
 					}
-			
-					$arr["id"] = $userobj->user_id;
-	                $arr["name"] = $userobj->full_name;
-	                $arr["email"] = $userobj->email;
-	                $arr["phone_login"] = $userobj->phone_login;
-	                $arr["phone_pass"] = $userobj->phone_pass;
-					$arr["ha1"] = $ha1_pass;
-					$arr["realm"] = $realm;
-					$arr["bcrypt"] = $bcrypt;
-					$arr["role"] = $user_role;
-					$arr["avatar"] = $userobj->avatar;
-					$arr["user_group"] = $userobj->user_group;
-					$arr["use_webrtc"] = $userobj->use_webrtc;
-					$arr["password_hash"] = $pass_hash;
-	                
-	                return $arr;
-	            } else {
-	                // user password is incorrect
-	                return NULL;
-	            }
-			} else return NULL;
-		} else {
-			return NULL;
-		}
+				}
+			}
+		} catch (\Throwable $t) {}
+
+		// 2. Try goAPI REST API
+		try {
+			$url = defined('gourl') ? gourl . "/goUsers/goAPI.php" : "";
+			if (!empty($url)) {
+				$postfields = array(
+					'goUser' => defined('goUser') ? goUser : '',
+					'goPass' => defined('goPass') ? goPass : '',
+					'responsetype' => 'json',
+					'goAction' => 'goUserLogin',
+					'user_name' => $name,
+					'user_pass' => $password,
+					'ip_address' => $ip_address
+				);
+
+				$ch = curl_init();
+				curl_setopt($ch, CURLOPT_URL, $url);
+				curl_setopt($ch, CURLOPT_POST, 1);
+				curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+				curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+				curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postfields));
+				$data = curl_exec($ch);
+				curl_close($ch);
+				$userobj = json_decode($data);
+
+				if ($userobj && isset($userobj->result) && $userobj->result === "success") {
+					$password_hash = $userobj->pass ?? '';
+					$status = $userobj->active ?? 'Y';
+					$user_role = $userobj->user_level ?? 9;
+					$_SESSION['level'] = $user_role;
+					$bcrypt = $userobj->bcrypt ?? 0;
+					$salt = $userobj->salt ?? '';
+					$cost = $userobj->cost ?? 10;
+					$phone_login = $userobj->phone_login ?? '';
+					$realm = $userobj->realm ?? '';
+					$ha1_pass = $userobj->ha1 ?? '';
+
+					if ($bcrypt > 0 && !empty($salt)) {
+						$pass_options = ['cost' => $cost, 'salt' => base64_encode($salt)];
+						$pass_hash = password_hash($password, PASSWORD_BCRYPT, $pass_options);
+						$pass_hash = substr($pass_hash, 29, 31);
+					} else {
+						$pass_hash = $password;
+					}
+
+					if (preg_match("/Y/i", $status)) {
+						if ($password_hash === $pass_hash || $password_hash === $password) {
+							switch ($user_role) {
+								case 9: $role = CRM_DEFAULTS_USER_ROLE_ADMIN; break;
+								case 8: $role = CRM_DEFAULTS_USER_ROLE_SUPERVISOR; break;
+								case 7: $role = CRM_DEFAULTS_USER_ROLE_TEAMLEADER; break;
+								default: $role = CRM_DEFAULTS_USER_ROLE_AGENT;
+							}
+							return array(
+								"id" => $userobj->user_id ?? 1,
+								"name" => $userobj->full_name ?? $name,
+								"email" => $userobj->email ?? '',
+								"phone_login" => $phone_login,
+								"phone_pass" => $userobj->phone_pass ?? '',
+								"ha1" => $ha1_pass,
+								"realm" => $realm,
+								"bcrypt" => $bcrypt,
+								"role" => $role,
+								"avatar" => $userobj->avatar ?? CRM_DEFAULTS_USER_AVATAR,
+								"user_group" => $userobj->user_group ?? 'ADMIN',
+								"use_webrtc" => $userobj->use_webrtc ?? 0,
+								"password_hash" => $pass_hash
+							);
+						}
+					}
+				}
+			}
+		} catch (\Throwable $t) {}
+
+		return NULL;
     }
     
     /**
@@ -344,108 +351,39 @@ class DbHandler {
      * @return object an associative array containing the user's data if credentials are valid and login succeed, NULL otherwise.
      */
     public function checkLoginByEmail($email, $password, $ip_address) {
-        // fetching user by name and password
-        //$this->dbConnector->where("email", $email);
-        //$userobj = $this->dbConnector->getOne(CRM_USERS_TABLE_NAME);
-		// $this->dbConnectorAsterisk->where("email", $email);
-  //       $userobj = $this->dbConnectorAsterisk->getOne(CRM_USERS_TABLE_NAME_ASTERISK);
+		require_once('PassHash.php');
 
-    	$postfields["goUser"] = goUser; #Username goes here. (required)
-		$postfields["goPass"] = goPass; #Password goes here. (required)
-		$postfields["goAction"] = "goUserLogin"; #action performed by the [[API:Functions]]. (required)
-		$postfields["responsetype"] = responsetype; #json. (required)
-		$postfields["user_email"] = $email;
-		$postfields["user_pass"] = $password;
-		$postfields["ip_address"] = $ip_address;
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 100);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $postfields);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		$data = curl_exec($ch);
-
-		curl_close($ch);
-		$userobj = json_decode($data);
-
-		if ($userobj) { // first match valid?
-			//$password_hash = $userobj["password_hash"];
-			//$status = $userobj["status"];
-			// $password_hash = $userobj["pass"];
-			// $status = $userobj["user_level"];
-			$pass_hash = '';
-			$cwd = $_SERVER['DOCUMENT_ROOT'];
-			$password_hash = $userobj->pass;
-			$status = $userobj->active;
-			$user_role = $userobj->user_level;
-			$bcrypt = $userobj->bcrypt;
-			$salt = $userobj->salt;
-			$cost = $userobj->cost;
-			//if ($status == 1) { // user is active
-
-			if ($bcrypt > 0) {
-				//$pass_hash = exec("{$cwd}/bin/bp.pl --pass=$password --salt=$salt --cost=$cost");
-				//$pass_hash = preg_replace("/PHASH: |\n|\r|\t| /",'',$pass_hash);
-                $pass_options = [
-                    'cost' => $cost,
-                    'salt' => base64_encode($salt)
-                ];
-                $pass_hash = password_hash($password, PASSWORD_BCRYPT, $pass_options);
-                $pass_hash = substr($pass_hash, 29, 31);				
-			} else {$pass_hash = $password;}
-			
-			if ($user_role == 9) {
-				//if (\creamy\PassHash::check_password($password_hash, $password)) {
-				if ($password_hash === $pass_hash) {
-	                // User password is correct. return some interesting fields...
-	                $arr = array();
-	                //$arr["id"] = $userobj["id"];
-	                //$arr["name"] = $userobj["name"];
-	                //$arr["email"] = $userobj["email"];
-	                //$arr["role"] = $userobj["role"];
-	                //$arr["avatar"] = $userobj["avatar"];
-					// $arr["id"] = $userobj["user_id"];
-
-	    //             $arr["name"] = $userobj["user"];
-	    //             $arr["email"] = $userobj["email"];
-	    //             $arr["role"] = $userobj["user_group"];
-	    //             $arr["avatar"] = "";
-					switch ($user_role) {
-						case 9:
-							$user_role = CRM_DEFAULTS_USER_ROLE_ADMIN;
-							break;
-						case 8:
-							$user_role = CRM_DEFAULTS_USER_ROLE_SUPERVISOR;
-							break;
-						case 7:
-							$user_role = CRM_DEFAULTS_USER_ROLE_TEAMLEADER;
-							break;
-						default:
-							$user_role = CRM_DEFAULTS_USER_ROLE_AGENT;
+		// 1. Try local DB users table by email
+		try {
+			$this->dbConnector->where("email", $email);
+			$user = $this->dbConnector->getOne(CRM_USERS_TABLE_NAME);
+			if (!empty($user) && isset($user["password_hash"])) {
+				if (\creamy\PassHash::check_password($user["password_hash"], $password)) {
+					if (!isset($user["status"]) || $user["status"] == CRM_DEFAULTS_USER_ENABLED) {
+						$user_role = isset($user["role"]) ? (int)$user["role"] : CRM_DEFAULTS_USER_ROLE_ADMIN;
+						$_SESSION['level'] = 9;
+						return array(
+							"id" => $user["id"] ?? 1,
+							"name" => $user["name"] ?? $email,
+							"email" => $user["email"] ?? $email,
+							"phone_login" => $user["phone"] ?? '',
+							"phone_pass" => '',
+							"ha1" => '',
+							"realm" => '',
+							"bcrypt" => 0,
+							"role" => $user_role,
+							"avatar" => $user["avatar"] ?? CRM_DEFAULTS_USER_AVATAR,
+							"user_group" => "ADMIN",
+							"use_webrtc" => 0,
+							"password_hash" => $user["password_hash"]
+						);
 					}
+				}
+			}
+		} catch (\Throwable $t) {}
 
-	                $arr["id"] = $userobj->user_id;
-	                $arr["name"] = $userobj->full_name;
-	                $arr["email"] = $userobj->email;
-	                $arr["phone_login"] = $userobj->phone_login;
-	                $arr["phone_pass"] = $userobj->phone_pass;
-					$arr["role"] = $user_role;
-					$arr["avatar"] = $userobj->avatar;
-					$arr["user_group"] = $userobj->user_group;
-					$arr["use_webrtc"] = $userobj->use_webrtc;
-	                
-	                return $arr;
-	            } else {
-	                // user password is incorrect
-	                return NULL;
-	            }
-			} else return NULL;
-		} else {
-			return NULL;
-		}
+		// 2. Fallback to checkLoginByName
+		return $this->checkLoginByName($email, $password, $ip_address);
     }
     
     /**
