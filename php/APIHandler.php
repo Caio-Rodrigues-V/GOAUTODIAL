@@ -1103,7 +1103,37 @@
 			$postfields = array(
 				'goAction' => 'goGetAllUserGroups'
 			);
-			return $this->API_Request("goUserGroups", $postfields);
+			$res = $this->API_Request("goUserGroups", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_user_groups` (
+				  `user_group` varchar(20) NOT NULL,
+				  `group_name` varchar(40) NOT NULL,
+				  `allowed_campaigns` text,
+				  PRIMARY KEY (`user_group`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$groups = $db->get('vicidial_user_groups');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->user_group = array('---ALL---', 'ADMIN');
+				$obj->group_name = array('All User Groups', 'ADMIN Group');
+				if ($groups && is_array($groups) && count($groups) > 0) {
+					foreach ($groups as $g) {
+						if (!in_array($g['user_group'], $obj->user_group)) {
+							$obj->user_group[] = $g['user_group'];
+							$obj->group_name[] = !empty($g['group_name']) ? $g['group_name'] : $g['user_group'];
+						}
+					}
+				}
+				return $obj;
+			}
+			return $res;
 		}
 		
 		public function API_getUserGroupInfo($group_id) {
@@ -1119,16 +1149,12 @@
 				'goAction' => 'goGetCallRecordingList'
 			);
 			if (isset($search_phone)) { 
-				$postfields .= array(
-					'requestDataPhone' => $search_phone
-				);
+				$postfields['requestDataPhone'] = $search_phone;
 			}
 			if (isset($start_filterdate)) {
-				$postfields .= array(
-					'start_filterdate' => $start_filterdate,
-					'end_filterdate' => $end_filterdate,
-					'agent_filter' => $agent_filter
-				);	    
+				$postfields['start_filterdate'] = $start_filterdate;
+				$postfields['end_filterdate'] = $end_filterdate;
+				$postfields['agent_filter'] = $agent_filter;
 			}
 			return $this->API_Request("goCallRecordings", $postfields);
 		}	
