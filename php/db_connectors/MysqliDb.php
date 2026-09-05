@@ -166,11 +166,12 @@ class MysqliDb implements \creamy\DbConnector
             die ('Mysql host is not set');
 
         try {
+            @mysqli_report(MYSQLI_REPORT_OFF);
 	        @$this->_mysqli = new mysqli ($this->host, $this->username, $this->password, $this->db, $this->port);
 			if ($this->_mysqli->connect_errno) { return false; }
 			if ($this->charset) $this->_mysqli->set_charset ($this->charset);
 			return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
 	        return false;
         }
 		return false;        

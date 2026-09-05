@@ -95,18 +95,21 @@ class DatabaseConnectorFactory {
 			    @$mysqldb = new \MysqliDb($dbhost, $dbuser, $dbpass, $dbname, $dbport);
 			    if (empty($mysqldb)) { throw new \Exception("Database access failed. Incorrect credentials or missing parameters."); return null; }
 			    // try to set the timezone (for dates).
-				$mysqldb->where("setting", CRM_SETTING_TIMEZONE);
-				$mysqldb->where("context", CRM_SETTING_CONTEXT_CREAMY);
-				if ($result = $mysqldb->getOne(CRM_SETTINGS_TABLE_NAME)) {
-					$timezone = $result["value"];
-					if (isset($timezone)) { date_default_timezone_set($timezone); } 
-				} else { // fallback.
-					if (defined('CRM_TIMEZONE')) { $timezone = CRM_TIMEZONE; }
-					if (defined('CRM_LOCALE')) { date_default_timezone_set($timezone); }			
-				}
+			    try {
+					$mysqldb->where("setting", CRM_SETTING_TIMEZONE);
+					$mysqldb->where("context", CRM_SETTING_CONTEXT_CREAMY);
+					if ($result = $mysqldb->getOne(CRM_SETTINGS_TABLE_NAME)) {
+						$timezone = $result["value"];
+						if (isset($timezone)) { date_default_timezone_set($timezone); } 
+					} else { // fallback.
+						if (defined('CRM_TIMEZONE')) { $timezone = CRM_TIMEZONE; }
+						if (defined('CRM_LOCALE')) { date_default_timezone_set($timezone); }			
+					}
+			    } catch (\Throwable $t) {
+			    }
 			    // return MySQL database connector
 			    return $mysqldb;
-		    } catch (\Exception $e) {
+		    } catch (\Throwable $e) {
 		    	throw new \Exception("Incorrect credentials. Access denied or incorrect parameters.");
 		    	return null;
 		    }
