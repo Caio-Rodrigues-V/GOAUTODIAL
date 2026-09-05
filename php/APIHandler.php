@@ -912,7 +912,7 @@
 			}
 			// DB Fallback
 			require_once('DatabaseConnectorFactory.php');
-			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
 			if ($db) {
 				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_server_carriers` (
 				  `carrier_id` varchar(15) NOT NULL,
@@ -963,7 +963,7 @@
 			}
 			// DB Fallback
 			require_once('DatabaseConnectorFactory.php');
-			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
 			if ($db) {
 				$db->where('carrier_id', $carrier_id);
 				$row = $db->getOne('vicidial_server_carriers');
@@ -987,7 +987,7 @@
 			}
 			// DB Fallback
 			require_once('DatabaseConnectorFactory.php');
-			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
 			if ($db) {
 				$db->rawQuery("CREATE TABLE IF NOT EXISTS `servers` (
 				  `server_id` varchar(10) NOT NULL DEFAULT '',
@@ -1109,7 +1109,7 @@
 			}
 			// DB Fallback
 			require_once('DatabaseConnectorFactory.php');
-			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
 			if ($db) {
 				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_user_groups` (
 				  `user_group` varchar(20) NOT NULL,
@@ -1213,7 +1213,7 @@
 			}
 			// DB Fallback: Direct Database Insert / Update
 			require_once('DatabaseConnectorFactory.php');
-			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
 			if ($db) {
 				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_server_carriers` (
 				  `carrier_id` varchar(15) NOT NULL,
@@ -1271,7 +1271,7 @@
 			}
 			// DB Fallback
 			require_once('DatabaseConnectorFactory.php');
-			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
 			if ($db) {
 				$cid = !empty($postfields['modifyid']) ? $postfields['modifyid'] : (!empty($postfields['carrier_id']) ? $postfields['carrier_id'] : '');
 				$server_ip = !empty($postfields['server_ip']) ? $postfields['server_ip'] : '127.0.0.1';
