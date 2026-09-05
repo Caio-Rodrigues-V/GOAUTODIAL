@@ -253,11 +253,27 @@
 						<div class="form-group">
 							<label for="server_ip" class="col-sm-3 control-label"><?php $lh->translateText('server_ip'); ?></label>
 							<div class="col-sm-8">
-								<select name="server_ip" class="form-control">
+								<select name="server_ip" id="server_ip" class="form-control">
 									<?php
-										if (isset($servers->server_ip) && is_array($servers->server_ip)) {
-											for($i=0;$i<count($servers->server_ip);$i++){
-												echo "<option value='".$servers->server_ip[$i]."'>".$servers->server_ip[$i]." - ".$servers->server_description[$i]."</option>";
+										$has_server = false;
+										if (isset($servers->server_ip)) {
+											if (is_array($servers->server_ip) && count($servers->server_ip) > 0) {
+												for($i=0;$i<count($servers->server_ip);$i++){
+													$desc = isset($servers->server_description[$i]) ? $servers->server_description[$i] : 'Dialer Server';
+													echo "<option value='".$servers->server_ip[$i]."'>".$servers->server_ip[$i]." - ".$desc."</option>";
+													$has_server = true;
+												}
+											} elseif (is_string($servers->server_ip) && !empty($servers->server_ip)) {
+												$desc = isset($servers->server_description) ? $servers->server_description : 'Dialer Server';
+												echo "<option value='".$servers->server_ip."'>".$servers->server_ip." - ".$desc."</option>";
+												$has_server = true;
+											}
+										}
+										if (!$has_server) {
+											$srv_addr = !empty($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '127.0.0.1';
+											echo "<option value='".$srv_addr."' selected>".$srv_addr." - Default Asterisk Server</option>";
+											if ($srv_addr !== '127.0.0.1') {
+												echo "<option value='127.0.0.1'>127.0.0.1 - Localhost</option>";
 											}
 										}
 									?>
