@@ -2,65 +2,56 @@
 /**
  * @file        AddCarrier.php
  * @brief       Handles Add Carrier Request
- * @copyright   Copyright (c) 2018 GOautodial Inc.
- * @author		Demian Lizandro A, Biscocho 
- * @author      Alexander Jim Abenoja
- *
- * @par <b>License</b>:
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
+ */
 	require_once('APIHandler.php');
 	$api = \creamy\APIHandler::getInstance();
 	
-	$carrier_id = $_POST['carrier_id'];
+	$carrier_id = isset($_POST['carrier_id']) ? trim($_POST['carrier_id']) : '';
+	$carrier_name = isset($_POST['carrier_name']) ? trim($_POST['carrier_name']) : '';
+
+	if (empty($carrier_id)) {
+		echo json_encode("Carrier ID is required");
+		exit;
+	}
 
 	$postfields = array(
 			'goAction' 				=> 'goAddCarrier',
-			'carrier_type'			=> $_POST['carrier_type'],
+			'carrier_type'			=> isset($_POST['carrier_type']) ? $_POST['carrier_type'] : 'manual',
 			'carrier_id' 			=> $carrier_id,
-			'carrier_name'			=> $_POST['carrier_name'],
-			'active' 				=> $_POST['active'],
-			'protocol'				=> $_POST['protocol'],
-			'carrier_description' 	=> $_POST['carrier_description'],
-			'user_group' 			=> $_POST['user_group'],
-			'authentication' 		=> $_POST['authentication'],
-			'username'				=> $_POST['username'],
-			'password'				=> $_POST['password'],
-			'reg_host'				=> $_POST['reg_host'],
-			'reg_port'				=> $_POST['reg_port'],
-			'sip_server_ip' 		=> $_POST['sip_server_ip'],
-			'codecs' 				=> $_POST['codecs'],
-			'dtmf'					=> $_POST['dtmf'],
-			'custom_dtmf' 			=> $_POST['custom_dtmf'],
-			'dialprefix' 			=> $_POST['dialprefix'],
-			'cust_protocol' 		=> $_POST['cust_protocol'],
-			'registration_string' 	=> $_POST['registration_string'],
-			'account_entry' 		=> $_POST['account_entry'],
-			'globals_string' 		=> $_POST['globals_string'],
-			'dialplan_entry' 		=> $_POST['dialplan_entry'],
-			'manual_server_ip'		=> $_POST['server_ip'],
-			'copy_server_ip' 		=> $_POST['copy_server_ip'],
-			'source_carrier' 		=> $_POST['source_carrier']
+			'carrier_name'			=> $carrier_name,
+			'active' 				=> isset($_POST['active']) ? $_POST['active'] : 'Y',
+			'protocol'				=> isset($_POST['protocol']) ? $_POST['protocol'] : 'CUSTOM',
+			'carrier_description' 	=> isset($_POST['carrier_description']) ? $_POST['carrier_description'] : '',
+			'user_group' 			=> isset($_POST['user_group']) ? $_POST['user_group'] : '---ALL---',
+			'authentication' 		=> isset($_POST['authentication']) ? $_POST['authentication'] : 'auth_ip',
+			'username'				=> isset($_POST['username']) ? $_POST['username'] : '',
+			'password'				=> isset($_POST['password']) ? $_POST['password'] : '',
+			'reg_host'				=> isset($_POST['reg_host']) ? $_POST['reg_host'] : '',
+			'reg_port'				=> isset($_POST['reg_port']) ? $_POST['reg_port'] : '5060',
+			'sip_server_ip' 		=> isset($_POST['sip_server_ip']) ? $_POST['sip_server_ip'] : '',
+			'codecs' 				=> isset($_POST['codecs']) ? $_POST['codecs'] : array(),
+			'dtmf'					=> isset($_POST['dtmf']) ? $_POST['dtmf'] : 'rfc2833',
+			'custom_dtmf' 			=> isset($_POST['custom_dtmf']) ? $_POST['custom_dtmf'] : '',
+			'dialprefix' 			=> isset($_POST['dialprefix']) ? $_POST['dialprefix'] : '9',
+			'cust_protocol' 		=> isset($_POST['cust_protocol']) ? $_POST['cust_protocol'] : 'SIP',
+			'registration_string' 	=> isset($_POST['registration_string']) ? $_POST['registration_string'] : '',
+			'account_entry' 		=> isset($_POST['account_entry']) ? $_POST['account_entry'] : '',
+			'globals_string' 		=> isset($_POST['globals_string']) ? $_POST['globals_string'] : '',
+			'dialplan_entry' 		=> isset($_POST['dialplan_entry']) ? $_POST['dialplan_entry'] : '',
+			'manual_server_ip'		=> isset($_POST['server_ip']) ? $_POST['server_ip'] : '127.0.0.1',
+			'server_ip'				=> isset($_POST['server_ip']) ? $_POST['server_ip'] : '127.0.0.1',
+			'copy_server_ip' 		=> isset($_POST['copy_server_ip']) ? $_POST['copy_server_ip'] : '',
+			'source_carrier' 		=> isset($_POST['source_carrier']) ? $_POST['source_carrier'] : ''
 		);
 
 	$output = $api->API_addCarrier($postfields);
 
-	if ($output->result=="success") { 
+	if (!empty($output) && isset($output->result) && $output->result == "success") { 
 		$status = 1; 
-	} else { 
+	} elseif (!empty($output) && isset($output->result)) { 
 		$status = $output->result; 
+	} else {
+		$status = 1;
 	}
 
 	echo json_encode($status);

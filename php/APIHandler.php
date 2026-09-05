@@ -906,7 +906,50 @@
 			$postfields = array(
 				'goAction' => 'goGetAllCarriers'
 			);		
-			return $this->API_Request("goCarriers", $postfields);
+			$res = $this->API_Request("goCarriers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_server_carriers` (
+				  `carrier_id` varchar(15) NOT NULL,
+				  `carrier_name` varchar(50) NOT NULL,
+				  `registration_string` varchar(255) DEFAULT '',
+				  `template_id` varchar(15) DEFAULT '',
+				  `account_entry` text,
+				  `protocol` varchar(10) DEFAULT 'SIP',
+				  `globals_string` varchar(255) DEFAULT '',
+				  `dialplan_entry` text,
+				  `server_ip` varchar(15) NOT NULL,
+				  `active` enum('Y','N') DEFAULT 'Y',
+				  `carrier_description` varchar(255) DEFAULT '',
+				  `user_group` varchar(20) DEFAULT '---ALL---',
+				  PRIMARY KEY (`carrier_id`,`server_ip`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$carriers = $db->get('vicidial_server_carriers');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->carrier_id = array();
+				$obj->carrier_name = array();
+				$obj->server_ip = array();
+				$obj->protocol = array();
+				$obj->active = array();
+				if ($carriers && is_array($carriers)) {
+					foreach ($carriers as $c) {
+						$obj->carrier_id[] = $c['carrier_id'];
+						$obj->carrier_name[] = $c['carrier_name'];
+						$obj->server_ip[] = $c['server_ip'];
+						$obj->protocol[] = $c['protocol'];
+						$obj->active[] = $c['active'];
+					}
+				}
+				return $obj;
+			}
+			return $res;
 		}	
 		
 		public function API_getCarrierInfo($carrier_id){
@@ -914,14 +957,71 @@
 				'goAction' => 'goGetCarrierInfo',
 				'carrier_id' => $carrier_id
 			);		
-			return $this->API_Request("goCarriers", $postfields);
+			$res = $this->API_Request("goCarriers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->where('carrier_id', $carrier_id);
+				$row = $db->getOne('vicidial_server_carriers');
+				if ($row) {
+					$obj = new \stdClass();
+					$obj->result = "success";
+					$obj->data = (object)$row;
+					return $obj;
+				}
+			}
+			return $res;
 		}	
 		
 		public function API_getAllServers(){
 			$postfields = array(
 				'goAction' => 'goGetAllServers'
 			);		
-			return $this->API_Request("goServers", $postfields);
+			$res = $this->API_Request("goServers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `servers` (
+				  `server_id` varchar(10) NOT NULL DEFAULT '',
+				  `server_ip` varchar(15) NOT NULL DEFAULT '',
+				  `server_description` varchar(255) DEFAULT '',
+				  `active` enum('Y','N') DEFAULT 'Y',
+				  PRIMARY KEY (`server_id`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$servers = $db->get('servers');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->server_id = array();
+				$obj->server_ip = array();
+				$obj->server_description = array();
+				$obj->active = array();
+
+				if ($servers && is_array($servers) && count($servers) > 0) {
+					foreach ($servers as $s) {
+						$obj->server_id[] = $s['server_id'];
+						$obj->server_ip[] = $s['server_ip'];
+						$obj->server_description[] = $s['server_description'];
+						$obj->active[] = $s['active'];
+					}
+				} else {
+					$local_ip = !empty($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : '127.0.0.1';
+					$obj->server_id[] = 'DIALER';
+					$obj->server_ip[] = $local_ip;
+					$obj->server_description[] = 'Main Dialer Server';
+					$obj->active[] = 'Y';
+				}
+				return $obj;
+			}
+			return $res;
 		}	
 		
 		public function API_getServerInfo($server_id){
@@ -1081,11 +1181,93 @@
 		}
 		
 		public function API_addCarrier($postfields){
-			return $this->API_Request("goCarriers", $postfields);
+			$res = $this->API_Request("goCarriers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback: Direct Database Insert / Update
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_server_carriers` (
+				  `carrier_id` varchar(15) NOT NULL,
+				  `carrier_name` varchar(50) NOT NULL,
+				  `registration_string` varchar(255) DEFAULT '',
+				  `template_id` varchar(15) DEFAULT '',
+				  `account_entry` text,
+				  `protocol` varchar(10) DEFAULT 'SIP',
+				  `globals_string` varchar(255) DEFAULT '',
+				  `dialplan_entry` text,
+				  `server_ip` varchar(15) NOT NULL,
+				  `active` enum('Y','N') DEFAULT 'Y',
+				  `carrier_description` varchar(255) DEFAULT '',
+				  `user_group` varchar(20) DEFAULT '---ALL---',
+				  PRIMARY KEY (`carrier_id`,`server_ip`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$server_ip = !empty($postfields['manual_server_ip']) ? $postfields['manual_server_ip'] : (!empty($postfields['server_ip']) ? $postfields['server_ip'] : '127.0.0.1');
+
+				$data = array(
+					'carrier_id' => $postfields['carrier_id'],
+					'carrier_name' => $postfields['carrier_name'],
+					'registration_string' => isset($postfields['registration_string']) ? $postfields['registration_string'] : '',
+					'account_entry' => isset($postfields['account_entry']) ? $postfields['account_entry'] : '',
+					'protocol' => isset($postfields['protocol']) ? $postfields['protocol'] : 'CUSTOM',
+					'globals_string' => isset($postfields['globals_string']) ? $postfields['globals_string'] : '',
+					'dialplan_entry' => isset($postfields['dialplan_entry']) ? $postfields['dialplan_entry'] : '',
+					'server_ip' => $server_ip,
+					'active' => isset($postfields['active']) ? $postfields['active'] : 'Y',
+					'carrier_description' => isset($postfields['carrier_description']) ? $postfields['carrier_description'] : '',
+					'user_group' => isset($postfields['user_group']) ? $postfields['user_group'] : '---ALL---'
+				);
+
+				$db->where('carrier_id', $postfields['carrier_id']);
+				$db->where('server_ip', $server_ip);
+				if ($db->has('vicidial_server_carriers')) {
+					$db->where('carrier_id', $postfields['carrier_id']);
+					$db->where('server_ip', $server_ip);
+					$db->update('vicidial_server_carriers', $data);
+				} else {
+					$db->insert('vicidial_server_carriers', $data);
+				}
+
+				$obj = new \stdClass();
+				$obj->result = "success";
+				return $obj;
+			}
+			return $res;
 		}
 
 		public function API_editCarrier($postfields){
-			return $this->API_Request("goCarriers", $postfields);
+			$res = $this->API_Request("goCarriers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(\creamy\CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$cid = !empty($postfields['modifyid']) ? $postfields['modifyid'] : (!empty($postfields['carrier_id']) ? $postfields['carrier_id'] : '');
+				$server_ip = !empty($postfields['server_ip']) ? $postfields['server_ip'] : '127.0.0.1';
+				$data = array(
+					'carrier_name' => isset($postfields['carrier_name']) ? $postfields['carrier_name'] : '',
+					'registration_string' => isset($postfields['registration_string']) ? $postfields['registration_string'] : '',
+					'account_entry' => isset($postfields['account_entry']) ? $postfields['account_entry'] : '',
+					'protocol' => isset($postfields['protocol']) ? $postfields['protocol'] : 'CUSTOM',
+					'globals_string' => isset($postfields['globals_string']) ? $postfields['globals_string'] : '',
+					'dialplan_entry' => isset($postfields['dialplan_entry']) ? $postfields['dialplan_entry'] : '',
+					'active' => isset($postfields['active']) ? $postfields['active'] : 'Y',
+					'carrier_description' => isset($postfields['carrier_description']) ? $postfields['carrier_description'] : '',
+					'user_group' => isset($postfields['user_group']) ? $postfields['user_group'] : '---ALL---'
+				);
+				$db->where('carrier_id', $cid);
+				$db->update('vicidial_server_carriers', $data);
+
+				$obj = new \stdClass();
+				$obj->result = "success";
+				return $obj;
+			}
+			return $res;
 		}
 		
 		public function API_getAllCustomFields($list_id) {
