@@ -66,6 +66,19 @@ class SessionHandler {
 		
 		// Encrypt session data
 		$this->encrypt = $encrypt;
+
+		if ($this->db) {
+			try {
+				$this->db->rawQuery("CREATE TABLE IF NOT EXISTS `{$this->table}` (
+				  `session_id` varchar(50) NOT NULL,
+				  `user_agent` varchar(255) DEFAULT NULL,
+				  `last_activity` int(11) NOT NULL DEFAULT '0',
+				  `user_data` longtext,
+				  `ip_address` varchar(50) DEFAULT NULL,
+				  PRIMARY KEY (`session_id`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+			} catch (\Throwable $t) {}
+		}
 		
 		// Hook up handler
 		session_set_save_handler(
@@ -78,7 +91,9 @@ class SessionHandler {
 		);
 		
 		// Start session
-		session_start();
+		if (session_status() === PHP_SESSION_NONE) {
+			@session_start();
+		}
 	}
 	
 	function __destruct () {
@@ -129,21 +144,17 @@ class SessionHandler {
 	 * @return string
 	 */
 	function _Read($session_id) {
-		// Read entry
-		//error_log('_Read');
-		$this->db->where('session_id', md5($session_id));
-		//$this->db->where('user_agent', $this->getUserAgent());
-		$this->db->where('ip_address', $this->getUserIP());
-		$this->db->where('last_activity', time(), '>');
-		$this->db->orderBy('last_activity', 'DESC');
-		$result = $this->db->getOne($this->table, 'user_data');
-		
-		// Return data or null
-		//return ($this->db->getRowCount() > 0 && ($row = $result)) ? $this->encrypt ?  $this->decrypt($row['user_data']) : $row['user_data'] : NULL;
-		
-		// Return empty string not null PHP > 7.0
-		// https://www.php.net/manual/en/function.session-start.php#120589
-		return ($this->db->getRowCount() > 0 && ($row = $result)) ? $this->encrypt ?  $this->decrypt($row['user_data']) : $row['user_data'] : '';		
+		try {
+			$this->db->where('session_id', md5($session_id));
+			$this->db->where('ip_address', $this->getUserIP());
+			$this->db->where('last_activity', time(), '>');
+			$this->db->orderBy('last_activity', 'DESC');
+			$result = $this->db->getOne($this->table, 'user_data');
+			
+			return ($result && isset($result['user_data'])) ? ($this->encrypt ? $this->decrypt($result['user_data']) : $result['user_data']) : '';
+		} catch (\Throwable $t) {
+			return '';
+		}
 	}
 	
 	/** Initialize session
@@ -151,31 +162,32 @@ class SessionHandler {
 	 * @param string 	$data 		- Session data
 	 */
 	function _Write($session_id, $data) {
-		//error_log('_Write');
 		if (!empty($data)) {
-			$insertData = array(
-				'session_id' => md5($session_id),
-				'user_agent' => $this->getUserAgent(),
-				'last_activity' => time() + $this->lifeTime,
-				'user_data' => $this->encrypt ? $this->encrypt($data) : $data,
-				'ip_address' => $this->getUserIP()
-			);
-			
-			$this->db->insert($this->table, $insertData);
-			$err = $this->db->getLastError();
-			
-			if (preg_match("/^Duplicate entry/", $err)) {
-				// Update Entry
-				$updateData = array(
+			try {
+				$insertData = array(
+					'session_id' => md5($session_id),
 					'user_agent' => $this->getUserAgent(),
 					'last_activity' => time() + $this->lifeTime,
 					'user_data' => $this->encrypt ? $this->encrypt($data) : $data,
 					'ip_address' => $this->getUserIP()
 				);
 				
-				$this->db->where('session_id', md5($session_id));
-				$this->db->update($this->table, $updateData);
-			}
+				$this->db->insert($this->table, $insertData);
+				$err = $this->db->getLastError();
+				
+				if (preg_match("/^Duplicate entry/", $err)) {
+					// Update Entry
+					$updateData = array(
+						'user_agent' => $this->getUserAgent(),
+						'last_activity' => time() + $this->lifeTime,
+						'user_data' => $this->encrypt ? $this->encrypt($data) : $data,
+						'ip_address' => $this->getUserIP()
+					);
+					
+					$this->db->where('session_id', md5($session_id));
+					$this->db->update($this->table, $updateData);
+				}
+			} catch (\Throwable $t) {}
 		}
 		return TRUE;
 	}

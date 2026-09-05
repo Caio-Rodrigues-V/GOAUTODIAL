@@ -46,9 +46,11 @@ $session_class = new \creamy\SessionHandler();
 }*/
 
 // force https protocol
-if(empty($_SERVER["HTTPS"]) || $_SERVER["HTTPS"] != "on") {
-    header("Location: https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"]);
-    exit();
+if ((empty($_SERVER["HTTPS"]) || $_SERVER["HTTPS"] != "on") && (empty($_SERVER["HTTP_X_FORWARDED_PROTO"]) || $_SERVER["HTTP_X_FORWARDED_PROTO"] != "https")) {
+    if (isset($_SERVER["HTTP_HOST"]) && isset($_SERVER["REQUEST_URI"])) {
+        header("Location: https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"]);
+        exit();
+    }
 }
 
 $realPath = '';
