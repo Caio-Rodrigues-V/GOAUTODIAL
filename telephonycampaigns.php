@@ -160,11 +160,11 @@
                 <section class="content">
                 	<div class="panel panel-default">
                 		<div class="panel-body">
-                			<legend>
+                 			<legend>
                  				<?php $lh->translateText("campaigns"); ?>
-                 				<button type="button" class="btn btn-primary btn-sm pull-right" data-toggle="modal" data-target="#add_campaign" onclick="$('#add_campaign').modal('show');">
+                 				<a href="addtelephonycampaign.php" class="btn btn-primary btn-sm pull-right">
                  					<i class="fa fa-plus"></i> <?php $lh->translateText("add_campaign"); ?>
-                 				</button>
+                 				</a>
                  			</legend>
 							<?php if ($perm->campaign->campaign_read !== 'N') { ?>
 							<?php
@@ -513,7 +513,7 @@
 									if ($menu < 2) { $menuHeight = '120px'; }
 									?>
 									<ul class="fab-ul" style="height: <?=$menuHeight?>;">
-										<li class="li-style<?=$hideCampaign?>"><a class="fa fa-dashboard fab-div-item" data-toggle="modal" data-target="#add_campaign" title="Add Campaign"></a></li><br/>
+										<li class="li-style<?=$hideCampaign?>"><a href="addtelephonycampaign.php" class="fa fa-dashboard fab-div-item" title="Add Campaign"></a></li><br/>
 										<li class="li-style<?=$hideDisposition?>"><a class="fa fa-tty fab-div-item" data-toggle="modal" data-target="#modal_add_disposition" title="Add Disposition"></a></li><br/>
 										<li class="li-style<?=$hideLeadRecycling?>"><a class="fa fa-recycle fab-div-item" data-toggle="modal" data-target="#add_leadrecycling" title="Add Lead Recycling"></a></li><br/>
 										<!--<li class="li-style"><a class="fa fa-phone-square fab-div-item" data-toggle="modal" data-target="#add_leadfilter" title="Add Phone Numbers"> </a></li>-->

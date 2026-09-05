@@ -546,7 +546,47 @@
 			$postfields = array(
 				'goAction' => 'goGetAllCampaigns'
 			);		
-			return $this->API_Request("goCampaigns", $postfields);
+			$res = $this->API_Request("goCampaigns", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_campaigns` (
+				  `campaign_id` varchar(8) NOT NULL,
+				  `campaign_name` varchar(40) DEFAULT '',
+				  `campaign_description` varchar(255) DEFAULT '',
+				  `active` enum('Y','N') DEFAULT 'Y',
+				  `dial_method` varchar(20) DEFAULT 'RATIO',
+				  `auto_dial_level` varchar(6) DEFAULT '1.0',
+				  `dial_prefix` varchar(20) DEFAULT '9',
+				  `user_group` varchar(20) DEFAULT '---ALL---',
+				  PRIMARY KEY (`campaign_id`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$rows = $db->get('vicidial_campaigns');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->data = new \stdClass();
+				$obj->campaign_id = array();
+				$obj->campaign_name = array();
+				$obj->dial_method = array();
+				$obj->active = array();
+				$obj->auto_dial_level = array();
+				if (!empty($rows)) {
+					foreach ($rows as $r) {
+						$obj->campaign_id[] = $r['campaign_id'];
+						$obj->campaign_name[] = $r['campaign_name'];
+						$obj->dial_method[] = $r['dial_method'];
+						$obj->active[] = $r['active'];
+						$obj->auto_dial_level[] = isset($r['auto_dial_level']) ? $r['auto_dial_level'] : '1.0';
+					}
+				}
+				return $obj;
+			}
+			return $res;
 		}	
 		
 		public function API_getAllAudioFiles(){
@@ -1309,7 +1349,43 @@
 		}
 
 		public function API_addCampaign($postfields){
-			return $this->API_Upload("goCampaigns", $postfields);
+			$res = $this->API_Upload("goCampaigns", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db && !empty($postfields['campaign_id'])) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_campaigns` (
+				  `campaign_id` varchar(8) NOT NULL,
+				  `campaign_name` varchar(40) DEFAULT '',
+				  `campaign_description` varchar(255) DEFAULT '',
+				  `active` enum('Y','N') DEFAULT 'Y',
+				  `dial_method` varchar(20) DEFAULT 'RATIO',
+				  `auto_dial_level` varchar(6) DEFAULT '1.0',
+				  `dial_prefix` varchar(20) DEFAULT '9',
+				  `user_group` varchar(20) DEFAULT '---ALL---',
+				  PRIMARY KEY (`campaign_id`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$data = array(
+					'campaign_id' => substr($postfields['campaign_id'], 0, 8),
+					'campaign_name' => !empty($postfields['campaign_name']) ? $postfields['campaign_name'] : $postfields['campaign_id'],
+					'campaign_description' => isset($postfields['description']) ? $postfields['description'] : '',
+					'active' => isset($postfields['status']) ? $postfields['status'] : 'Y',
+					'dial_method' => !empty($postfields['dial_method']) ? $postfields['dial_method'] : 'RATIO',
+					'auto_dial_level' => !empty($postfields['auto_dial_level']) ? $postfields['auto_dial_level'] : '1.0',
+					'dial_prefix' => !empty($postfields['dial_prefix']) ? $postfields['dial_prefix'] : '9',
+					'user_group' => !empty($postfields['user_group']) ? $postfields['user_group'] : '---ALL---'
+				);
+				$db->replace('vicidial_campaigns', $data);
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->data = "Campaign added successfully";
+				return $obj;
+			}
+			return $res;
 		}
 		
 		public function API_addDialStatus($postfields){
