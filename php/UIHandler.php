@@ -6113,26 +6113,32 @@ error_reporting(E_ERROR | E_PARSE);
 		 return $output;
 	}
 
-	public function goGetPermissions($type = 'dashboard', $group) {
-		$permissions = $this->API_goGetGroupPermission($group);
-		if (!is_null($permissions)) {
-			$types = explode(",", $type);
-			if (count($types) > 1) {
-				foreach ($types as $t) {
-					if (array_key_exists($t, $permissions)) {
-						$return->{$t} = $permissions->{$t};
+	public function goGetPermissions($type = 'dashboard', $group = null) {
+		$return = new \stdClass();
+		try {
+			$permissions = $this->API_goGetGroupPermission($group);
+			if (!empty($permissions)) {
+				$permArray = is_object($permissions) ? (array)$permissions : $permissions;
+				$types = explode(",", $type);
+				if (count($types) > 1) {
+					foreach ($types as $t) {
+						if (isset($permArray[$t])) {
+							$return->{$t} = $permArray[$t];
+						}
+					}
+				} else {
+					if ($type == 'sidebar') {
+						$return = $permissions;
+					} else if (isset($permArray[$type])) {
+						$return = $permArray[$type];
+					} else {
+						$return = null;
 					}
 				}
 			} else {
-				if ($type == 'sidebar') {
-					$return = $permissions;
-				} else if (array_key_exists($type, $permissions)) {
-					$return = $permissions->{$type};
-				} else {
-					$return = null;
-				}
+				$return = null;
 			}
-		} else {
+		} catch (\Throwable $t) {
 			$return = null;
 		}
 		return $return;

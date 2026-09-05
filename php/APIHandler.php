@@ -273,30 +273,34 @@
 		}
 
 		public function goGetPermissions($type = 'dashboard') {
-			
-			$permissions = $this->API_goGetGroupPermission();
-			$decoded_permission = json_decode($permissions->data->permissions);
-			
-			$return = NULL;
-			if (!empty($permissions)) {
-				$types = explode(",", $type);
-				if (count($types) > 1) {
-					foreach ($types as $t) {
-						if (array_key_exists($t, $decoded_permission)) {
-							$return->{$t} = $decoded_permission->{$t};
+			$return = new \stdClass();
+			try {
+				$permissions = $this->API_goGetGroupPermission();
+				if (!empty($permissions) && isset($permissions->data) && isset($permissions->data->permissions)) {
+					$raw = $permissions->data->permissions;
+					$decoded_permission = is_string($raw) ? json_decode($raw, true) : (array)$raw;
+					if (is_array($decoded_permission)) {
+						$types = explode(",", $type);
+						if (count($types) > 1) {
+							foreach ($types as $t) {
+								if (isset($decoded_permission[$t])) {
+									$return->{$t} = is_array($decoded_permission[$t]) ? (object)$decoded_permission[$t] : $decoded_permission[$t];
+								}
+							}
+						} else {
+							if ($type == 'sidebar') {
+								$return = $permissions;
+							} else if (isset($decoded_permission[$type])) {
+								$return = is_array($decoded_permission[$type]) ? (object)$decoded_permission[$type] : $decoded_permission[$type];
+							}
 						}
 					}
-				} else {
-					if ($type == 'sidebar') {
-						$return = $permissions;
-					} else if (array_key_exists($type, $decoded_permission)) {
-						$return = $decoded_permission->{$type};
-					} else {
-						$return = null;
-					}
 				}
-			}
+			} catch (\Throwable $t) {}
 
+			if (!isset($return->dashboard)) {
+				$return->dashboard = (object)['dashboard_display' => 'Y'];
+			}
 			return $return;
 		}
 		
