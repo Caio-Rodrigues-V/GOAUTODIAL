@@ -25,7 +25,7 @@
 
 // dependencies
 namespace creamy;
-@include_once("Config.php");
+@include_once(__DIR__ . DIRECTORY_SEPARATOR . 'Config.php');
 
 
 // Database Connectors

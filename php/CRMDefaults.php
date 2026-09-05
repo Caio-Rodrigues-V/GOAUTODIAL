@@ -41,6 +41,7 @@ define ('CRM_INSTALLED_FILE', 'installed.txt');
 define ('CRM_SKEL_DIRECTORY', 'skel');
 define ('CRM_RECOVERY_EMAIL_FILE', 'creamyEmail.html');
 define ('CRM_PHP_CONFIG_FILE', 'php'.DIRECTORY_SEPARATOR.'Config.php');
+@include_once(__DIR__ . DIRECTORY_SEPARATOR . 'Config.php');
 define ('CRM_PHP_BEGIN_TAG', '<?php');
 define ('CRM_PHP_END_TAG', '?>');
 define ('CRM_DEFAULT_HEADER_LOGO', 'img/logo.png');
