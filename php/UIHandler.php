@@ -4711,42 +4711,38 @@ error_reporting(E_ERROR | E_PARSE);
 	public function getListAllCarriers($perm) {
 		$output = $this->api->API_getAllCarriers();
 
-	    if ($output->result=="success") {
-	    # Result was OK!
+	    if (!empty($output) && isset($output->result) && $output->result=="success") {
+	        $columns = array($this->lh->translationFor('carrier_id'), $this->lh->translationFor('carrier_name'), $this->lh->translationFor('server_ip'), $this->lh->translationFor('protocol'), $this->lh->translationFor('status'), $this->lh->translationFor('action'));
+	        $hideOnMedium = array($this->lh->translationFor('server_ip'), $this->lh->translationFor('protocol'));
+			$hideOnLow = array( $this->lh->translationFor('carrier_id'), $this->lh->translationFor('server_ip'), $this->lh->translationFor('protocol'), $this->lh->translationFor('status'));
 
-        $columns = array($this->lh->translationFor('carrier_id'), $this->lh->translationFor('carrier_name'), $this->lh->translationFor('server_ip'), $this->lh->translationFor('protocol'), $this->lh->translationFor('status'), $this->lh->translationFor('action'));
-        $hideOnMedium = array($this->lh->translationFor('server_ip'), $this->lh->translationFor('protocol'));
-		$hideOnLow = array( $this->lh->translationFor('carrier_id'), $this->lh->translationFor('server_ip'), $this->lh->translationFor('protocol'), $this->lh->translationFor('status'));
+			$result = $this->generateTableHeaderWithItems($columns, "carriers", "table-bordered table-striped", true, false, $hideOnMedium, $hideOnLow, '');
 
-		$result = $this->generateTableHeaderWithItems($columns, "carriers", "table-bordered table-striped", true, false, $hideOnMedium, $hideOnLow, '');
-
-	      for($i=0;$i<count($output->carrier_id);$i++) {
-
+			$count = (isset($output->carrier_id) && is_array($output->carrier_id)) ? count($output->carrier_id) : 0;
+			for($i=0;$i<$count;$i++) {
 				$action = '';
 				if ($perm->carriers_update != 'N' || $perm->carriers_delete != 'N') {
 					$action = $this->getUserActionMenuForCarriers($output->carrier_id[$i], $perm);
 				}
 
-			    if ($output->active[$i] == "Y") {
+			    if (isset($output->active[$i]) && $output->active[$i] == "Y") {
 				    $active = $this->lh->translationFor('active');
 				}else{
 				    $active = $this->lh->translationFor('inactive');
 				}
-            $result .= "<tr>
-						<td class ='hide-on-low'>".($perm->carriers_update !== 'N' ? "<a class='edit-carrier' data-id='".$output->carrier_id[$i]."'>" : '')."".$output->carrier_id[$i]."</td>
-						<td>".$output->carrier_name[$i]."</td>
-						<td class ='hide-on-medium hide-on-low'>".$output->server_ip[$i]."</td>
-						<td class ='hide-on-medium hide-on-low'>".$output->protocol[$i]."</td>
-						<td class ='hide-on-low'>".$active."</td>
-						<td nowrap>".$action."</td>
-	            </tr>";
-         }
+	            $result .= "<tr>
+							<td class ='hide-on-low'>".($perm->carriers_update !== 'N' ? "<a class='edit-carrier' data-id='".$output->carrier_id[$i]."'>" : '')."".$output->carrier_id[$i]."</td>
+							<td>".(isset($output->carrier_name[$i]) ? $output->carrier_name[$i] : '')."</td>
+							<td class ='hide-on-medium hide-on-low'>".(isset($output->server_ip[$i]) ? $output->server_ip[$i] : '')."</td>
+							<td class ='hide-on-medium hide-on-low'>".(isset($output->protocol[$i]) ? $output->protocol[$i] : '')."</td>
+							<td class ='hide-on-low'>".$active."</td>
+							<td nowrap>".$action."</td>
+		            </tr>";
+	        }
 
 		    return $result.'</table>';
-
 	    } else {
-	       # An error occured
-	       return $output->result;
+	        return '<p class="text-muted" style="padding: 15px;">Nenhum carrier cadastrado.</p>';
 	    }
 	}
 
