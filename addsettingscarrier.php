@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once('php/UIHandler.php');
 require_once('php/APIHandler.php');
 require_once('./php/CRMDefaults.php');
@@ -10,8 +14,8 @@ $api = \creamy\APIHandler::getInstance();
 $lh = \creamy\LanguageHandler::getInstance();
 $user = \creamy\CreamyUser::currentUser();
 
-if($user->getUserRole() != CRM_DEFAULTS_USER_ROLE_ADMIN){
-    if($user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT){
+if(!$user || $user->getUserRole() != CRM_DEFAULTS_USER_ROLE_ADMIN){
+    if($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT){
         header('location: agent.php');
         exit();
     }
@@ -19,6 +23,8 @@ if($user->getUserRole() != CRM_DEFAULTS_USER_ROLE_ADMIN){
 
 $user_groups = $api->API_getAllUserGroups();
 $servers = $api->API_getAllServers();
+$sess_user = isset($_SESSION['user']) ? $_SESSION['user'] : '';
+$sess_group = isset($_SESSION['usergroup']) ? $_SESSION['usergroup'] : '';
 ?>
 <!DOCTYPE html>
 <html>
@@ -56,8 +62,8 @@ $servers = $api->API_getAllServers();
                 </div>
                 <div class="panel-body">
                     <form id="create_form" class="form-horizontal">
-                        <input type="hidden" name="log_user" value="<?=$_SESSION['user']?>" />
-                        <input type="hidden" name="log_group" value="<?=$_SESSION['usergroup']?>" />
+                        <input type="hidden" name="log_user" value="<?php echo htmlspecialchars($sess_user); ?>" />
+                        <input type="hidden" name="log_group" value="<?php echo htmlspecialchars($sess_group); ?>" />
                         <input type="hidden" name="carrier_type" value="manual" />
 
                         <div class="form-group">
