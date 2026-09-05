@@ -23,7 +23,9 @@
 		THE SOFTWARE.
 	*/
 
-	error_reporting(E_ERROR | E_PARSE);
+	ini_set('display_errors', 1);
+	ini_set('display_startup_errors', 1);
+	error_reporting(E_ALL);
 	
 	require_once('./php/CRMDefaults.php');
 	require_once('./php/DbInstaller.php');
@@ -34,7 +36,11 @@
 	define('CRM_INSTALL_SKEL_CONFIG_FILE', 'skel/Config.php');
 
 	// language handler
-	$locale = Locale::acceptFromHttp($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+	if (class_exists('Locale') && isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+		$locale = Locale::acceptFromHttp($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+	} else {
+		$locale = "en_US";
+	}
 	$lh = \creamy\LanguageHandler::getInstance($locale);
 	
 	session_start(); // Starting Session
