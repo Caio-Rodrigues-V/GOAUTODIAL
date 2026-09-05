@@ -49,9 +49,9 @@ class DBInstaller {
 	        $dbConnectorFactory = \creamy\DatabaseConnectorFactory::getInstance();
 	        $this->dbConnector = $dbConnectorFactory->getDatabaseConnectorOfType($dbConnectorType, $dbhost, $dbname, $dbuser, $dbpass, $dbport);
 	        $this->state = CRM_INSTALL_STATE_SUCCESS;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->state = CRM_INSTALL_STATE_ERROR;
-            $this->error = CRM_INSTALL_STATE_DATABASE_ERROR . ". Unable to instantiate database connector of type $dbConnectorType. Incorrect credentials or access denied.";
+            $this->error = CRM_INSTALL_STATE_DATABASE_ERROR . ". " . $e->getMessage();
         }
     }
     

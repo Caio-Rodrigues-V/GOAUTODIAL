@@ -110,8 +110,7 @@ class DatabaseConnectorFactory {
 			    // return MySQL database connector
 			    return $mysqldb;
 		    } catch (\Throwable $e) {
-		    	throw new \Exception("Incorrect credentials. Access denied or incorrect parameters.");
-		    	return null;
+		    	throw new \Exception($e->getMessage());
 		    }
 		    
 	    } else {

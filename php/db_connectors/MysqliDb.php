@@ -143,11 +143,18 @@ class MysqliDb implements \creamy\DbConnector
 
         // for subqueries we do not need database connection and redefine root instance
         $connected = false;
+        $connectErr = "";
         if (!is_object ($host)) {
-            if ($this->connect() === true) { $connected = true; }
+            if ($this->connect() === true) { 
+                $connected = true; 
+            } else {
+                $connectErr = ($this->_mysqli && $this->_mysqli->connect_error) ? $this->_mysqli->connect_error : mysqli_connect_error();
+            }
 		}
 		// check connection
-		if ($connected === false) { throw new \Exception("Unable to connect to the database. Access denied or incorrect parameters."); }
+		if ($connected === false) { 
+            throw new \Exception("Unable to connect to MySQL database ($host:$port). Error: " . ($connectErr ? $connectErr : "Access denied or incorrect parameters")); 
+        }
 		
         $this->setPrefix();
         self::$_instance = $this;
@@ -168,8 +175,8 @@ class MysqliDb implements \creamy\DbConnector
         try {
             @mysqli_report(MYSQLI_REPORT_OFF);
 	        @$this->_mysqli = new mysqli ($this->host, $this->username, $this->password, $this->db, $this->port);
-			if ($this->_mysqli->connect_errno) { return false; }
-			if ($this->charset) $this->_mysqli->set_charset ($this->charset);
+			if ($this->_mysqli && $this->_mysqli->connect_errno) { return false; }
+			if ($this->charset && $this->_mysqli) $this->_mysqli->set_charset ($this->charset);
 			return true;
         } catch (\Throwable $e) {
 	        return false;
