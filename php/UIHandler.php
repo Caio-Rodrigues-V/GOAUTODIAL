@@ -5980,31 +5980,32 @@ error_reporting(E_ERROR | E_PARSE);
 		$js .= '<script src="js/vue-avatar/vue-avatar.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/select2/select2.full.min.js" type="text/javascript" ></script>'."\n";
 		$js .= "<script type='text/javascript'>
-
-			var goOptions = {
-				el: 'body',
-				components: {
-					'avatar': Avatar.Avatar,
-					'rules': {
-						props: ['items'],
-						template: 'For example:' +
-							'<ul id=\"example-1\">' +
-							'<li v-for=\"item in items\"><b>{{ item.username }}</b> becomes <b>{{ item.initials }}</b></li>' +
-							'</ul>'
-					}
-				},
-
-				data: {
-					items: []
-				},
-
-				methods: {
-					initials: function(username, initials) {
-						this.items.push({username: username, initials: initials});
-					}
+			try {
+				if (typeof Vue !== 'undefined' && typeof Avatar !== 'undefined' && Avatar && Avatar.Avatar) {
+					var goOptions = {
+						el: '.user-panel',
+						components: {
+							'avatar': Avatar.Avatar
+						}
+					};
+					new Vue(goOptions);
 				}
-			};
-			var goAvatar = new Vue(goOptions);
+			} catch(e) { console.warn('Avatar Vue init:', e); }
+
+			// Universal Sidebar TreeView Toggle
+			$(document).on('click', '.sidebar-menu li.treeview > a', function(e) {
+				e.preventDefault();
+				var \$menu = $(this).next('.treeview-menu');
+				var \$parent = $(this).parent('li');
+				if (\$menu.is(':visible')) {
+					\$menu.slideUp(200);
+					\$parent.removeClass('active menu-open');
+				} else {
+					$('.sidebar-menu .treeview-menu:visible').not(\$menu).slideUp(200).parent('li').removeClass('active menu-open');
+					\$menu.slideDown(200);
+					\$parent.addClass('active menu-open');
+				}
+			});
 		</script>\n";
 
 		return $js;
