@@ -2056,6 +2056,12 @@ error_reporting(E_ERROR | E_PARSE);
 			}
 			$telephonyArea .= '</ul></li>';
 
+			$aiVoiceArea = '<li class="treeview"><a href="#"><i class="fa fa-magic"></i> <span>Agentes de IA</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
+			$aiVoiceArea .= $this->getSidebarItem("./ai_agents.php", "users", "Meus Agentes");
+			$aiVoiceArea .= $this->getSidebarItem("./add_ai_agent.php", "plus", "Criar Agente");
+			$aiVoiceArea .= $this->getSidebarItem("./ai_settings.php", "key", "Configurações IA");
+			$aiVoiceArea .= '</ul></li>';
+
 			$rocketchatAnalytics = "";
 			if(ROCKETCHAT_ENABLE === 'y'){
 				$rocketchatAnalytics .= '<li class="treeview"><a href="#"><i class="fa fa-headphones"></i> <span>'.$this->lh->translationFor("livechat").'</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
@@ -2149,6 +2155,7 @@ error_reporting(E_ERROR | E_PARSE);
 			$telephonyArea = '';
 		}
 		$result .= $telephonyArea;
+		$result .= $aiVoiceArea;
 		$result .= $rocketchatAnalytics;
 		if ($userrole != CRM_DEFAULTS_USER_ROLE_AGENT) {
 			$result .= $settings;

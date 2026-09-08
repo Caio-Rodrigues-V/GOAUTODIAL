@@ -5,12 +5,14 @@ require_once('php/UIHandler.php');
 require_once('php/APIHandler.php');
 require_once('./php/CRMDefaults.php');
 require_once('./php/LanguageHandler.php');
+require_once('php/AIAgentHandler.php');
 include('./php/Session.php');
 
 $ui = \creamy\UIHandler::getInstance();
 $api = \creamy\APIHandler::getInstance();
 $lh = \creamy\LanguageHandler::getInstance();
 $user = \creamy\CreamyUser::currentUser();
+$aiHandler = \creamy\AIAgentHandler::getInstance();
 
 if(!$user || $user->getUserRole() != CRM_DEFAULTS_USER_ROLE_ADMIN){
     if($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT){
@@ -22,6 +24,7 @@ if(!$user || $user->getUserRole() != CRM_DEFAULTS_USER_ROLE_ADMIN){
 $user_groups = $api->API_getAllUserGroups();
 $carriers = $api->API_getAllCarriers();
 $scripts = $api->API_getAllScripts();
+$ai_agents = $aiHandler->getAllAgents();
 $sess_user = isset($_SESSION['user']) ? $_SESSION['user'] : '';
 $sess_group = isset($_SESSION['usergroup']) ? $_SESSION['usergroup'] : '';
 ?>
@@ -131,6 +134,32 @@ $sess_group = isset($_SESSION['usergroup']) ? $_SESSION['usergroup'] : '';
                         </div>
 
                         <div class="form-group">
+                            <label for="campaign_agent_type" class="col-sm-3 control-label">Atendimento da Campanha</label>
+                            <div class="col-sm-8">
+                                <select name="campaign_agent_type" id="campaign_agent_type" class="form-control">
+                                    <option value="human" selected>Operadores Humanos (Fila Normal)</option>
+                                    <option value="ai">Agente de IA (Dial GO Voice AI)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="div_ai_agent_select" style="display: none;">
+                            <label for="ai_agent_id" class="col-sm-3 control-label"><i class="fa fa-magic text-primary"></i> Selecionar Agente de IA</label>
+                            <div class="col-sm-8">
+                                <select name="ai_agent_id" id="ai_agent_id" class="form-control">
+                                    <?php if (!empty($ai_agents)): ?>
+                                        <?php foreach ($ai_agents as $ag): ?>
+                                            <option value="<?=$ag['agent_id']?>"><?=htmlspecialchars($ag['agent_name'])?> (<?=strtoupper($ag['voice_provider'])?> / <?=strtoupper($ag['llm_provider'])?>)</option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="0">Nenhum agente de IA cadastrado</option>
+                                    <?php endif; ?>
+                                </select>
+                                <small class="text-muted"><a href="add_ai_agent.php" target="_blank">+ Criar outro agente de IA</a></small>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="user_group" class="col-sm-3 control-label">User Group</label>
                             <div class="col-sm-8">
                                 <select id="user_group" class="form-control" name="user_group">
@@ -163,6 +192,14 @@ $sess_group = isset($_SESSION['usergroup']) ? $_SESSION['usergroup'] : '';
 <?php print $ui->standardizedThemeJS(); ?>
 <script type="text/javascript">
     $(document).ready(function() {
+        $('#campaign_agent_type').on('change', function() {
+            if ($(this).val() === 'ai') {
+                $('#div_ai_agent_select').slideDown();
+            } else {
+                $('#div_ai_agent_select').slideUp();
+            }
+        });
+
         $('#campaign_id').bind('keypress', function (event) {
             var regex = new RegExp('^[a-zA-Z0-9_]+$');
             var key = String.fromCharCode(!event.charCode ? event.which : event.charCode);
