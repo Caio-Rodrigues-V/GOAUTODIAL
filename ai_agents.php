@@ -128,7 +128,8 @@ $agents = $aiHandler->getAllAgents();
                                         <?php endif; ?>
                                     </td>
                                     <td style="text-align: center;">
-                                        <button class="btn btn-success btn-xs btn-test-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" data-greeting="<?=htmlspecialchars($ag['greeting_message'])?>" title="Testar Conversa ao Vivo"><i class="fa fa-phone"></i> <b>Testar</b></button>
+                                        <button class="btn btn-success btn-xs btn-test-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" data-greeting="<?=htmlspecialchars($ag['greeting_message'])?>" title="Testar Conversa no Navegador"><i class="fa fa-headphones"></i> Testar Web</button>
+                                        <button class="btn btn-primary btn-xs btn-open-dial-modal" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" title="Fazer Ligação de Teste para Telefone"><i class="fa fa-phone"></i> <b>Ligar p/ Celular</b></button>
                                         <a href="edit_ai_agent.php?id=<?=$ag['agent_id']?>" class="btn btn-default btn-xs" title="Editar Agente"><i class="fa fa-pencil"></i></a>
                                         <button class="btn btn-danger btn-xs btn-delete-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" title="Excluir"><i class="fa fa-trash"></i></button>
                                     </td>
@@ -148,6 +149,39 @@ $agents = $aiHandler->getAllAgents();
             </div>
         </section>
     </aside>
+</div>
+
+<!-- Modal Ligar para Telefone via Oktor -->
+<div class="modal fade" id="modal_dial_phone" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="width: 420px;">
+        <div class="modal-content" style="border-radius: 8px;">
+            <div class="modal-header bg-green" style="color: #fff; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.9;">&times;</button>
+                <h4 class="modal-title"><i class="fa fa-phone"></i> Teste Telefônico com IA</h4>
+            </div>
+            <form id="form_make_ai_call">
+                <input type="hidden" name="agent_id" id="dial_agent_id" value="" />
+                <div class="modal-body" style="padding: 20px;">
+                    <p>O discador vai usar o <strong>Tronco SIP da Oktor (Tech Prefix 5908355)</strong> para ligar para o seu número. Ao atender, a <strong id="dial_agent_name_display">Sofia</strong> vai conversar com você no telefone!</p>
+                    
+                    <div class="form-group">
+                        <label><i class="fa fa-mobile-phone"></i> Seu Telefone / Celular (com DDD):</label>
+                        <input type="text" name="phone_number" id="dial_phone_input" class="form-control input-lg" placeholder="Ex: 11987654321" required autofocus />
+                        <small class="text-muted">Digite apenas DDD + Número (ex: 11987654321 ou 21999998888).</small>
+                    </div>
+
+                    <div id="dial_call_status" style="display:none; margin-top: 10px;" class="alert alert-info">
+                        <!-- Call status message -->
+                    </div>
+                </div>
+                <div class="modal-footer" style="background: #f8fafc;">
+                    <button type="submit" class="btn btn-success btn-lg btn-block" id="btn_submit_dial_call">
+                        <i class="fa fa-phone"></i> <strong>Discar Agora</strong>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Teste de Agente / Simulador de Voz -->
@@ -316,6 +350,42 @@ $(document).ready(function() {
         }, 'json').fail(function() {
             $('#btn_send_test_msg').prop('disabled', false);
             $('#test_agent_status').html('<i class="fa fa-times text-danger"></i> Erro de comunicação com o servidor.');
+        });
+    });
+
+    // Open Dial Phone Modal
+    $(document).on('click', '.btn-open-dial-modal', function() {
+        var agentId = $(this).data('id');
+        var agentName = $(this).data('name');
+        $('#dial_agent_id').val(agentId);
+        $('#dial_agent_name_display').text(agentName);
+        $('#dial_call_status').hide().removeClass('alert-danger alert-success alert-info');
+        $('#modal_dial_phone').modal('show');
+        setTimeout(function() {
+            $('#dial_phone_input').focus();
+        }, 500);
+    });
+
+    // Make AI Call
+    $('#form_make_ai_call').submit(function(e) {
+        e.preventDefault();
+        var $btn = $('#btn_submit_dial_call');
+        var $status = $('#dial_call_status');
+
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Originando chamada via Oktor...');
+        $status.show().removeClass('alert-danger alert-success').addClass('alert-info').html('<i class="fa fa-spinner fa-spin"></i> Conectando ao tronco Oktor e discando...');
+
+        var formData = $(this).serialize();
+        $.post('php/MakeAICall.php', formData, function(res) {
+            $btn.prop('disabled', false).html('<i class="fa fa-phone"></i> <strong>Discar Novamente</strong>');
+            if (res.status === 1) {
+                $status.removeClass('alert-info alert-danger').addClass('alert-success').html('<i class="fa fa-check-circle"></i> ' + res.message);
+            } else {
+                $status.removeClass('alert-info alert-success').addClass('alert-danger').html('<i class="fa fa-exclamation-triangle"></i> ' + (res.message || 'Erro ao discar.'));
+            }
+        }, 'json').fail(function() {
+            $btn.prop('disabled', false).html('<i class="fa fa-phone"></i> <strong>Discar Agora</strong>');
+            $status.removeClass('alert-info alert-success').addClass('alert-danger').html('<i class="fa fa-times"></i> Erro de conexão com o servidor de telefonia.');
         });
     });
 
