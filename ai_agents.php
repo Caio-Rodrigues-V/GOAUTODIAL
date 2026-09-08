@@ -128,6 +128,7 @@ $agents = $aiHandler->getAllAgents();
                                         <?php endif; ?>
                                     </td>
                                     <td style="text-align: center;">
+                                        <button class="btn btn-success btn-xs btn-test-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" data-greeting="<?=htmlspecialchars($ag['greeting_message'])?>" title="Testar Conversa ao Vivo"><i class="fa fa-phone"></i> <b>Testar</b></button>
                                         <a href="edit_ai_agent.php?id=<?=$ag['agent_id']?>" class="btn btn-default btn-xs" title="Editar Agente"><i class="fa fa-pencil"></i></a>
                                         <button class="btn btn-danger btn-xs btn-delete-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" title="Excluir"><i class="fa fa-trash"></i></button>
                                     </td>
@@ -149,8 +150,70 @@ $agents = $aiHandler->getAllAgents();
     </aside>
 </div>
 
+<!-- Modal Teste de Agente / Simulador de Voz -->
+<div class="modal fade" id="modal_test_agent" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content" style="border-radius: 8px;">
+            <div class="modal-header bg-primary" style="color: #fff; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+                <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.9;">&times;</button>
+                <h4 class="modal-title"><i class="fa fa-headphones"></i> Teste de Voz ao Vivo: <span id="test_agent_title_name"></span></h4>
+            </div>
+            <div class="modal-body" style="background: #f8fafc; padding: 15px;">
+                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; height: 320px; overflow-y: auto;" id="test_chat_box">
+                    <!-- Dynamic chat bubbles -->
+                </div>
+                
+                <div id="test_agent_status" style="margin-top: 8px; font-size: 13px; color: #64748b; font-weight: 500;">
+                    <i class="fa fa-circle text-success"></i> Pronto para conversar
+                </div>
+
+                <!-- Hidden audio player for TTS playback -->
+                <audio id="tts_audio_player" style="display:none;"></audio>
+            </div>
+            <div class="modal-footer" style="background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+                <form id="form_send_test_message" style="display: flex; gap: 8px;">
+                    <input type="text" id="test_user_input" class="form-control input-lg" placeholder="Fale algo com a IA (ex: Olá, quem é você?)..." required autocomplete="off" />
+                    <button type="submit" class="btn btn-primary btn-lg" id="btn_send_test_msg">
+                        <i class="fa fa-paper-plane"></i> Enviar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php print $ui->standardizedThemeJS(); ?>
 <script type="text/javascript">
+var currentTestAgentId = null;
+var testConversationHistory = [];
+
+function appendChatMessage(sender, text, isAI) {
+    var $box = $('#test_chat_box');
+    var align = isAI ? 'left' : 'right';
+    var bg = isAI ? '#e0f2fe' : '#2563eb';
+    var color = isAI ? '#0369a1' : '#ffffff';
+    var icon = isAI ? '<i class="fa fa-magic"></i>' : '<i class="fa fa-user"></i>';
+
+    var html = '<div style="margin-bottom: 12px; text-align: ' + align + ';">' +
+        '<div style="display: inline-block; max-width: 80%; text-align: left; padding: 10px 14px; border-radius: 12px; background: ' + bg + '; color: ' + color + '; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">' +
+            '<div style="font-size: 11px; opacity: 0.85; margin-bottom: 3px;">' + icon + ' <strong>' + sender + '</strong></div>' +
+            '<div style="font-size: 13px; line-height: 1.4;">' + text + '</div>' +
+        '</div>' +
+    '</div>';
+
+    $box.append(html);
+    $box.scrollTop($box[0].scrollHeight);
+}
+
+function playVoiceAudio(audioUrl) {
+    if (!audioUrl) return;
+    var audio = document.getElementById('tts_audio_player');
+    audio.src = audioUrl;
+    audio.play().catch(function(e) {
+        console.log('Audio playback info:', e);
+    });
+}
+
 $(document).ready(function() {
     $('#table_ai_agents').DataTable({
         responsive: true,
@@ -162,7 +225,79 @@ $(document).ready(function() {
         }
     });
 
-    $('.btn-delete-agent').click(function() {
+    // Open Test Modal
+    $(document).on('click', '.btn-test-agent', function() {
+        currentTestAgentId = $(this).data('id');
+        var agentName = $(this).data('name');
+        var greeting = $(this).data('greeting') || "Olá, tudo bem? Como posso te ajudar?";
+
+        $('#test_agent_title_name').text(agentName);
+        $('#test_chat_box').empty();
+        testConversationHistory = [];
+
+        // Add greeting message
+        appendChatMessage(agentName, greeting, true);
+        testConversationHistory.push({ role: 'assistant', content: greeting });
+
+        $('#modal_test_agent').modal('show');
+        setTimeout(function() {
+            $('#test_user_input').focus();
+        }, 500);
+
+        // Fetch initial greeting audio
+        $('#test_agent_status').html('<i class="fa fa-spinner fa-spin text-primary"></i> Gerando voz inicial...');
+        $.post('php/TestAIAgent.php', {
+            agent_id: currentTestAgentId,
+            message: '',
+            history: JSON.stringify(testConversationHistory)
+        }, function(res) {
+            $('#test_agent_status').html('<i class="fa fa-circle text-success"></i> Pronto para conversar');
+            if (res.status === 1 && res.audio_url) {
+                playVoiceAudio(res.audio_url);
+            }
+        }, 'json').fail(function() {
+            $('#test_agent_status').html('<i class="fa fa-circle text-success"></i> Pronto para conversar');
+        });
+    });
+
+    // Send Test Message
+    $('#form_send_test_message').submit(function(e) {
+        e.preventDefault();
+        var userText = $.trim($('#test_user_input').val());
+        if (!userText || !currentTestAgentId) return;
+
+        appendChatMessage('Você', userText, false);
+        testConversationHistory.push({ role: 'user', content: userText });
+        $('#test_user_input').val('');
+
+        $('#test_agent_status').html('<i class="fa fa-spinner fa-spin text-primary"></i> Sofia está pensando e sintetizando a voz...');
+        $('#btn_send_test_msg').prop('disabled', true);
+
+        $.post('php/TestAIAgent.php', {
+            agent_id: currentTestAgentId,
+            message: userText,
+            history: JSON.stringify(testConversationHistory)
+        }, function(res) {
+            $('#btn_send_test_msg').prop('disabled', false);
+            $('#test_agent_status').html('<i class="fa fa-circle text-success"></i> Pronto para conversar');
+
+            if (res.status === 1 && res.response_text) {
+                appendChatMessage(res.agent_name || 'IA', res.response_text, true);
+                testConversationHistory.push({ role: 'assistant', content: res.response_text });
+
+                if (res.audio_url) {
+                    playVoiceAudio(res.audio_url);
+                }
+            } else {
+                alert(res.message || 'Erro ao processar resposta da IA.');
+            }
+        }, 'json').fail(function() {
+            $('#btn_send_test_msg').prop('disabled', false);
+            $('#test_agent_status').html('<i class="fa fa-times text-danger"></i> Erro de comunicação com o servidor.');
+        });
+    });
+
+    $(document).on('click', '.btn-delete-agent', function() {
         var agentId = $(this).data('id');
         var agentName = $(this).data('name');
         if (confirm("Deseja realmente excluir o agente '" + agentName + "'?")) {
