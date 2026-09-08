@@ -97,6 +97,10 @@ if (!$agent) {
                                     <input type="text" name="description" class="form-control" value="<?=htmlspecialchars($agent['description'])?>" />
                                 </div>
 
+<?php
+$llms = $aiHandler->getAvailableLLMs();
+$voices = $aiHandler->getAvailableVoices();
+?>
                                 <hr/>
                                 <h4><i class="fa fa-microphone"></i> Voz e Cérebro da IA</h4>
 
@@ -105,9 +109,9 @@ if (!$agent) {
                                         <div class="form-group">
                                             <label>Provedor de Voz (TTS Ultrarrealista)</label>
                                             <select name="voice_provider" id="voice_provider" class="form-control">
-                                                <option value="cartesia" <?=$agent['voice_provider'] == 'cartesia' ? 'selected' : ''?>>Cartesia Sonic (Latência < 90ms - Ultra Rápido)</option>
-                                                <option value="elevenlabs" <?=$agent['voice_provider'] == 'elevenlabs' ? 'selected' : ''?>>ElevenLabs Turbo v2.5</option>
-                                                <option value="openai" <?=$agent['voice_provider'] == 'openai' ? 'selected' : ''?>>OpenAI TTS</option>
+                                                <?php foreach ($voices as $k => $prov): ?>
+                                                    <option value="<?=$k?>" <?=$agent['voice_provider'] == $k ? 'selected' : ''?>><?=htmlspecialchars($prov['name'])?></option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                     </div>
@@ -115,12 +119,14 @@ if (!$agent) {
                                         <div class="form-group">
                                             <label>Voz Selecionada</label>
                                             <select name="voice_id" id="voice_id" class="form-control">
-                                                <option value="cartesia-pt-br-sofia" data-name="Sofia (Cartesia Português BR)" <?=$agent['voice_id'] == 'cartesia-pt-br-sofia' ? 'selected' : ''?>>Sofia (Feminina - Natural & Amigável)</option>
-                                                <option value="cartesia-pt-br-lucas" data-name="Lucas (Cartesia Português BR)" <?=$agent['voice_id'] == 'cartesia-pt-br-lucas' ? 'selected' : ''?>>Lucas (Masculino - Seguro & Profissional)</option>
-                                                <option value="cartesia-pt-br-julia" data-name="Júlia (Cartesia Português BR)" <?=$agent['voice_id'] == 'cartesia-pt-br-julia' ? 'selected' : ''?>>Júlia (Feminina - Dinâmica & Comercial)</option>
-                                                <option value="cartesia-pt-br-mateus" data-name="Mateus (Cartesia Português BR)" <?=$agent['voice_id'] == 'cartesia-pt-br-mateus' ? 'selected' : ''?>>Mateus (Masculino - Firme & Consultivo)</option>
+                                                <!-- Populated dynamically via JS -->
                                             </select>
                                             <input type="hidden" name="voice_name" id="voice_name" value="<?=htmlspecialchars($agent['voice_name'])?>" />
+                                        </div>
+                                        <div class="form-group" id="custom_voice_wrapper" style="display:none;">
+                                            <label><i class="fa fa-id-badge text-yellow"></i> ID da Voz Clonada / Personalizada</label>
+                                            <input type="text" name="custom_voice_id" id="custom_voice_id" class="form-control" value="<?=htmlspecialchars($agent['voice_id'])?>" placeholder="Cole o Voice ID da ElevenLabs / Cartesia" />
+                                            <small class="text-muted">Ex: <code>pNInz6obpgDQGcFmaJgB</code> (ElevenLabs) ou ID do Cartesia.</small>
                                         </div>
                                     </div>
                                 </div>
@@ -130,9 +136,9 @@ if (!$agent) {
                                         <div class="form-group">
                                             <label>Provedor de LLM (Inteligência Artificial)</label>
                                             <select name="llm_provider" id="llm_provider" class="form-control">
-                                                <option value="groq" <?=$agent['llm_provider'] == 'groq' ? 'selected' : ''?>>Groq (Latência ~120ms - Ultra Rápido)</option>
-                                                <option value="openai" <?=$agent['llm_provider'] == 'openai' ? 'selected' : ''?>>OpenAI</option>
-                                                <option value="gemini" <?=$agent['llm_provider'] == 'gemini' ? 'selected' : ''?>>Google Gemini</option>
+                                                <?php foreach ($llms as $k => $prov): ?>
+                                                    <option value="<?=$k?>" <?=$agent['llm_provider'] == $k ? 'selected' : ''?>><?=htmlspecialchars($prov['name'])?></option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                     </div>
@@ -140,10 +146,12 @@ if (!$agent) {
                                         <div class="form-group">
                                             <label>Modelo LLM</label>
                                             <select name="llm_model" id="llm_model" class="form-control">
-                                                <option value="llama-3.3-70b-versatile" <?=$agent['llm_model'] == 'llama-3.3-70b-versatile' ? 'selected' : ''?>>Llama 3.3 70B (Recomendado - Excelente em Português)</option>
-                                                <option value="llama-3.1-8b-instant" <?=$agent['llm_model'] == 'llama-3.1-8b-instant' ? 'selected' : ''?>>Llama 3.1 8B Instant (Extremamente veloz)</option>
-                                                <option value="gpt-4o-mini" <?=$agent['llm_model'] == 'gpt-4o-mini' ? 'selected' : ''?>>GPT-4o Mini (OpenAI)</option>
+                                                <!-- Populated dynamically via JS -->
                                             </select>
+                                        </div>
+                                        <div class="form-group" id="custom_model_wrapper" style="display:none;">
+                                            <label><i class="fa fa-cogs text-yellow"></i> ID do Modelo Personalizado</label>
+                                            <input type="text" name="custom_llm_model" id="custom_llm_model" class="form-control" value="<?=htmlspecialchars($agent['llm_model'])?>" placeholder="Ex: gpt-4o-2024-11-20 ou llama-3.3-70b" />
                                         </div>
                                     </div>
                                 </div>
@@ -198,10 +206,120 @@ if (!$agent) {
 
 <?php print $ui->standardizedThemeJS(); ?>
 <script type="text/javascript">
+var llmCatalog = <?=json_encode($llms)?>;
+var voiceCatalog = <?=json_encode($voices)?>;
+var currentVoiceId = <?=json_encode($agent['voice_id'])?>;
+var currentLlmModel = <?=json_encode($agent['llm_model'])?>;
+
+function updateLLMModels(selectedProvider, preselectModel) {
+    var $modelSelect = $('#llm_model');
+    $modelSelect.empty();
+    
+    var found = false;
+    if (llmCatalog[selectedProvider] && llmCatalog[selectedProvider].models) {
+        var models = llmCatalog[selectedProvider].models;
+        $.each(models, function(val, text) {
+            var selected = (preselectModel && preselectModel === val);
+            if (selected) found = true;
+            $modelSelect.append($('<option>', {
+                value: val,
+                text: text,
+                selected: selected
+            }));
+        });
+    }
+    
+    // If current model is not in standard list, select custom
+    if (!found && preselectModel) {
+        $modelSelect.val('custom');
+        $('#custom_llm_model').val(preselectModel);
+    }
+    toggleCustomModel();
+}
+
+function updateVoices(selectedProvider, preselectVoice) {
+    var $voiceSelect = $('#voice_id');
+    $voiceSelect.empty();
+    
+    var found = false;
+    if (voiceCatalog[selectedProvider] && voiceCatalog[selectedProvider].voices) {
+        var voices = voiceCatalog[selectedProvider].voices;
+        $.each(voices, function(val, text) {
+            var selected = (preselectVoice && preselectVoice === val);
+            if (selected) found = true;
+            $voiceSelect.append($('<option>', {
+                value: val,
+                text: text,
+                selected: selected,
+                'data-name': text
+            }));
+        });
+    }
+
+    // If current voice is not in standard list, select custom
+    if (!found && preselectVoice) {
+        $voiceSelect.val('custom');
+        $('#custom_voice_id').val(preselectVoice);
+    }
+
+    updateVoiceName();
+    toggleCustomVoice();
+}
+
+function updateVoiceName() {
+    var selected = $('#voice_id option:selected');
+    if ($('#voice_id').val() === 'custom') {
+        var customId = $('#custom_voice_id').val();
+        $('#voice_name').val('Voz Customizada (' + (customId || 'ID') + ')');
+    } else {
+        $('#voice_name').val(selected.data('name') || selected.text());
+    }
+}
+
+function toggleCustomModel() {
+    if ($('#llm_model').val() === 'custom') {
+        $('#custom_model_wrapper').show();
+        $('#custom_llm_model').attr('required', true);
+    } else {
+        $('#custom_model_wrapper').hide();
+        $('#custom_llm_model').removeAttr('required');
+    }
+}
+
+function toggleCustomVoice() {
+    if ($('#voice_id').val() === 'custom') {
+        $('#custom_voice_wrapper').show();
+        $('#custom_voice_id').attr('required', true);
+    } else {
+        $('#custom_voice_wrapper').hide();
+        $('#custom_voice_id').removeAttr('required');
+    }
+}
+
 $(document).ready(function() {
+    // Initial populate with saved data
+    updateVoices($('#voice_provider').val(), currentVoiceId);
+    updateLLMModels($('#llm_provider').val(), currentLlmModel);
+
+    $('#voice_provider').change(function() {
+        updateVoices($(this).val());
+    });
+
     $('#voice_id').change(function() {
-        var selectedText = $(this).find('option:selected').data('name') || $(this).find('option:selected').text();
-        $('#voice_name').val(selectedText);
+        updateVoiceName();
+        toggleCustomVoice();
+    });
+
+    $('#custom_voice_id').on('input', function() {
+        updateVoiceName();
+    });
+
+    $('#llm_provider').change(function() {
+        updateLLMModels($(this).val());
+    });
+
+    $('#llm_model').change(function() {
+        toggleCustomModel();
     });
 
     $('#form_edit_ai_agent').submit(function(e) {

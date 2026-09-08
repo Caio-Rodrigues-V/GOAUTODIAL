@@ -30,6 +30,8 @@ $cartesiaKey = $aiHandler->getSetting('cartesia_api_key', '');
 $openaiKey = $aiHandler->getSetting('openai_api_key', '');
 $elevenlabsKey = $aiHandler->getSetting('elevenlabs_api_key', '');
 $geminiKey = $aiHandler->getSetting('gemini_api_key', '');
+$anthropicKey = $aiHandler->getSetting('anthropic_api_key', '');
+$deepseekKey = $aiHandler->getSetting('deepseek_api_key', '');
 $aiServerUrl = $aiHandler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
 ?>
 <!DOCTYPE html>
@@ -69,7 +71,7 @@ $aiServerUrl = $aiHandler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
                 <div class="col-md-8 col-md-offset-2">
                     <div class="box box-primary">
                         <div class="box-header with-border">
-                            <h3 class="box-title"><i class="fa fa-plug"></i> Conexões de API (Zero Markup Vapi)</h3>
+                            <h3 class="box-title"><i class="fa fa-plug"></i> Conexões de API (Zero Markup Vapi / Retell)</h3>
                         </div>
                         <form id="form_ai_settings" method="POST" action="php/SaveAISettings.php">
                             <div class="box-body" style="padding: 25px;">
@@ -101,9 +103,21 @@ $aiServerUrl = $aiHandler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
                                 </div>
 
                                 <div class="form-group">
-                                    <label><i class="fa fa-music"></i> ElevenLabs API Key</label>
+                                    <label><i class="fa fa-music text-purple"></i> ElevenLabs API Key</label>
                                     <input type="password" name="elevenlabs_api_key" class="form-control" value="<?=htmlspecialchars($elevenlabsKey)?>" placeholder="xi-api-key..." />
                                     <small class="text-muted">Obtenha em: <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a></small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fa fa-comments text-orange"></i> Anthropic Claude API Key</label>
+                                    <input type="password" name="anthropic_api_key" class="form-control" value="<?=htmlspecialchars($anthropicKey)?>" placeholder="sk-ant-api..." />
+                                    <small class="text-muted">Obtenha em: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fa fa-rocket text-aqua"></i> DeepSeek API Key</label>
+                                    <input type="password" name="deepseek_api_key" class="form-control" value="<?=htmlspecialchars($deepseekKey)?>" placeholder="sk-..." />
+                                    <small class="text-muted">Obtenha em: <a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a></small>
                                 </div>
 
                                 <div class="form-group">

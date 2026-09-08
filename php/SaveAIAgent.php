@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        SaveAIAgent.php
  * @brief       Save or update AI Agent
@@ -19,15 +19,27 @@ if (empty($agent_name)) {
     exit;
 }
 
+$llm_model = isset($_POST['llm_model']) ? $_POST['llm_model'] : 'llama-3.3-70b-versatile';
+if ($llm_model === 'custom' && !empty($_POST['custom_llm_model'])) {
+    $llm_model = trim($_POST['custom_llm_model']);
+}
+
+$voice_id = isset($_POST['voice_id']) ? $_POST['voice_id'] : 'cartesia-pt-br-sofia';
+$voice_name = isset($_POST['voice_name']) ? $_POST['voice_name'] : '';
+if ($voice_id === 'custom' && !empty($_POST['custom_voice_id'])) {
+    $voice_id = trim($_POST['custom_voice_id']);
+    $voice_name = 'Voz Customizada (' . $voice_id . ')';
+}
+
 $data = array(
     'agent_name' => $agent_name,
     'description' => isset($_POST['description']) ? trim($_POST['description']) : '',
     'status' => (isset($_POST['status']) && $_POST['status'] == 'Y') ? 'Y' : 'N',
     'llm_provider' => isset($_POST['llm_provider']) ? $_POST['llm_provider'] : 'groq',
-    'llm_model' => isset($_POST['llm_model']) ? $_POST['llm_model'] : 'llama-3.3-70b-versatile',
+    'llm_model' => $llm_model,
     'voice_provider' => isset($_POST['voice_provider']) ? $_POST['voice_provider'] : 'cartesia',
-    'voice_id' => isset($_POST['voice_id']) ? $_POST['voice_id'] : 'cartesia-pt-br-sofia',
-    'voice_name' => isset($_POST['voice_name']) ? $_POST['voice_name'] : '',
+    'voice_id' => $voice_id,
+    'voice_name' => $voice_name,
     'stt_provider' => 'deepgram',
     'stt_model' => 'nova-2',
     'stt_language' => 'pt-BR',

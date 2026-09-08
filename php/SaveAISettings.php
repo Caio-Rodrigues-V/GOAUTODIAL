@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        SaveAISettings.php
  * @brief       Save AI Providers API Keys
@@ -18,6 +18,8 @@ $keys = array(
     'openai_api_key',
     'elevenlabs_api_key',
     'gemini_api_key',
+    'anthropic_api_key',
+    'deepseek_api_key',
     'ai_server_url'
 );
 

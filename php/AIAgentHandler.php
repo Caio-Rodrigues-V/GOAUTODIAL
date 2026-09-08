@@ -185,21 +185,49 @@ Diretrizes da conversa:
                 'name' => 'Groq (Ultra-Rápido ~120ms)',
                 'models' => array(
                     'llama-3.3-70b-versatile' => 'Llama 3.3 70B (Recomendado - Excelente em PT-BR)',
-                    'llama-3.1-8b-instant' => 'Llama 3.1 8B Instant (Ultra-rápido ~80ms)'
+                    'llama-3.1-8b-instant' => 'Llama 3.1 8B Instant (Ultra-rápido ~80ms)',
+                    'deepseek-r1-distill-llama-70b' => 'DeepSeek R1 Distill Llama 70B (Raciocínio no Groq)',
+                    'mixtral-8x7b-32768' => 'Mixtral 8x7B 32k',
+                    'gemma2-9b-it' => 'Gemma 2 9B IT',
+                    'custom' => 'Outro Modelo (Digitar ID)'
                 )
             ),
             'openai' => array(
                 'name' => 'OpenAI',
                 'models' => array(
-                    'gpt-4o-mini' => 'GPT-4o Mini (Ótima precisão e raciocínio)',
-                    'gpt-4o' => 'GPT-4o (Máxima inteligência)'
+                    'gpt-4o' => 'GPT-4o (Máxima inteligência & raciocínio)',
+                    'gpt-4o-mini' => 'GPT-4o Mini (Recomendado - Rápido e econômico)',
+                    'gpt-4-turbo' => 'GPT-4 Turbo',
+                    'gpt-3.5-turbo' => 'GPT-3.5 Turbo',
+                    'o1-mini' => 'o1-mini (Raciocínio avançado)',
+                    'o3-mini' => 'o3-mini (Raciocínio ultra-rápido)',
+                    'custom' => 'Outro Modelo (Digitar ID)'
+                )
+            ),
+            'anthropic' => array(
+                'name' => 'Anthropic Claude',
+                'models' => array(
+                    'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet (Altíssima qualidade de conversação)',
+                    'claude-3-5-haiku-20241022' => 'Claude 3.5 Haiku (Ultra-rápido e natural)',
+                    'claude-3-opus-20240229' => 'Claude 3 Opus',
+                    'custom' => 'Outro Modelo (Digitar ID)'
+                )
+            ),
+            'deepseek' => array(
+                'name' => 'DeepSeek (Direto)',
+                'models' => array(
+                    'deepseek-chat' => 'DeepSeek V3 (Chat - Excelente e ultra-econômico)',
+                    'deepseek-reasoner' => 'DeepSeek R1 (Raciocínio profundo)',
+                    'custom' => 'Outro Modelo (Digitar ID)'
                 )
             ),
             'gemini' => array(
                 'name' => 'Google Gemini',
                 'models' => array(
+                    'gemini-2.0-flash' => 'Gemini 2.0 Flash (Nova Geração - Ultra Rápido)',
                     'gemini-1.5-flash' => 'Gemini 1.5 Flash (Super ágil e econômico)',
-                    'gemini-2.0-flash' => 'Gemini 2.0 Flash'
+                    'gemini-1.5-pro' => 'Gemini 1.5 Pro (Janela de 2M tokens)',
+                    'custom' => 'Outro Modelo (Digitar ID)'
                 )
             )
         );
@@ -210,27 +238,56 @@ Diretrizes da conversa:
             'cartesia' => array(
                 'name' => 'Cartesia Sonic (Latência < 90ms - Ultrarrealista)',
                 'voices' => array(
-                    'cartesia-pt-br-sofia' => 'Sofia (Feminina - Natural & Amigável)',
-                    'cartesia-pt-br-lucas' => 'Lucas (Masculino - Seguro & Profissional)',
-                    'cartesia-pt-br-julia' => 'Júlia (Feminina - Dinâmica & Comercial)',
-                    'cartesia-pt-br-mateus' => 'Mateus (Masculino - Firme & Consultivo)'
+                    'cartesia-pt-br-sofia' => 'Sofia (Feminina - Natural, Amigável & Comercial - PT-BR)',
+                    'cartesia-pt-br-lucas' => 'Lucas (Masculino - Seguro, Profissional & Claro - PT-BR)',
+                    'cartesia-pt-br-julia' => 'Júlia (Feminina - Dinâmica & Vendas - PT-BR)',
+                    'cartesia-pt-br-mateus' => 'Mateus (Masculino - Firme & Consultivo - PT-BR)',
+                    'cartesia-pt-br-beatriz' => 'Beatriz (Feminina - Suave & Atendimento - PT-BR)',
+                    'cartesia-pt-br-gabriel' => 'Gabriel (Masculino - Jovem & Entusiasta - PT-BR)',
+                    'cartesia-en-sarah' => 'Sarah (English - American Conversational)',
+                    'cartesia-en-michael' => 'Michael (English - American Professional)',
+                    'custom' => 'Voz Personalizada Cartesia (Digitar Voice ID)'
                 )
             ),
             'elevenlabs' => array(
-                'name' => 'ElevenLabs Turbo v2.5',
+                'name' => 'ElevenLabs Turbo v2.5 (Multilingual & Clones)',
                 'voices' => array(
-                    'eleven-pt-br-alice' => 'Alice (Feminina - Expressiva)',
-                    'eleven-pt-br-bruno' => 'Bruno (Masculino - Narrador / Vendas)',
-                    'eleven-pt-br-carol' => 'Carol (Feminina - Atendimento)'
+                    '21m00Tcm4TlvDq8ikWAM' => 'Rachel (Feminina - Calma & Conversacional)',
+                    'AZnzlk1XvdvUeBnXmlld' => 'Domi (Feminina - Forte & Enérgica)',
+                    'EXAVITQu4vr4xnSDxMaL' => 'Bella (Feminina - Suave & Expressiva)',
+                    'ErXwobaYiN019PkySvjV' => 'Antoni (Masculino - Bem articulado & Modulado)',
+                    'MF3mGyEYCl7XYWbV9V6O' => 'Elli (Feminina - Jovem & Clara)',
+                    'TxGEqnHWrfWFTfGW9XjX' => 'Josh (Masculino - Jovem, Americano & Natural)',
+                    'VR6AewLTigWG4xSOukaG' => 'Arnold (Masculino - Firme & Narrador)',
+                    'pNInz6obpgDQGcFmaJgB' => 'Adam (Masculino - Profissional, Seguro & Conversacional)',
+                    'yoZ06aMxZJJ28mfd3POQ' => 'Sam (Masculino - Dinâmico & Rápido)',
+                    'ThT5KcBeYPX3keUQqHPh' => 'Dorothy (Feminina - Britânica & Amigável)',
+                    'jsCqWAovK2LkecY7zXl4' => 'Freya (Feminina - Expressiva)',
+                    'onwK4e9ZLuTAKqWW03F9' => 'Daniel (Masculino - Profundo & Sério)',
+                    'ZQe5CZNOzWyzPSCn5a3c' => 'James (Masculino - Confiante & Calmo)',
+                    'custom' => 'Voz Clonada / Personalizada ElevenLabs (Digitar Voice ID)'
                 )
             ),
             'openai' => array(
-                'name' => 'OpenAI TTS',
+                'name' => 'OpenAI TTS (Alloy, Echo, Nova, Onyx, Shimmer, Fable)',
                 'voices' => array(
-                    'nova' => 'Nova (Feminina - Jovem)',
-                    'shimmer' => 'Shimmer (Feminina - Clara)',
-                    'onyx' => 'Onyx (Masculina - Grave)',
-                    'echo' => 'Echo (Masculina - Suave)'
+                    'alloy' => 'Alloy (Neutra & Equilibrada)',
+                    'echo' => 'Echo (Masculina - Suave & Conversacional)',
+                    'fable' => 'Fable (Expressiva & Britânica)',
+                    'onyx' => 'Onyx (Masculina - Profunda & Séria)',
+                    'nova' => 'Nova (Feminina - Jovem, Viva & Energética)',
+                    'shimmer' => 'Shimmer (Feminina - Clara & Otimista)'
+                )
+            ),
+            'deepgram' => array(
+                'name' => 'Deepgram Aura (TTS Baixa Latência)',
+                'voices' => array(
+                    'aura-asteria-en' => 'Asteria (Feminina - Conversacional)',
+                    'aura-luna-en' => 'Luna (Feminina - Suave)',
+                    'aura-stella-en' => 'Stella (Feminina - Dinâmica)',
+                    'aura-arcus-en' => 'Arcus (Masculina - Forte)',
+                    'aura-orion-en' => 'Orion (Masculina - Firme)',
+                    'aura-zeus-en' => 'Zeus (Masculina - Profunda)'
                 )
             )
         );
