@@ -189,5 +189,13 @@ class CRMUtils {
 		return "#$r$g$b";
 	}
 
+	public static function safeCount($var) {
+		return safe_count($var);
+	}
+
+	public static function safeGet($obj, $prop, $default = null) {
+		return safe_get($obj, $prop, $default);
+	}
+
 }
 ?>

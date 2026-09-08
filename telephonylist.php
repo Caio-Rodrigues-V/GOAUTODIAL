@@ -187,10 +187,11 @@
 												</thead>
 												<tbody>
 												<?php
-												for($i=0;$i < count($lists->list_id);$i++){
+												$list_ids = (!empty($lists) && isset($lists->list_id) && is_array($lists->list_id)) ? $lists->list_id : array();
+												for($i=0;$i < count($list_ids);$i++){
 												// if no entry in user list
 												
-												if($lists->active[$i] == "Y"){
+												if(isset($lists->active[$i]) && $lists->active[$i] == "Y"){
 												$lists->active[$i] = $lh->translationFor("active");
 												}else{
 												$lists->active[$i] = $lh->translationFor("inactive");

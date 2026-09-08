@@ -124,16 +124,8 @@ class SessionHandler {
 	 * @return bool
 	 */
 	function _Close() {
-		//error_log('_Close');
 		// Run the garbage collector in 15% of f. calls
-		if (rand(1, 100) <= 15) $this->_GC();
-		// Run the garbage collector for expired sessions
-		$session_id = $session_id ?? '';
-		$this->db->where('session_id', md5($session_id));
-		$this->db->where('last_activity', time(), '<');
-		$result = $this->db->get($this->table);
-		//error_log($this->db->getRowCount());
-		if ($this->db->getRowCount() > 0) {
+		if (rand(1, 100) <= 15) {
 			$this->_GC();
 		}
 		return TRUE;
@@ -146,7 +138,6 @@ class SessionHandler {
 	function _Read($session_id) {
 		try {
 			$this->db->where('session_id', md5($session_id));
-			$this->db->where('ip_address', $this->getUserIP());
 			$this->db->where('last_activity', time(), '>');
 			$this->db->orderBy('last_activity', 'DESC');
 			$result = $this->db->getOne($this->table, 'user_data');
@@ -209,11 +200,14 @@ class SessionHandler {
 	 * @return 	integer	- Affected rows
 	 */
 	function _GC($maxlifetime = 0) {
-		//error_log('_GC');
 		// Remove expired sessions 
-		$this->db->where('last_activity', time(), '<');
-		$result = $this->db->delete($this->table);
-		return ($result) ? TRUE : FALSE;
+		try {
+			$this->db->where('last_activity', time(), '<');
+			$result = $this->db->delete($this->table);
+			return ($result) ? TRUE : FALSE;
+		} catch (\Throwable $t) {
+			return FALSE;
+		}
 	}
 	
 	/** Encrypt session data
@@ -242,25 +236,30 @@ class SessionHandler {
 		return openssl_decrypt($encrypted_data, 'aes-256-cbc',  $this->key, 0, $iv);
 	}
 	
-	/* PHP mcrypt deprecated */
-    /*function decrypt($data) {
-        return rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $this->key, base64_decode($data), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)), "\0");
-    }*/
-	
 	/** Returns "digital fingerprint" of user
      * @param 	void
      * @return 	string 	- MD5 hashed data
      */
 	function fingerprint() {
-		return md5(implode('|', array($_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['HTTP_ACCEPT'], $_SERVER['HTTP_ACCEPT_ENCODING'], $_SERVER['HTTP_ACCEPT_LANGUAGE'])));
+		return md5(implode('|', array($this->getUserIP(), $this->getUserAgent(), isset($_SERVER['HTTP_ACCEPT']) ? $_SERVER['HTTP_ACCEPT'] : '', isset($_SERVER['HTTP_ACCEPT_ENCODING']) ? $_SERVER['HTTP_ACCEPT_ENCODING'] : '', isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? $_SERVER['HTTP_ACCEPT_LANGUAGE'] : '')));
 	}
 	
 	function getUserIP() {
-		return $_SERVER['REMOTE_ADDR'];
+		if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+			return $_SERVER['HTTP_CF_CONNECTING_IP'];
+		}
+		if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+			$ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+			return trim($ips[0]);
+		}
+		if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+			return $_SERVER['HTTP_X_REAL_IP'];
+		}
+		return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
 	}
 	
 	function getUserAgent() {
-		return $_SERVER['HTTP_USER_AGENT'];
+		return isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
 	}
 	
 // ****************************************************************************

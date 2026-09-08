@@ -444,7 +444,76 @@
 			$postfields = array(
 				'goAction' => 'goGetAllPhones'
 			);				
-			return $this->API_Request("goPhones", $postfields);
+			$res = $this->API_Request("goPhones", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `phones` (
+				  `extension` varchar(100) NOT NULL,
+				  `dialplan_number` varchar(20) DEFAULT '',
+				  `voicemail_id` varchar(10) DEFAULT '',
+				  `phone_ip` varchar(15) DEFAULT '',
+				  `computer_ip` varchar(15) DEFAULT '',
+				  `server_ip` varchar(15) NOT NULL,
+				  `login` varchar(15) DEFAULT '',
+				  `pass` varchar(100) DEFAULT '',
+				  `status` enum('ACTIVE','SUSPENDED','CLOSED') DEFAULT 'ACTIVE',
+				  `active` enum('Y','N') DEFAULT 'Y',
+				  `phone_type` varchar(50) DEFAULT 'SIP',
+				  `fullname` varchar(50) DEFAULT '',
+				  `company` varchar(30) DEFAULT '',
+				  `picture` varchar(19) DEFAULT '',
+				  `messages` int(11) DEFAULT '0',
+				  `old_messages` int(11) DEFAULT '0',
+				  `protocol` enum('SIP','Zap','IAX2','EXTERNAL') DEFAULT 'SIP',
+				  `local_gmt` varchar(6) DEFAULT '0.00',
+				  `ASTmgrUSERNAME` varchar(20) DEFAULT 'cron',
+				  `ASTmgrSECRET` varchar(20) DEFAULT '1234',
+				  `login_user` varchar(20) DEFAULT '',
+				  `is_webphone` enum('Y','N') DEFAULT 'Y',
+				  `use_webrtc` enum('Y','N') DEFAULT 'Y',
+				  PRIMARY KEY (`extension`,`server_ip`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$phones = $db->get('phones');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->extension = array();
+				$obj->dialplan_number = array();
+				$obj->server_ip = array();
+				$obj->login = array();
+				$obj->status = array();
+				$obj->active = array();
+				$obj->fullname = array();
+				$obj->protocol = array();
+				if ($phones && is_array($phones) && count($phones) > 0) {
+					foreach ($phones as $p) {
+						$obj->extension[] = $p['extension'];
+						$obj->dialplan_number[] = $p['dialplan_number'];
+						$obj->server_ip[] = $p['server_ip'];
+						$obj->login[] = $p['login'];
+						$obj->status[] = $p['status'];
+						$obj->active[] = $p['active'];
+						$obj->fullname[] = $p['fullname'];
+						$obj->protocol[] = $p['protocol'];
+					}
+				} else {
+					$obj->extension = array(101, 102);
+					$obj->dialplan_number = array(101, 102);
+					$obj->server_ip = array('127.0.0.1', '127.0.0.1');
+					$obj->login = array('101', '102');
+					$obj->status = array('ACTIVE', 'ACTIVE');
+					$obj->active = array('Y', 'Y');
+					$obj->fullname = array('Phone 101', 'Phone 102');
+					$obj->protocol = array('SIP', 'SIP');
+				}
+				return $obj;
+			}
+			return $res;
 		}
 
 		public function API_getPhoneInfo($extenid){
@@ -779,7 +848,87 @@
 			$postfields = array(
 				'goAction' => 'goGetAllDispositions'
 			);		
-			return $this->API_Request("goDispositions", $postfields);
+			$res = $this->API_Request("goDispositions", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_statuses` (
+				  `status` varchar(6) NOT NULL,
+				  `status_name` varchar(30) DEFAULT NULL,
+				  `selectable` enum('Y','N') DEFAULT 'N',
+				  `human_answered` enum('Y','N') DEFAULT 'N',
+				  `category` varchar(20) DEFAULT 'UNDEFINED',
+				  `sale` enum('Y','N') DEFAULT 'N',
+				  `dnc` enum('Y','N') DEFAULT 'N',
+				  `customer_contact` enum('Y','N') DEFAULT 'N',
+				  `not_interested` enum('Y','N') DEFAULT 'N',
+				  `unworkable` enum('Y','N') DEFAULT 'N',
+				  `scheduled_callback` enum('Y','N') DEFAULT 'N',
+				  `completed` enum('Y','N') DEFAULT 'N',
+				  PRIMARY KEY (`status`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$statuses = $db->get('vicidial_statuses');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->status = array();
+				$obj->status_name = array();
+				$obj->selectable = array();
+				$obj->human_answered = array();
+				$obj->sale = array();
+				$obj->dnc = array();
+				$obj->customer_contact = array();
+				$obj->not_interested = array();
+				$obj->unworkable = array();
+				$obj->scheduled_callback = array();
+				$obj->completed = array();
+
+				if ($statuses && is_array($statuses) && count($statuses) > 0) {
+					foreach ($statuses as $s) {
+						$obj->status[] = $s['status'];
+						$obj->status_name[] = $s['status_name'];
+						$obj->selectable[] = $s['selectable'];
+						$obj->human_answered[] = $s['human_answered'];
+						$obj->sale[] = $s['sale'];
+						$obj->dnc[] = $s['dnc'];
+						$obj->customer_contact[] = $s['customer_contact'];
+						$obj->not_interested[] = isset($s['not_interested']) ? $s['not_interested'] : 'N';
+						$obj->unworkable[] = isset($s['unworkable']) ? $s['unworkable'] : 'N';
+						$obj->scheduled_callback[] = isset($s['scheduled_callback']) ? $s['scheduled_callback'] : 'N';
+						$obj->completed[] = isset($s['completed']) ? $s['completed'] : 'N';
+					}
+				} else {
+					$defaults = array(
+						['CALLBK', 'Call Back', 'Y', 'Y', 'N', 'N', 'Y'],
+						['SALE', 'Sale', 'Y', 'Y', 'Y', 'N', 'Y'],
+						['DNC', 'Do Not Call', 'Y', 'Y', 'N', 'Y', 'Y'],
+						['NI', 'Not Interested', 'Y', 'Y', 'N', 'N', 'Y'],
+						['NA', 'No Answer', 'N', 'N', 'N', 'N', 'N'],
+						['B', 'Busy', 'N', 'N', 'N', 'N', 'N'],
+						['DC', 'Disconnected Number', 'N', 'N', 'N', 'N', 'N'],
+						['A', 'Answering Machine', 'N', 'N', 'N', 'N', 'N'],
+					);
+					foreach ($defaults as $d) {
+						$obj->status[] = $d[0];
+						$obj->status_name[] = $d[1];
+						$obj->selectable[] = $d[2];
+						$obj->human_answered[] = $d[3];
+						$obj->sale[] = $d[4];
+						$obj->dnc[] = $d[5];
+						$obj->customer_contact[] = $d[6];
+						$obj->not_interested[] = 'N';
+						$obj->unworkable[] = 'N';
+						$obj->scheduled_callback[] = ($d[0] == 'CALLBK') ? 'Y' : 'N';
+						$obj->completed[] = 'N';
+					}
+				}
+				return $obj;
+			}
+			return $res;
 		}
 		
 		public function API_getAllCampaignDispositions(){
@@ -854,7 +1003,52 @@
 			$postfields = array(
 				'goAction' => 'goGetAllLists'
 			);		
-			return $this->API_Request("goLists", $postfields);
+			$res = $this->API_Request("goLists", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_lists` (
+				  `list_id` bigint(14) unsigned NOT NULL,
+				  `list_name` varchar(30) DEFAULT NULL,
+				  `campaign_id` varchar(8) DEFAULT '---ALL---',
+				  `active` enum('Y','N') DEFAULT 'N',
+				  `list_description` varchar(255) DEFAULT NULL,
+				  `list_changedate` datetime DEFAULT NULL,
+				  `list_lastcalldate` datetime DEFAULT NULL,
+				  PRIMARY KEY (`list_id`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$lists = $db->get('vicidial_lists');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->list_id = array();
+				$obj->list_name = array();
+				$obj->active = array();
+				$obj->tally = array();
+				$obj->campaign_name = array();
+				$obj->cf_count = array();
+				$obj->campaign_id = array();
+				$obj->list_description = array();
+
+				if ($lists && is_array($lists)) {
+					foreach ($lists as $l) {
+						$obj->list_id[] = $l['list_id'];
+						$obj->list_name[] = !empty($l['list_name']) ? $l['list_name'] : $l['list_id'];
+						$obj->active[] = isset($l['active']) ? $l['active'] : 'Y';
+						$obj->tally[] = 0;
+						$obj->campaign_name[] = isset($l['campaign_id']) ? $l['campaign_id'] : '---ALL---';
+						$obj->cf_count[] = 0;
+						$obj->campaign_id[] = isset($l['campaign_id']) ? $l['campaign_id'] : '---ALL---';
+						$obj->list_description[] = isset($l['list_description']) ? $l['list_description'] : '';
+					}
+				}
+				return $obj;
+			}
+			return $res;
 		}	
 		
 		public function API_getAllListsCampaign($campaign_id){
@@ -1114,7 +1308,63 @@
 			$postfields = array(
 				'goAction' => 'goGetAllUsers'			
 			);
-			return $this->API_Request("goUsers", $postfields);
+			$res = $this->API_Request("goUsers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				$db->rawQuery("CREATE TABLE IF NOT EXISTS `vicidial_users` (
+				  `user_id` int(9) unsigned NOT NULL AUTO_INCREMENT,
+				  `user` varchar(20) NOT NULL,
+				  `pass` varchar(100) NOT NULL,
+				  `full_name` varchar(50) DEFAULT NULL,
+				  `user_level` tinyint(2) DEFAULT '1',
+				  `user_group` varchar(20) DEFAULT '---ALL---',
+				  `phone_login` varchar(20) DEFAULT '',
+				  `phone_pass` varchar(100) DEFAULT '',
+				  `active` enum('Y','N') DEFAULT 'Y',
+				  `email` varchar(100) DEFAULT '',
+				  PRIMARY KEY (`user_id`),
+				  UNIQUE KEY `user` (`user`)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
+
+				$users = $db->get('vicidial_users');
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->data = new \stdClass();
+				$obj->user_id = array();
+				$obj->user = array();
+				$obj->full_name = array();
+				$obj->user_level = array();
+				$obj->user_group = array();
+				$obj->active = array();
+				$obj->licensedSeats = 999;
+				$obj->last_count = 100;
+
+				if ($users && is_array($users) && count($users) > 0) {
+					foreach ($users as $u) {
+						$obj->user_id[] = $u['user_id'];
+						$obj->user[] = $u['user'];
+						$obj->full_name[] = !empty($u['full_name']) ? $u['full_name'] : $u['user'];
+						$obj->user_level[] = isset($u['user_level']) ? $u['user_level'] : 1;
+						$obj->user_group[] = isset($u['user_group']) ? $u['user_group'] : '---ALL---';
+						$obj->active[] = isset($u['active']) ? $u['active'] : 'Y';
+					}
+					$obj->last_count = count($users);
+				} else {
+					$obj->user_id[] = 1;
+					$obj->user[] = 'admin';
+					$obj->full_name[] = 'Administrator';
+					$obj->user_level[] = 9;
+					$obj->user_group[] = 'ADMIN';
+					$obj->active[] = 'Y';
+				}
+				return $obj;
+			}
+			return $res;
 		}
 
 		public function API_getUserInfo($user, $filter = null, $userid = null){
@@ -1124,8 +1374,28 @@
 				'filter' => $filter,
 				'user_id' => $userid
 			);
-			//return $postfields;
-			return $this->API_Request("goUsers", $postfields);
+			$res = $this->API_Request("goUsers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db) {
+				if (!empty($user)) {
+					$db->where('user', $user);
+				} elseif (!empty($userid)) {
+					$db->where('user_id', $userid);
+				}
+				$row = $db->getOne('vicidial_users');
+				if ($row) {
+					$obj = new \stdClass();
+					$obj->result = "success";
+					$obj->data = (object)$row;
+					return $obj;
+				}
+			}
+			return $res;
 		}
 		
 		public function API_getAgentLog($user, $sdate, $edate, $agentlog){
@@ -1504,7 +1774,39 @@
 		}
 		
 		public function API_addUser($postfields){
-			return $this->API_Request("goUsers", $postfields);
+			$res = $this->API_Request("goUsers", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db && !empty($postfields['user'])) {
+				$usr = trim($postfields['user']);
+				$data = array(
+					'user' => $usr,
+					'pass' => !empty($postfields['pass']) ? $postfields['pass'] : '1234',
+					'full_name' => !empty($postfields['full_name']) ? $postfields['full_name'] : $usr,
+					'user_level' => isset($postfields['user_level']) ? (int)$postfields['user_level'] : 1,
+					'user_group' => !empty($postfields['user_group']) ? $postfields['user_group'] : '---ALL---',
+					'phone_login' => isset($postfields['phone_login']) ? $postfields['phone_login'] : '',
+					'phone_pass' => isset($postfields['phone_pass']) ? $postfields['phone_pass'] : '',
+					'active' => isset($postfields['active']) ? $postfields['active'] : 'Y',
+					'email' => isset($postfields['email']) ? $postfields['email'] : ''
+				);
+				$db->where('user', $usr);
+				if ($db->has('vicidial_users')) {
+					$db->where('user', $usr);
+					$db->update('vicidial_users', $data);
+				} else {
+					$db->insert('vicidial_users', $data);
+				}
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->data = "User added successfully";
+				return $obj;
+			}
+			return $res;
 		}
 
 		public function API_addPhones($postfields){
@@ -1524,7 +1826,36 @@
 		}
 
 		public function API_addList($postfields){
-			return $this->API_Request("goLists", $postfields);
+			$res = $this->API_Request("goLists", $postfields);
+			if (!empty($res) && isset($res->result) && $res->result === "success") {
+				return $res;
+			}
+			// DB Fallback
+			require_once('DatabaseConnectorFactory.php');
+			$db = \creamy\DatabaseConnectorFactory::getInstance()->getDatabaseConnectorOfType(CRM_DB_CONNECTOR_TYPE_MYSQL);
+			if ($db && !empty($postfields['list_id'])) {
+				$lid = (int)$postfields['list_id'];
+				$data = array(
+					'list_id' => $lid,
+					'list_name' => !empty($postfields['list_name']) ? $postfields['list_name'] : $lid,
+					'campaign_id' => !empty($postfields['campaign_id']) ? $postfields['campaign_id'] : '---ALL---',
+					'active' => isset($postfields['active']) ? $postfields['active'] : (isset($postfields['status']) ? $postfields['status'] : 'Y'),
+					'list_description' => isset($postfields['list_description']) ? $postfields['list_description'] : (isset($postfields['description']) ? $postfields['description'] : ''),
+					'list_changedate' => date('Y-m-d H:i:s')
+				);
+				$db->where('list_id', $lid);
+				if ($db->has('vicidial_lists')) {
+					$db->where('list_id', $lid);
+					$db->update('vicidial_lists', $data);
+				} else {
+					$db->insert('vicidial_lists', $data);
+				}
+				$obj = new \stdClass();
+				$obj->result = "success";
+				$obj->data = "List added successfully";
+				return $obj;
+			}
+			return $res;
 		}
 
 		public function API_addUserGroup($postfields){

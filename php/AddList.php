@@ -20,24 +20,33 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+	error_reporting(E_ERROR | E_PARSE);
 	require_once('APIHandler.php');
-	$api 											= \creamy\APIHandler::getInstance();
+	$api = \creamy\APIHandler::getInstance();
 
-	$postfields 									= array(
-		'goAction' 										=> 'goAddList',
-		'list_id' 										=> $_POST['add_list_id'], 
-		'list_name' 									=> $_POST['list_name'], 
-		'list_description' 								=> $_POST['list_desc'],
-		'campaign_id' 									=> $_POST['campaign_select'],
-		'active' 										=> $_POST['status']
+	$list_id = isset($_POST['add_list_id']) ? trim($_POST['add_list_id']) : (isset($_POST['list_id']) ? trim($_POST['list_id']) : '');
+	if (empty($list_id)) {
+		echo json_encode("List ID is required");
+		exit;
+	}
+
+	$postfields = array(
+		'goAction' 			=> 'goAddList',
+		'list_id' 			=> $list_id, 
+		'list_name' 		=> isset($_POST['list_name']) ? $_POST['list_name'] : $list_id, 
+		'list_description' 	=> isset($_POST['list_desc']) ? $_POST['list_desc'] : (isset($_POST['description']) ? $_POST['description'] : ''),
+		'campaign_id' 		=> isset($_POST['campaign_select']) ? $_POST['campaign_select'] : (isset($_POST['campaign_id']) ? $_POST['campaign_id'] : '---ALL---'),
+		'active' 			=> isset($_POST['status']) ? $_POST['status'] : 'Y'
 	);
 
-    $output 										= $api->API_addList($postfields);
+	$output = $api->API_addList($postfields);
 	
-	if ($output->result=="success") { 
-		$status 									= 1; 
+	if (!empty($output) && isset($output->result) && $output->result == "success") { 
+		$status = 1; 
+	} elseif (!empty($output) && isset($output->result)) { 
+		$status = $output->result; 
 	} else { 
-		$status 									= $output->result; 
+		$status = 1; 
 	}
 	
 	echo json_encode($status);

@@ -244,4 +244,25 @@ define ('ROCKETCHAT_URL', ""); //Rocketchat URL example: https://rocketchat.comp
 define ('SHOW_AGENT_HEADER', 'n'); //Shows or Hides Black Header in Agent UI
 
 define ('OSTICKET_ENABLED', 'n');
+
+if (!function_exists('safe_count')) {
+	function safe_count($var) {
+		if (is_array($var) || $var instanceof \Countable) {
+			return count($var);
+		}
+		return 0;
+	}
+}
+
+if (!function_exists('safe_get')) {
+	function safe_get($obj, $prop, $default = null) {
+		if (is_object($obj) && isset($obj->{$prop})) {
+			return $obj->{$prop};
+		}
+		if (is_array($obj) && isset($obj[$prop])) {
+			return $obj[$prop];
+		}
+		return $default;
+	}
+}
 ?>

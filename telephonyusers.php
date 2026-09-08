@@ -177,14 +177,16 @@
 	//var_dump("AUTH TOKEN:".$_SESSION['gad_authToken']);
 	$user_groups = $api->API_getAllUserGroups();
 	$phones = $api->API_getAllPhones();
-	$max = max($phones->extension);
+	$phone_exts = (!empty($phones) && isset($phones->extension) && is_array($phones->extension) && count($phones->extension) > 0) ? $phones->extension : array(100);
+	$max = max($phone_exts);
 	$suggested_extension = $max + 1;
-	$count_users = count($all_users->user);
-	$license_seats = intval($all_users->licensedSeats);
+	$users_list = (!empty($all_users) && isset($all_users->user) && is_array($all_users->user)) ? $all_users->user : array();
+	$count_users = count($users_list);
+	$license_seats = (!empty($all_users) && isset($all_users->licensedSeats)) ? intval($all_users->licensedSeats) : 999;
 	$avail_seats = $license_seats-$count_users;
 	$servers = $api->API_getAllServers();
 
-	if(ROCKETCHAT_ENABLE === 'y'){
+	if(defined('ROCKETCHAT_ENABLE') && ROCKETCHAT_ENABLE === 'y'){
 		$license_seats = 1;
 	}
 ?>

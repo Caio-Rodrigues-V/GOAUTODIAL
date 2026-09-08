@@ -48,38 +48,60 @@ if($user->getUserRole() != CRM_DEFAULTS_USER_ROLE_AGENT){
     header("location: index.php");
 }
 
-$lead_id = $_GET['lead_id'];
-$output = $api->API_getLeadsInfo($lead_id);
-$list_id_ct = count($output->list_id);
+$lead_id = isset($_GET['lead_id']) ? $_GET['lead_id'] : '';
+$first_name = '';
+$middle_initial = '';
+$last_name = '';
+$email = '';
+$phone_number = '';
+$alt_phone = '';
+$address1 = '';
+$address2 = '';
+$address3 = '';
+$city = '';
+$state = '';
+$province = '';
+$postal_code = '';
+$country = '';
+$gender = '';
+$date_of_birth = date('Y-m-d');
+$comments = '';
+$title = '';
+$call_count = 0;
+$last_local_call_time = '';
 
-if ($list_id_ct > 0) {
-	for($i=0;$i < $list_id_ct;$i++){
-		$first_name 	= $output->first_name[$i];
-		$middle_initial = $output->middle_initial[$i];
-		$last_name 		= $output->last_name[$i];
+if (!empty($lead_id)) {
+	$output = $api->API_getLeadsInfo($lead_id);
+	$list_id_ct = (!empty($output) && isset($output->list_id) && is_array($output->list_id)) ? count($output->list_id) : 0;
 
-		$email 			= $output->email[$i];
-		$phone_number 	= $output->phone_number[$i];
-		$alt_phone 		= $output->alt_phone[$i];
-		$address1 		= $output->address1[$i];
-		$address2 		= $output->address2[$i];
-		$address3 		= $output->address3[$i];
-		$city 			= $output->city[$i];
-		$state 			= $output->state[$i];
-		$country 		= $output->country[$i];
-		$gender 		= $output->gender[$i];
-		$date_of_birth 	= $output->date_of_birth[$i];
-		$comments 		= $output->comments[$i];
-		$title 			= $output->title[$i];
-		$call_count 	= $output->call_count[$i];
-		$last_local_call_time = $output->last_local_call_time[$i];
+	if ($list_id_ct > 0) {
+		for($i=0;$i < $list_id_ct;$i++){
+			$first_name 	= isset($output->first_name[$i]) ? $output->first_name[$i] : '';
+			$middle_initial = isset($output->middle_initial[$i]) ? $output->middle_initial[$i] : '';
+			$last_name 		= isset($output->last_name[$i]) ? $output->last_name[$i] : '';
+
+			$email 			= isset($output->email[$i]) ? $output->email[$i] : '';
+			$phone_number 	= isset($output->phone_number[$i]) ? $output->phone_number[$i] : '';
+			$alt_phone 		= isset($output->alt_phone[$i]) ? $output->alt_phone[$i] : '';
+			$address1 		= isset($output->address1[$i]) ? $output->address1[$i] : '';
+			$address2 		= isset($output->address2[$i]) ? $output->address2[$i] : '';
+			$address3 		= isset($output->address3[$i]) ? $output->address3[$i] : '';
+			$city 			= isset($output->city[$i]) ? $output->city[$i] : '';
+			$state 			= isset($output->state[$i]) ? $output->state[$i] : '';
+			$country 		= isset($output->country[$i]) ? $output->country[$i] : '';
+			$gender 		= isset($output->gender[$i]) ? $output->gender[$i] : '';
+			$date_of_birth 	= isset($output->date_of_birth[$i]) ? $output->date_of_birth[$i] : date('Y-m-d');
+			$comments 		= isset($output->comments[$i]) ? $output->comments[$i] : '';
+			$title 			= isset($output->title[$i]) ? $output->title[$i] : '';
+			$call_count 	= isset($output->call_count[$i]) ? $output->call_count[$i] : 0;
+			$last_local_call_time = isset($output->last_local_call_time[$i]) ? $output->last_local_call_time[$i] : '';
+		}
 	}
 }
-$fullname = $title.' '.$first_name.' '.$middle_initial.' '.$last_name;
+$fullname = trim($title.' '.$first_name.' '.$middle_initial.' '.$last_name);
 $date_of_birth = date('Y-m-d', strtotime($date_of_birth));
-//var_dump($output);
- $output_script = $ui->getAgentScript($lead_id, $fullname, $first_name, $last_name, $middle_initial, $email,
- 									  $phone_number, $alt_phone, $address1, $address2, $address3, $city, $province, $state, $postal_code, $country);
+$output_script = $ui->getAgentScript($lead_id, $fullname, $first_name, $last_name, $middle_initial, $email,
+									  $phone_number, $alt_phone, $address1, $address2, $address3, $city, $province, $state, $postal_code, $country);
 
 
 if (isset($_GET["folder"])) {
