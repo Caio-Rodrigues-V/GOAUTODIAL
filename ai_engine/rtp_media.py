@@ -122,6 +122,59 @@ class RTPPacket:
         header = struct.pack('!BBHII', byte0, byte1, seq & 0xFFFF, timestamp & 0xFFFFFFFF, ssrc & 0xFFFFFFFF)
         return header + payload
 
+# Tabela ITU-T G.711 A-law para Linear PCM 16-bit
+def alaw_to_pcm16_byte(b: int) -> int:
+    """Converte 1 byte G.711 A-law para inteiro 16-bit"""
+    b = b ^ 0xD5
+    sign = b & 0x80
+    exponent = (b & 0x70) >> 4
+    mantissa = b & 0x0F
+    
+    if exponent == 0:
+        sample = (mantissa << 4) + 8
+    else:
+        sample = ((mantissa << 4) + 0x108) << (exponent - 1)
+        
+    return -sample if sign == 0 else sample
+
+def alaw_to_linear(alaw_bytes: bytes) -> bytes:
+    """Converte G.711 A-law (8-bit) para PCM 16-bit Little Endian (8000Hz)"""
+    try:
+        import audioop
+        return audioop.alaw2lin(alaw_bytes, 2)
+    except:
+        out = bytearray(len(alaw_bytes) * 2)
+        idx = 0
+        for b in alaw_bytes:
+            sample = alaw_to_pcm16_byte(b)
+            out[idx:idx+2] = sample.to_bytes(2, byteorder='little', signed=True)
+            idx += 2
+        return bytes(out)
+
+def ulaw_to_linear(ulaw_bytes: bytes) -> bytes:
+    """Converte G.711 Mu-law (8-bit) para PCM 16-bit Little Endian (8000Hz)"""
+    try:
+        import audioop
+        return audioop.ulaw2lin(ulaw_bytes, 2)
+    except:
+        return alaw_to_linear(ulaw_bytes)
+
+def calculate_rms(pcm_bytes: bytes) -> float:
+    """Calcula a energia sonora (RMS) do bloco PCM 16-bit para Voice Activity Detection (VAD)"""
+    if not pcm_bytes or len(pcm_bytes) < 2:
+        return 0.0
+    try:
+        import audioop
+        return float(audioop.rms(pcm_bytes, 2))
+    except:
+        import math
+        total = 0
+        count = len(pcm_bytes) // 2
+        for i in range(0, len(pcm_bytes) - 1, 2):
+            sample = int.from_bytes(pcm_bytes[i:i+2], byteorder='little', signed=True)
+            total += sample * sample
+        return math.sqrt(total / count) if count > 0 else 0.0
+
 class RTPAudioSession:
     def __init__(self, local_port: int, remote_ip: str, remote_port: int, codec: str = "PCMA"):
         self.local_port = local_port
@@ -134,6 +187,20 @@ class RTPAudioSession:
         self.timestamp = 0
         self.sock: Optional[socket.socket] = None
         self.is_running = False
+        self.is_transmitting = False
+        self.cancel_playback = False
+        
+        # Callbacks de conversa
+        self.on_speech_ready: Optional[Callable] = None
+        self.on_barge_in: Optional[Callable] = None
+        
+        # VAD & Buffer de Fala do Cliente
+        self.speech_buffer = bytearray()
+        self.is_collecting_speech = False
+        self.last_speech_time = 0.0
+        self.vad_threshold = 400.0  # Nível de energia sonora para detectar voz humana
+        self.silence_timeout = 0.65  # 650ms de silêncio finaliza o turno de fala
+        self._rx_task: Optional[asyncio.Task] = None
 
     def start_socket(self):
         try:
@@ -141,18 +208,83 @@ class RTPAudioSession:
             self.sock.bind(("0.0.0.0", self.local_port))
             self.sock.setblocking(False)
             self.is_running = True
-            logger.info(f"Socket RTP local aberto em 0.0.0.0:{self.local_port} -> Oktor Mídia {self.remote_ip}:{self.remote_port}")
+            logger.info(f"Socket RTP local aberto em 0.0.0.0:{self.local_port} <-> Oktor Mídia {self.remote_ip}:{self.remote_port}")
+            
+            # Iniciar loop de recepção de áudio do cliente em background
+            self._rx_task = asyncio.create_task(self._receive_loop())
         except Exception as e:
             logger.error(f"Erro ao abrir socket RTP na porta {self.local_port}: {e}")
 
+    async def _receive_loop(self):
+        """
+        Escuta pacotes RTP do cliente, detecta fala (VAD), trata interrupções (Barge-In)
+        e despacha para transcrição quando o cliente termina de falar.
+        """
+        logger.info(f"Escutador RTP iniciado para captura da voz do cliente...")
+        loop = asyncio.get_running_loop()
+
+        while self.is_running and self.sock:
+            try:
+                data = await loop.sock_recv(self.sock, 2048)
+                if len(data) <= 12:
+                    continue  # Apenas cabeçalho ou pacote vazio
+
+                # Extrai payload G.711 (após os 12 bytes de header RTP RFC 3550)
+                g711_payload = data[12:]
+                
+                # Decodifica para PCM 16-bit
+                pcm_chunk = alaw_to_linear(g711_payload) if self.payload_type == 8 else ulaw_to_linear(g711_payload)
+                rms = calculate_rms(pcm_chunk)
+
+                now = time.time()
+
+                if rms > self.vad_threshold:
+                    # Cliente está falando!
+                    if self.is_transmitting:
+                        # BARGE-IN: Cliente interrompeu a IA!
+                        logger.info("⚡ [BARGE-IN]: Cliente começou a falar! Interrompendo a voz da IA imediatamente...")
+                        self.cancel_playback = True
+                        if self.on_barge_in:
+                            asyncio.create_task(self.on_barge_in())
+
+                    if not self.is_collecting_speech:
+                        self.is_collecting_speech = True
+                        self.speech_buffer.clear()
+                        logger.info("🎙️ [Cliente Falando...] Capturando áudio...")
+
+                    self.speech_buffer.extend(pcm_chunk)
+                    self.last_speech_time = now
+
+                elif self.is_collecting_speech:
+                    # Adiciona um pouco de silêncio natural no buffer
+                    self.speech_buffer.extend(pcm_chunk)
+                    
+                    # Checa se o silêncio atingiu o tempo de finalização da fala
+                    if now - self.last_speech_time > self.silence_timeout:
+                        self.is_collecting_speech = False
+                        logger.info(f"🤫 [Silêncio detectado]: Final de fala do cliente ({len(self.speech_buffer)} bytes PCM). Enviando para STT...")
+                        if self.on_speech_ready and len(self.speech_buffer) > 3200:
+                            collected_audio = bytes(self.speech_buffer)
+                            asyncio.create_task(self.on_speech_ready(collected_audio))
+                        self.speech_buffer.clear()
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                if self.is_running:
+                    await asyncio.sleep(0.01)
+
     async def stream_pcm_audio(self, pcm_bytes: bytes):
         """
-        Envia áudio PCM para a Oktor em blocos de 20 milissegundos (160 samples = 160 bytes em G.711).
+        Envia áudio PCM para a Oktor em blocos de 20ms com suporte a cancelamento instantâneo (Barge-In).
         """
         if not self.sock or not self.is_running:
             self.start_socket()
 
-        # Envia 3 pacotes de warm-up (silêncio) para abrir NAT / firewall do Media Server da Oktor
+        self.is_transmitting = True
+        self.cancel_playback = False
+
+        # Envia pacotes de warm-up (silêncio)
         silence_byte = b'\xd5' if self.payload_type == 8 else b'\xff'
         silence_frame = silence_byte * 160
         for _ in range(3):
@@ -176,14 +308,15 @@ class RTPAudioSession:
         logger.info(f"Transmitindo áudio da IA via RTP ({len(g711_audio)} bytes, ~{total_frames * 20}ms de fala)...")
 
         for idx, i in enumerate(range(0, len(g711_audio), frame_size)):
-            if not self.is_running:
+            if not self.is_running or self.cancel_playback:
+                if self.cancel_playback:
+                    logger.info("🚫 Transmissão de áudio da IA cancelada por interrupção do cliente (Barge-In)")
                 break
             
             chunk = g711_audio[i:i + frame_size]
             if len(chunk) < frame_size:
                 chunk = chunk + (silence_byte * (frame_size - len(chunk)))
 
-            # Marker bit = 1 no primeiro pacote da fala
             marker = 1 if idx == 0 else 0
             packet = RTPPacket.build(chunk, self.seq, self.timestamp, self.ssrc, self.payload_type, marker=marker)
             
@@ -197,10 +330,17 @@ class RTPAudioSession:
             self.timestamp = (self.timestamp + 160) & 0xFFFFFFFF
             await asyncio.sleep(0.0195)
 
-        logger.info("Transmissão do bloco de áudio da IA concluída com sucesso!")
+        self.is_transmitting = False
+        if not self.cancel_playback:
+            logger.info("Transmissão do bloco de áudio da IA concluída com sucesso!")
 
     def stop(self):
         self.is_running = False
+        self.is_transmitting = False
+        self.cancel_playback = True
+        if self._rx_task:
+            self._rx_task.cancel()
+            self._rx_task = None
         if self.sock:
             try:
                 self.sock.close()

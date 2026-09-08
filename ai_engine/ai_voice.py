@@ -1,6 +1,7 @@
 """
-Dial GO Voice AI Engine - AI Synthesis & LLM Brain
-Síntese de voz em tempo real (OpenAI, ElevenLabs, Cartesia) e raciocínio de conversação (Groq, OpenAI, Anthropic, DeepSeek).
+Dial GO Voice AI Engine - AI Synthesis, Transcription & LLM Brain
+Síntese de voz em tempo real (OpenAI, ElevenLabs, Cartesia), Transcrição ultrarrápida (Deepgram Nova-2, Groq Whisper, OpenAI Whisper)
+e raciocínio conversacional de alta fidelidade (Groq Llama 3.3 70B, OpenAI GPT-4o Mini, Claude, DeepSeek).
 """
 
 import httpx
@@ -13,7 +14,94 @@ from rtp_media import resample_wav_to_8k_pcm
 
 logger = logging.getLogger("DialGO_Brain")
 
+def create_wav_from_pcm(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
+    """Empacota bytes PCM 16-bit Mono em um container WAV válido em memória"""
+    buf = io.BytesIO()
+    with wave.open(buf, 'wb') as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        wav.writeframes(pcm_bytes)
+    return buf.getvalue()
+
 class AIVoiceBrain:
+    @staticmethod
+    async def transcribe(pcm_bytes: bytes, stt_provider: str, api_keys: Dict[str, str]) -> str:
+        """
+        Transcreve o áudio do cliente em texto em < 150ms usando Deepgram, Groq ou OpenAI.
+        """
+        if not pcm_bytes or len(pcm_bytes) < 3200:  # Menos de 200ms de áudio é ruído
+            return ""
+
+        stt_provider = (stt_provider or "deepgram").lower()
+        wav_data = create_wav_from_pcm(pcm_bytes, 8000)
+
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            try:
+                # 1. Deepgram Nova-2 (Ultra-rápido ~100ms, especialista em telefonia PT-BR)
+                if (stt_provider == "deepgram" or not stt_provider) and api_keys.get("deepgram_api_key"):
+                    api_key = api_keys.get("deepgram_api_key")
+                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&encoding=linear16&sample_rate=8000"
+                    headers = {
+                        "Authorization": f"Token {api_key}",
+                        "Content-Type": "audio/wav"
+                    }
+                    r = await client.post(url, content=wav_data, headers=headers)
+                    if r.status_code == 200:
+                        data = r.json()
+                        transcript = data["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
+                        if transcript:
+                            logger.info(f"[Deepgram STT]: '{transcript}'")
+                            return transcript
+
+                # 2. Groq Whisper Large v3 Turbo (Latência ~120ms)
+                if api_keys.get("groq_api_key"):
+                    api_key = api_keys.get("groq_api_key")
+                    files = {
+                        "file": ("audio.wav", wav_data, "audio/wav")
+                    }
+                    data = {
+                        "model": "whisper-large-v3-turbo",
+                        "language": "pt",
+                        "response_format": "json"
+                    }
+                    headers = {
+                        "Authorization": f"Bearer {api_key}"
+                    }
+                    r = await client.post("https://api.groq.com/openai/v1/audio/transcriptions", files=files, data=data, headers=headers)
+                    if r.status_code == 200:
+                        res = r.json()
+                        transcript = res.get("text", "").strip()
+                        if transcript:
+                            logger.info(f"[Groq Whisper STT]: '{transcript}'")
+                            return transcript
+
+                # 3. OpenAI Whisper
+                if api_keys.get("openai_api_key"):
+                    api_key = api_keys.get("openai_api_key")
+                    files = {
+                        "file": ("audio.wav", wav_data, "audio/wav")
+                    }
+                    data = {
+                        "model": "whisper-1",
+                        "language": "pt"
+                    }
+                    headers = {
+                        "Authorization": f"Bearer {api_key}"
+                    }
+                    r = await client.post("https://api.openai.com/v1/audio/transcriptions", files=files, data=data, headers=headers)
+                    if r.status_code == 200:
+                        res = r.json()
+                        transcript = res.get("text", "").strip()
+                        if transcript:
+                            logger.info(f"[OpenAI Whisper STT]: '{transcript}'")
+                            return transcript
+
+            except Exception as e:
+                logger.error(f"Erro no reconhecimento de fala (STT): {e}")
+
+        return ""
+
     @staticmethod
     async def synthesize(text: str, voice_provider: str, voice_id: str, api_keys: Dict[str, str]) -> bytes:
         """
@@ -71,7 +159,6 @@ class AIVoiceBrain:
                     }
                     r = await client.post(url, json=payload, headers=headers)
                     if r.status_code == 200:
-                        # Retorna diretamente PCM 8kHz
                         return r.content
                     else:
                         logger.error(f"Erro ElevenLabs TTS: {r.status_code} - {r.text}")
@@ -131,7 +218,7 @@ class AIVoiceBrain:
                         "model": model,
                         "messages": messages,
                         "temperature": temperature or 0.7,
-                        "max_tokens": 150
+                        "max_tokens": 120
                     }
                     headers = {
                         "Authorization": f"Bearer {api_key}",
@@ -150,7 +237,7 @@ class AIVoiceBrain:
                         "model": model,
                         "messages": messages,
                         "temperature": temperature or 0.7,
-                        "max_tokens": 150
+                        "max_tokens": 120
                     }
                     headers = {
                         "Authorization": f"Bearer {api_key}",

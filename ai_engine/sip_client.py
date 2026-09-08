@@ -288,27 +288,74 @@ class DirectSIPEngine:
 
     async def start_ai_conversation(self, call: OktorSIPCall, remote_ip: str, remote_port: int, codec: str = "PCMA"):
         """
-        Orquestra a fala inicial e a interação da IA na linha telefônica
+        Orquestra a fala inicial e a interação contínua da IA na linha telefônica (STT -> LLM -> TTS).
         """
         try:
             call.rtp_session = RTPAudioSession(call.rtp_port, remote_ip, remote_port, codec=codec)
             call.rtp_session.start_socket()
 
-            # Mensagem de saudação do Agente
-            greeting = call.agent_config.get("greeting_message") or "Olá, tudo bem? Falo com o titular da linha?"
-            voice_provider = call.agent_config.get("voice_provider") or "openai"
-            voice_id = call.agent_config.get("voice_id") or "nova"
+            # Configurações do Agente de IA
+            agent = call.agent_config or {}
+            greeting = agent.get("greeting_message") or "Olá, tudo bem? Falo com o titular da linha?"
+            system_prompt = agent.get("system_prompt") or "Você é um assistente virtual gentil e direto. Responda em no máximo 2 frases curtas."
+            voice_provider = agent.get("voice_provider") or "openai"
+            voice_id = agent.get("voice_id") or "nova"
+            llm_provider = agent.get("llm_provider") or "groq"
+            llm_model = agent.get("llm_model") or "llama-3.3-70b-versatile"
+            stt_provider = agent.get("stt_provider") or "deepgram"
+            temperature = float(agent.get("temperature", 0.7))
 
-            logger.info(f"[IA Falando na Linha]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
+            # Histórico da Conversa
+            conversation_history = [
+                {"role": "system", "content": system_prompt},
+                {"role": "assistant", "content": greeting}
+            ]
 
-            # 1. Sintetizar áudio
+            # Callback quando o cliente termina de falar
+            async def handle_user_speech(pcm_audio: bytes):
+                try:
+                    logger.info(f"Processando fala do cliente ({len(pcm_audio)} bytes PCM)...")
+                    
+                    # 1. Speech-to-Text (STT)
+                    transcript = await AIVoiceBrain.transcribe(pcm_audio, stt_provider, call.api_keys)
+                    if not transcript or len(transcript.strip()) < 2:
+                        return
+
+                    logger.info(f"🗣️ [Cliente Disse]: \"{transcript}\"")
+                    conversation_history.append({"role": "user", "content": transcript})
+
+                    # 2. Cérebro LLM (Groq / OpenAI)
+                    ai_reply = await AIVoiceBrain.chat_completion(
+                        conversation_history, 
+                        llm_provider, 
+                        llm_model, 
+                        temperature, 
+                        call.api_keys
+                    )
+                    logger.info(f"🤖 [IA Formulou Resposta]: \"{ai_reply}\"")
+                    conversation_history.append({"role": "assistant", "content": ai_reply})
+
+                    # 3. Text-to-Speech (TTS)
+                    pcm_reply = await AIVoiceBrain.synthesize(ai_reply, voice_provider, voice_id, call.api_keys)
+                    if pcm_reply and len(pcm_reply) > 0:
+                        # 4. Transmitir áudio da resposta para o telefone
+                        await call.rtp_session.stream_pcm_audio(pcm_reply)
+
+                except Exception as ex:
+                    logger.error(f"Erro no ciclo de conversa: {ex}")
+
+            # Vincular callbacks na sessão RTP
+            call.rtp_session.on_speech_ready = handle_user_speech
+            call.rtp_session.on_barge_in = lambda: logger.info("Barge-in acionado: IA parou de falar para escutar o cliente.")
+
+            # 1. Saudação Inicial do Agente
+            logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
             pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys)
             
             if pcm_audio and len(pcm_audio) > 0:
-                # 2. Transmitir áudio para a Oktor via pacotes RTP
                 await call.rtp_session.stream_pcm_audio(pcm_audio)
             else:
-                logger.warning("Nenhum áudio gerado pelo TTS.")
+                logger.warning("Nenhum áudio gerado para a saudação inicial.")
 
         except Exception as e:
-            logger.error(f"Erro ao iniciar áudio da chamada: {e}")
+            logger.error(f"Erro ao iniciar diálogo de voz da IA: {e}")
