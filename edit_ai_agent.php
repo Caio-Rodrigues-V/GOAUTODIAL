@@ -641,7 +641,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
     <?php print $ui->creamyHeader($user); ?>
     <?php print $ui->getSidebar($user->getUserId(), $user->getUserName(), $user->getUserRole(), $user->getUserAvatar()); ?>
 
-    <aside class="right-side" style="margin-left: 220px; background-color: #0d0f12;">
+    <aside class="right-side" style="background-color: #0d0f12;">
         <form id="form_vapi_agent" method="POST" action="php/SaveAIAgent.php">
             <input type="hidden" name="agent_id" value="<?=$agent['agent_id']?>" />
             <input type="hidden" name="model_preset" id="input_model_preset" value="<?=$model_preset?>" />

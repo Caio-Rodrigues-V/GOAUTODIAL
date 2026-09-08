@@ -2129,7 +2129,7 @@ error_reporting(E_ERROR | E_PARSE);
 		// prefix: structure and home link
 		// old img element : <img src="'.$avatar.'" class="img-circle" alt="User Image" />
 		$avatarElement = $this->getVueAvatar($username, $avatar, 40);
-		$result = '<aside class="main-sidebar" sidebar-offcanvas"><section class="sidebar">
+		$result = '<aside class="main-sidebar sidebar-offcanvas"><section class="sidebar">
 	            <div class="user-panel hidden">
 	                <div class="pull-left image">
 	                    <a href="edituser.php">'.$avatarElement.'</a>
@@ -2208,7 +2208,7 @@ error_reporting(E_ERROR | E_PARSE);
 	 /** Agent Sidebar */
 
         public function getAgentSidebar($userid, $username, $userrole, $avatar, $usergroup = NULL) {
-		$result = '<aside class="main-sidebar" sidebar-offcanvas hide"><section class="sidebar">';
+		$result = '<aside class="main-sidebar sidebar-offcanvas hide"><section class="sidebar">';
 		$result = '';
 		//$result .= $this->getChat();
 		$result .= '</section></aside>';
@@ -5997,25 +5997,6 @@ error_reporting(E_ERROR | E_PARSE);
 					new Vue(goOptions);
 				}
 			} catch(e) { console.warn('Avatar Vue init:', e); }
-
-			$(document).ready(function() {
-				$(document).off('click.goSidebar', '.sidebar-menu li.treeview > a').on('click.goSidebar', '.sidebar-menu li.treeview > a', function(e) {
-					e.preventDefault();
-					e.stopPropagation();
-					var \$parent = $(this).parent('li');
-					var \$menu = $(this).next('.treeview-menu');
-					if (\$menu.length > 0) {
-						if (\$menu.is(':visible')) {
-							\$menu.slideUp(200);
-							\$parent.removeClass('active menu-open');
-						} else {
-							\$parent.siblings('li.treeview').removeClass('active menu-open').find('.treeview-menu:visible').slideUp(200);
-							\$menu.slideDown(200);
-							\$parent.addClass('active menu-open');
-						}
-					}
-				});
-			});
 		</script>\n";
 
 		return $js;
