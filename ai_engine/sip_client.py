@@ -1,7 +1,7 @@
 """
 Dial GO Voice AI Engine - High-Performance Pure Python SIP Engine
 Conecta diretamente com a OKTOR Telecom (200.196.232.250) sem necessidade de Asterisk.
-Suporta até centenas de chamadas simultâneas via asyncio / UDP RTP.
+Suporta chamadas simultâneas via asyncio / UDP RTP com streaming de áudio direto da IA.
 """
 
 import socket
@@ -11,6 +11,8 @@ import time
 import logging
 import re
 from typing import Dict, Any, Optional
+from rtp_media import RTPAudioSession
+from ai_voice import AIVoiceBrain
 
 logger = logging.getLogger("DialGO_SIP")
 
@@ -20,9 +22,11 @@ OKTOR_PORT = 5060
 TECH_PREFIX = "59083"
 
 class OktorSIPCall:
-    def __init__(self, agent_id: int, phone_number: str, local_ip: str = "0.0.0.0", local_port: int = 5060):
+    def __init__(self, agent_id: int, phone_number: str, agent_config: Dict[str, Any] = None, api_keys: Dict[str, str] = None, local_ip: str = "0.0.0.0", local_port: int = 5060):
         self.agent_id = agent_id
         self.phone_number = phone_number
+        self.agent_config = agent_config or {}
+        self.api_keys = api_keys or {}
         self.call_id = f"{uuid.uuid4()}@dialgo-ai"
         self.from_tag = uuid.uuid4().hex[:8]
         self.to_tag = None
@@ -30,7 +34,10 @@ class OktorSIPCall:
         self.status = "initiating"  # initiating, ringing, answered, completed, failed
         self.local_ip = local_ip
         self.local_port = local_port
-        self.rtp_port = 10000 + (int(time.time()) % 20000)
+        self.rtp_port = 12000 + (int(time.time() * 1000) % 20000)
+        self.rtp_session: Optional[RTPAudioSession] = None
+        self.remote_rtp_ip = OKTOR_PRIMARY_IP
+        self.remote_rtp_port = 0
         
         # Format destination: 59083 + 55 + DDD + NUM
         digits = re.sub(r'\D', '', phone_number)
@@ -114,7 +121,7 @@ class SIPProtocol(asyncio.DatagramProtocol):
 
     def connection_made(self, transport):
         self.transport = transport
-        logger.info(f"Socket SIP UDP aberto e pronto para receber/enviar sinalização")
+        logger.info("Socket SIP UDP aberto e pronto para receber/enviar sinalização")
 
     def datagram_received(self, data, addr):
         message = data.decode('utf-8', errors='ignore')
@@ -136,33 +143,24 @@ class DirectSIPEngine:
                     self.public_ip = r.text.strip()
                     logger.info(f"============================================================")
                     logger.info(f"📡 IP Público do Servidor Detectado: {self.public_ip}")
-                    logger.info(f"👉 Confirme se o IP '{self.public_ip}' está autorizado na sua conta da OKTOR!")
+                    logger.info(f"👉 IP '{self.public_ip}' pronto para Oktor Telecom")
                     logger.info(f"============================================================")
                     return
         except Exception as e:
             logger.warning(f"Não foi possível obter IP público via API: {e}")
 
-        # Fallback local socket
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect((OKTOR_PRIMARY_IP, 80))
-            self.public_ip = s.getsockname()[0]
-            s.close()
-        except:
-            self.public_ip = "127.0.0.1"
+        self.public_ip = "129.121.42.250"
 
     async def start(self):
         await self.detect_public_ip()
         loop = asyncio.get_running_loop()
         try:
-            # Bind to 0.0.0.0:5060 or ephemeral port if 5060 is taken
             self.transport, _ = await loop.create_datagram_endpoint(
                 lambda: SIPProtocol(self),
                 local_addr=("0.0.0.0", self.port)
             )
             logger.info(f"SIP Engine ativo na porta {self.port}")
         except Exception as e:
-            # Fallback to random high port (50600) if 5060 is restricted in cPanel
             self.port = 50600
             self.transport, _ = await loop.create_datagram_endpoint(
                 lambda: SIPProtocol(self),
@@ -170,17 +168,15 @@ class DirectSIPEngine:
             )
             logger.info(f"SIP Engine ativo na porta alternativa {self.port}")
 
-    async def dial(self, agent_id: int, phone_number: str) -> Dict[str, Any]:
-        call = OktorSIPCall(agent_id, phone_number, local_ip=self.public_ip, local_port=self.port)
+    async def dial(self, agent_id: int, phone_number: str, agent_config: Dict[str, Any] = None, api_keys: Dict[str, str] = None) -> Dict[str, Any]:
+        call = OktorSIPCall(agent_id, phone_number, agent_config=agent_config, api_keys=api_keys, local_ip=self.public_ip, local_port=self.port)
         self.active_calls[call.call_id] = call
         
         invite_msg = call.build_invite(self.public_ip)
         logger.info(f"Disparando SIP INVITE para Oktor ({OKTOR_PRIMARY_IP}:{OKTOR_PORT}) - Destino: {call.dial_string}")
         
         if self.transport:
-            # Send to Primary SBC
             self.transport.sendto(invite_msg.encode('utf-8'), (OKTOR_PRIMARY_IP, OKTOR_PORT))
-            # Also send to Secondary SBC
             self.transport.sendto(invite_msg.encode('utf-8'), (OKTOR_SECONDARY_IP, OKTOR_PORT))
         
         call.status = "ringing"
@@ -192,18 +188,35 @@ class DirectSIPEngine:
             "agent_id": agent_id,
             "message": f"Chamada SIP INVITE enviada para a Oktor ({call.dial_string})"
         }
-        
-        call.status = "ringing"
-        return {
-            "status": "success",
-            "call_id": call.call_id,
-            "destination": call.dial_string,
-            "agent_id": agent_id,
-            "message": f"Chamada SIP INVITE enviada para a Oktor ({call.dial_string})"
-        }
 
     async def handle_sip_message(self, msg: str, addr):
-        first_line = msg.split("\r\n")[0]
+        lines = msg.split("\r\n")
+        first_line = lines[0] if lines else ""
+        
+        # 1. Tratar OPTIONS (Keep-Alive da Oktor)
+        if first_line.startswith("OPTIONS "):
+            logger.info(f"[Keep-Alive Oktor <- {addr[0]}]: Respondendo 200 OK")
+            via_match = re.search(r'Via:\s*([^\r\n]+)', msg, re.IGNORECASE)
+            from_match = re.search(r'From:\s*([^\r\n]+)', msg, re.IGNORECASE)
+            to_match = re.search(r'To:\s*([^\r\n]+)', msg, re.IGNORECASE)
+            callid_match = re.search(r'Call-ID:\s*([^\r\n]+)', msg, re.IGNORECASE)
+            cseq_match = re.search(r'CSeq:\s*([^\r\n]+)', msg, re.IGNORECASE)
+            
+            resp = (
+                "SIP/2.0 200 OK\r\n"
+                + (f"Via: {via_match.group(1)}\r\n" if via_match else "")
+                + (f"From: {from_match.group(1)}\r\n" if from_match else "")
+                + (f"To: {to_match.group(1)};tag=dialgo123\r\n" if to_match else "")
+                + (f"Call-ID: {callid_match.group(1)}\r\n" if callid_match else "")
+                + (f"CSeq: {cseq_match.group(1)}\r\n" if cseq_match else "")
+                + "User-Agent: DialGO-VoiceAI/1.0\r\n"
+                + "Allow: INVITE, ACK, CANCEL, OPTIONS, BYE\r\n"
+                + "Content-Length: 0\r\n\r\n"
+            )
+            if self.transport:
+                self.transport.sendto(resp.encode('utf-8'), addr)
+            return
+
         logger.info(f"[SIP <- Oktor {addr[0]}]: {first_line}")
 
         # Extract Call-ID
@@ -232,14 +245,57 @@ class DirectSIPEngine:
             # Send ACK
             ack_msg = call.build_ack(call.local_ip)
             if self.transport:
-                self.transport.sendto(ack_msg.encode('utf-8'), (OKTOR_PRIMARY_IP, OKTOR_PORT))
+                self.transport.sendto(ack_msg.encode('utf-8'), addr)
+
+            # Extrair IP e Porta RTP do SDP da Oktor
+            c_match = re.search(r'c=IN IP4 ([0-9.]+)', msg)
+            m_match = re.search(r'm=audio (\d+)', msg)
+            
+            remote_media_ip = c_match.group(1) if c_match else addr[0]
+            remote_media_port = int(m_match.group(1)) if m_match else 10000
+            
+            logger.info(f"Conexão RTP estabelecida: Destino Oktor Mídia = {remote_media_ip}:{remote_media_port}")
+            
+            # Iniciar Streaming RTP da IA
+            asyncio.create_task(self.start_ai_conversation(call, remote_media_ip, remote_media_port))
 
         elif " 486 Busy" in first_line or " 603 Decline" in first_line or " 487 Request Terminated" in first_line:
             call.status = "busy"
             logger.info(f"Chamada {call.dial_string} foi rejeitada ou ocupada.")
+            if call.rtp_session:
+                call.rtp_session.stop()
             self.active_calls.pop(call_id, None)
 
         elif "BYE " in first_line:
             call.status = "completed"
             logger.info(f"Chamada {call.dial_string} finalizada.")
+            if call.rtp_session:
+                call.rtp_session.stop()
             self.active_calls.pop(call_id, None)
+
+    async def start_ai_conversation(self, call: OktorSIPCall, remote_ip: str, remote_port: int):
+        """
+        Orquestra a fala inicial e a interação da IA na linha telefônica
+        """
+        try:
+            call.rtp_session = RTPAudioSession(call.rtp_port, remote_ip, remote_port, codec="PCMA")
+            call.rtp_session.start_socket()
+
+            # Mensagem de saudação do Agente
+            greeting = call.agent_config.get("greeting_message") or "Olá, tudo bem? Falo com o titular da linha?"
+            voice_provider = call.agent_config.get("voice_provider") or "openai"
+            voice_id = call.agent_config.get("voice_id") or "nova"
+
+            logger.info(f"[IA Falando na Linha]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
+
+            # 1. Sintetizar áudio
+            pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys)
+            
+            if pcm_audio and len(pcm_audio) > 0:
+                # 2. Transmitir áudio para a Oktor via pacotes RTP
+                await call.rtp_session.stream_pcm_audio(pcm_audio)
+            else:
+                logger.warning("Nenhum áudio gerado pelo TTS.")
+
+        except Exception as e:
+            logger.error(f"Erro ao iniciar áudio da chamada: {e}")

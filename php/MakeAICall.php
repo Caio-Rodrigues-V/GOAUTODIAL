@@ -50,6 +50,19 @@ $oktorPrefix = '59083';
 $aiServerUrl = $aiHandler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
 $dialEndpoint = rtrim($aiServerUrl, '/') . '/api/dial';
 
+$apiKeys = array(
+    'openai_api_key' => $aiHandler->getSetting('openai_api_key', ''),
+    'groq_api_key' => $aiHandler->getSetting('groq_api_key', ''),
+    'elevenlabs_api_key' => $aiHandler->getSetting('elevenlabs_api_key', ''),
+    'cartesia_api_key' => $aiHandler->getSetting('cartesia_api_key', ''),
+    'deepgram_api_key' => $aiHandler->getSetting('deepgram_api_key', ''),
+    'gemini_api_key' => $aiHandler->getSetting('gemini_api_key', ''),
+    'anthropic_api_key' => $aiHandler->getSetting('anthropic_api_key', ''),
+    'deepseek_api_key' => $aiHandler->getSetting('deepseek_api_key', '')
+);
+
+$dialNumber = "59083{$e164}";
+
 // 1. Send HTTP request to Python Direct SIP Server
 $ch = curl_init($dialEndpoint);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -57,7 +70,9 @@ curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
     'agent_id' => $agentId,
-    'phone_number' => $phone
+    'phone_number' => $phone,
+    'agent_config' => $agent,
+    'api_keys' => $apiKeys
 )));
 curl_setopt($ch, CURLOPT_TIMEOUT, 8);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);

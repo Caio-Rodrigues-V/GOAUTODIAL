@@ -26,6 +26,8 @@ sip_engine = DirectSIPEngine()
 class DialRequest(BaseModel):
     agent_id: int
     phone_number: str
+    agent_config: Optional[Dict[str, Any]] = None
+    api_keys: Optional[Dict[str, str]] = None
 
 @app.on_event("startup")
 async def startup_event():
@@ -48,7 +50,7 @@ async def originate_call(req: DialRequest):
     Origina uma chamada SIP direta para a Oktor Telecom sem precisar de Asterisk.
     """
     logger.info(f"Recebida solicitação de discagem para Agente #{req.agent_id} -> {req.phone_number}")
-    result = await sip_engine.dial(req.agent_id, req.phone_number)
+    result = await sip_engine.dial(req.agent_id, req.phone_number, agent_config=req.agent_config, api_keys=req.api_keys)
     return result
 
 @app.get("/api/calls")
