@@ -68,6 +68,32 @@ class AIAgentHandler {
                 PRIMARY KEY (`setting_key`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 
+            // Table for AI Call Logs & Transcripts
+            $this->db->rawQuery("CREATE TABLE IF NOT EXISTS `go_ai_call_logs` (
+                `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+                `call_id` varchar(100) NOT NULL,
+                `agent_id` int(11) unsigned DEFAULT NULL,
+                `agent_name` varchar(100) DEFAULT '',
+                `phone_number` varchar(30) NOT NULL,
+                `status` varchar(50) NOT NULL DEFAULT 'completed',
+                `duration_seconds` int(11) NOT NULL DEFAULT 0,
+                `llm_provider` varchar(50) DEFAULT '',
+                `llm_model` varchar(100) DEFAULT '',
+                `voice_provider` varchar(50) DEFAULT '',
+                `voice_id` varchar(100) DEFAULT '',
+                `stt_provider` varchar(50) DEFAULT '',
+                `transcript_json` longtext,
+                `qualification` varchar(100) DEFAULT 'Atendida',
+                `cost_estimate` decimal(8,4) DEFAULT '0.0000',
+                `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+                `ended_at` datetime DEFAULT NULL,
+                PRIMARY KEY (`id`),
+                KEY `idx_call_id` (`call_id`),
+                KEY `idx_agent_id` (`agent_id`),
+                KEY `idx_phone_number` (`phone_number`),
+                KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
             // Insert default sample agent if none exists
             $existing = $this->db->get('go_ai_agents');
             if (empty($existing)) {
@@ -291,6 +317,68 @@ Diretrizes da conversa:
                 )
             )
         );
+    }
+
+    public function saveCallLog($data) {
+        if (!$this->db) return false;
+        try {
+            if (isset($data['transcript_json']) && is_array($data['transcript_json'])) {
+                $data['transcript_json'] = json_encode($data['transcript_json']);
+            }
+            return $this->db->insert('go_ai_call_logs', $data);
+        } catch (\Throwable $t) {
+            return false;
+        }
+    }
+
+    public function getCallLogs($limit = 100, $offset = 0, $agentId = null, $phone = null, $status = null) {
+        if (!$this->db) return array();
+        try {
+            if ($agentId) {
+                $this->db->where('agent_id', (int)$agentId);
+            }
+            if ($phone) {
+                $this->db->where('phone_number', "%{$phone}%", 'LIKE');
+            }
+            if ($status) {
+                $this->db->where('status', $status);
+            }
+            $this->db->orderBy('id', 'DESC');
+            return $this->db->get('go_ai_call_logs', array($offset, $limit));
+        } catch (\Throwable $t) {
+            return array();
+        }
+    }
+
+    public function getCallLogById($id) {
+        if (!$this->db) return null;
+        try {
+            $this->db->where('id', (int)$id);
+            return $this->db->getOne('go_ai_call_logs');
+        } catch (\Throwable $t) {
+            return null;
+        }
+    }
+
+    public function getCallStats() {
+        if (!$this->db) return array('total' => 0, 'answered' => 0, 'duration' => 0, 'leads' => 0);
+        try {
+            $total = $this->db->getValue('go_ai_call_logs', 'count(*)');
+            $this->db->where('status', 'completed');
+            $answered = $this->db->getValue('go_ai_call_logs', 'count(*)');
+            $duration = $this->db->getValue('go_ai_call_logs', 'sum(duration_seconds)');
+            $this->db->where('qualification', 'Interessado');
+            $leads = $this->db->getValue('go_ai_call_logs', 'count(*)');
+
+            return array(
+                'total' => (int)$total,
+                'answered' => (int)$answered,
+                'duration' => (int)$duration,
+                'leads' => (int)$leads
+            );
+        } catch (\Throwable $t) {
+            return array('total' => 0, 'answered' => 0, 'duration' => 0, 'leads' => 0);
+        }
     }
 }
 ?>

@@ -38,6 +38,9 @@ class OktorSIPCall:
         self.rtp_session: Optional[RTPAudioSession] = None
         self.remote_rtp_ip = OKTOR_PRIMARY_IP
         self.remote_rtp_port = 0
+        self.start_time = time.time()
+        self.answered_time = 0.0
+        self.conversation_history = []
         
         # Format destination: 59083 + 55 + DDD + NUM
         digits = re.sub(r'\D', '', phone_number)
@@ -248,6 +251,7 @@ class DirectSIPEngine:
                 return
 
             call.status = "answered"
+            call.answered_time = time.time()
             logger.info(f"Chamada {call.dial_string} foi ATENDIDA! Conectando áudio com a IA...")
             
             # Send ACK
@@ -277,6 +281,7 @@ class DirectSIPEngine:
             logger.info(f"Chamada {call.dial_string} foi rejeitada ou ocupada.")
             if call.rtp_session:
                 call.rtp_session.stop()
+            asyncio.create_task(self.save_call_to_crm(call, "busy"))
             self.active_calls.pop(call_id, None)
 
         elif "BYE " in first_line:
@@ -284,7 +289,37 @@ class DirectSIPEngine:
             logger.info(f"Chamada {call.dial_string} finalizada.")
             if call.rtp_session:
                 call.rtp_session.stop()
+            asyncio.create_task(self.save_call_to_crm(call, "completed"))
             self.active_calls.pop(call_id, None)
+
+    async def save_call_to_crm(self, call: OktorSIPCall, status: str):
+        """Salva a transcrição e métricas da chamada no banco de dados via API PHP"""
+        try:
+            duration = int(time.time() - call.answered_time) if call.answered_time > 0 else 0
+            agent = call.agent_config or {}
+            
+            payload = {
+                "call_id": call.call_id,
+                "agent_id": call.agent_id,
+                "agent_name": agent.get("agent_name", "Agente IA"),
+                "phone_number": call.phone_number,
+                "status": status,
+                "duration_seconds": duration,
+                "llm_provider": agent.get("llm_provider", "groq"),
+                "llm_model": agent.get("llm_model", "llama-3.3-70b-versatile"),
+                "voice_provider": agent.get("voice_provider", "openai"),
+                "voice_id": agent.get("voice_id", "nova"),
+                "stt_provider": agent.get("stt_provider", "deepgram"),
+                "transcript_json": call.conversation_history,
+                "qualification": "Interessado" if len(call.conversation_history) >= 4 else "Atendida"
+            }
+
+            import httpx
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                await client.post("http://127.0.0.1/php/SaveAICallLog.php", json=payload)
+                logger.info(f"Log e transcrição da chamada {call.dial_string} gravados com sucesso no CRM!")
+        except Exception as e:
+            logger.warning(f"Não foi possível gravar log da chamada no CRM: {e}")
 
     async def start_ai_conversation(self, call: OktorSIPCall, remote_ip: str, remote_port: int, codec: str = "PCMA"):
         """
@@ -306,7 +341,7 @@ class DirectSIPEngine:
             temperature = float(agent.get("temperature", 0.7))
 
             # Histórico da Conversa
-            conversation_history = [
+            call.conversation_history = [
                 {"role": "system", "content": system_prompt},
                 {"role": "assistant", "content": greeting}
             ]
@@ -329,18 +364,18 @@ class DirectSIPEngine:
                             return
 
                         logger.info(f"🗣️ [Cliente Disse]: \"{transcript}\"")
-                        conversation_history.append({"role": "user", "content": transcript})
+                        call.conversation_history.append({"role": "user", "content": transcript})
 
                         # 2. Cérebro LLM (Groq / OpenAI)
                         ai_reply = await AIVoiceBrain.chat_completion(
-                            conversation_history, 
+                            call.conversation_history, 
                             llm_provider, 
                             llm_model, 
                             temperature, 
                             call.api_keys
                         )
                         logger.info(f"🤖 [IA Formulou Resposta]: \"{ai_reply}\"")
-                        conversation_history.append({"role": "assistant", "content": ai_reply})
+                        call.conversation_history.append({"role": "assistant", "content": ai_reply})
 
                         # 3. Text-to-Speech (TTS)
                         pcm_reply = await AIVoiceBrain.synthesize(ai_reply, voice_provider, voice_id, call.api_keys)
