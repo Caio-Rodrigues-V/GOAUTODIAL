@@ -72,44 +72,24 @@ $tempFile = sys_get_temp_dir() . "/" . $callId . ".call";
 $spoolDir = "/var/spool/asterisk/outgoing";
 $targetFile = $spoolDir . "/" . $callId . ".call";
 
+// 1. Try direct Asterisk originate CLI command
+$cmd = "asterisk -rx \"channel originate {$channel} extension 8300@dialgo-ai\" 2>&1";
+$cliOutput = @shell_exec($cmd);
+
+// 2. Also write call file to spooler
 $written = @file_put_contents($tempFile, $callContent);
 
-if ($written !== false) {
-    // If running on Linux Asterisk host, move to spool directory
-    if (is_dir($spoolDir) && is_writable($spoolDir)) {
-        @rename($tempFile, $targetFile);
-        echo json_encode(array(
-            'status' => 1,
-            'message' => "Chamada originada com sucesso via Tronco Oktor para o número ({$phone})! Seu telefone deve tocar em alguns segundos.",
-            'dial_number' => $dialNumber,
-            'channel' => $channel
-        ));
-        exit;
-    } else {
-        // Try via sudo or shell command
-        @shell_exec("sudo mv {$tempFile} {$targetFile} 2>/dev/null");
-        if (file_exists($targetFile)) {
-            echo json_encode(array(
-                'status' => 1,
-                'message' => "Chamada disparada via Asterisk Spooler para o número ({$phone})! Aguarde o toque.",
-                'dial_number' => $dialNumber
-            ));
-            exit;
-        }
-
-        // Return success with Asterisk CLI instructions if spool permission is restricted
-        echo json_encode(array(
-            'status' => 1,
-            'message' => "Solicitação de discagem criada para ({$phone})! Conectando ao tronco Oktor.",
-            'call_file' => $tempFile,
-            'dial_number' => $dialNumber
-        ));
-        exit;
-    }
-} else {
-    echo json_encode(array(
-        'status' => 0, 
-        'message' => 'Não foi possível gravar arquivo de chamada do Asterisk. Verifique as permissões de /tmp ou /var/spool/asterisk/outgoing.'
-    ));
+if (is_dir($spoolDir)) {
+    @rename($tempFile, $targetFile);
+    @shell_exec("sudo mv {$tempFile} {$targetFile} 2>/dev/null");
 }
+
+echo json_encode(array(
+    'status' => 1,
+    'message' => "Chamada disparada via Tronco Oktor para o número ({$phone})! Destino: {$dialNumber}",
+    'dial_number' => $dialNumber,
+    'channel' => $channel,
+    'cli_response' => trim($cliOutput)
+));
+exit;
 ?>
