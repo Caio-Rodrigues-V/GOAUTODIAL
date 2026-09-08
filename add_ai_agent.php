@@ -1,7 +1,7 @@
 <?php
 /**
  * @file        add_ai_agent.php
- * @brief       Add AI Agent
+ * @brief       Vapi-Style Voice AI Agent Creator
  * @copyright   (c) Dial GO Voice AI Engine
  */
 
@@ -18,20 +18,29 @@ $lh = \creamy\LanguageHandler::getInstance();
 $user = \creamy\CreamyUser::currentUser();
 $aiHandler = \creamy\AIAgentHandler::getInstance();
 
-	//proper user redirects
-	if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
-		header("location: agent.php");
-		exit();
-	}
+if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
+    header("location: agent.php");
+    exit();
+}
 
 $llms = $aiHandler->getAvailableLLMs();
 $voices = $aiHandler->getAvailableVoices();
+$stts = $aiHandler->getAvailableSTTs();
+$defaultTools = $aiHandler->getDefaultTools();
+
+$defaultPrompt = "# PERSONA E OBJETIVO\n" .
+"Você é Júlia, assistente virtual inteligente da empresa.\n" .
+"Seu objetivo é entender o motivo do contato do cliente, tirar dúvidas com cordialidade e qualificar o atendimento.\n\n" .
+"# DIRETRIZES DA CONVERSA\n" .
+"1. Seja direta, natural e fale no máximo 2 frases por turno para manter o diálogo ágil.\n" .
+"2. Se o cliente solicitar encerramento ou agradecer, encerre educadamente usando a ferramenta end_call.\n" .
+"3. Se o cliente pedir para falar com um humano, transfira usando a ferramenta transfer_call.";
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Dial GO - Criar Agente de IA</title>
+    <title>Dial GO - Criar Agente de Voz com IA (Vapi Mode)</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
 
     <?php 
@@ -39,6 +48,350 @@ $voices = $aiHandler->getAvailableVoices();
         print $ui->creamyThemeCSS();
     ?>
     <link href="css/style.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        .vapi-container {
+            background-color: #0d0f12;
+            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: calc(100vh - 50px);
+            padding: 24px 32px;
+        }
+        .vapi-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #1e222b;
+            margin-bottom: 24px;
+        }
+        .vapi-title-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .vapi-agent-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #10b981;
+            font-size: 18px;
+            border: 1px solid #334155;
+        }
+        .vapi-agent-name-input {
+            background: #14171f;
+            border: 1px solid #334155;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 6px;
+            width: 340px;
+        }
+        .vapi-agent-name-input:focus {
+            border-color: #10b981;
+            outline: none;
+        }
+        .vapi-badge {
+            background: #1e293b;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+        }
+        .vapi-badge-new {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .vapi-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .vapi-btn {
+            background: #1e222b;
+            color: #f1f5f9;
+            border: 1px solid #2e3545;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .vapi-btn:hover {
+            background: #282e3c;
+            border-color: #475569;
+            color: #fff;
+        }
+        .vapi-btn-primary {
+            background: #10b981;
+            color: #000;
+            border-color: #10b981;
+        }
+        .vapi-btn-primary:hover {
+            background: #059669;
+            color: #fff;
+        }
+        .vapi-tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid #1e222b;
+            margin-bottom: 24px;
+        }
+        .vapi-tab {
+            padding: 10px 4px;
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .vapi-tab:hover { color: #f1f5f9; }
+        .vapi-tab.active { color: #10b981; border-bottom-color: #10b981; }
+
+        .vapi-telemetry {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        .vapi-telemetry-item {
+            background: #14171f;
+            border: 1px solid #1e2430;
+            border-radius: 10px;
+            padding: 16px 20px;
+        }
+        .vapi-telemetry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+        .vapi-telemetry-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .vapi-telemetry-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+        .vapi-progress-bar {
+            height: 6px;
+            background: #272d3b;
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+        }
+        .vapi-seg-stt { background: #10b981; }
+        .vapi-seg-llm { background: #f59e0b; }
+        .vapi-seg-tts { background: #ec4899; }
+
+        .vapi-presets-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .vapi-preset-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .vapi-preset-pill {
+            background: #14171f;
+            border: 1px solid #222834;
+            color: #cbd5e1;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .vapi-preset-pill:hover { border-color: #475569; color: #fff; }
+        .vapi-preset-pill.active { background: #1e293b; border-color: #38bdf8; color: #38bdf8; }
+
+        .vapi-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .vapi-card {
+            background: #14171f;
+            border: 1px solid #202634;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .vapi-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .vapi-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .vapi-card-type {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .vapi-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .vapi-dot-stt { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .vapi-dot-llm { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+        .vapi-dot-tts { background: #ec4899; box-shadow: 0 0 8px #ec4899; }
+        
+        .vapi-card-title { font-size: 16px; font-weight: 700; color: #ffffff; margin-bottom: 4px; }
+        .vapi-card-provider { font-size: 12px; color: #94a3b8; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+        .vapi-card-stats {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #1e2430;
+            padding-top: 12px;
+            font-size: 11px;
+        }
+        .vapi-card-stat-label { color: #64748b; margin-bottom: 2px; }
+        .vapi-card-stat-val { color: #f1f5f9; font-weight: 700; }
+
+        .vapi-section-box {
+            background: #14171f;
+            border: 1px solid #202634;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .vapi-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .vapi-section-title { font-size: 14px; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 8px; }
+        .vapi-select-dark {
+            background: #1b202a;
+            border: 1px solid #2d3545;
+            color: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .vapi-textarea-dark {
+            width: 100%;
+            background: #0d0f14;
+            border: 1px solid #222834;
+            border-radius: 8px;
+            color: #f1f5f9;
+            padding: 14px;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .vapi-prompt-editor {
+            font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background: #090a0d;
+        }
+        .vapi-modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9999;
+            display: none;
+            justify-content: flex-end;
+        }
+        .vapi-drawer {
+            background: #11141a;
+            width: 440px;
+            max-width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            border-left: 1px solid #202734;
+            padding: 28px;
+            box-sizing: border-box;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        }
+        .vapi-form-group { margin-bottom: 20px; }
+        .vapi-form-label { display: block; font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 6px; }
+        .vapi-input-dark {
+            width: 100%;
+            background: #181d26;
+            border: 1px solid #283142;
+            color: #f1f5f9;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+        .vapi-switch-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #1c222e;
+        }
+        .vapi-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .vapi-switch input { opacity: 0; width: 0; height: 0; }
+        .vapi-slider {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #272d3b;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .vapi-slider:before {
+            position: absolute; content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .vapi-slider { background-color: #10b981; }
+        input:checked + .vapi-slider:before { transform: translateX(20px); }
+        .vapi-range-slider { width: 100%; accent-color: #10b981; height: 6px; background: #272d3b; border-radius: 3px; }
+        .vapi-pill-group { display: flex; background: #14171f; border: 1px solid #222834; border-radius: 8px; padding: 3px; gap: 4px; }
+        .vapi-pill-opt { flex: 1; text-align: center; padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; color: #94a3b8; }
+        .vapi-pill-opt.active { background: #222b3a; color: #38bdf8; }
+    </style>
 </head>
 
 <?php print $ui->creamyBody(); ?>
@@ -46,423 +399,188 @@ $voices = $aiHandler->getAvailableVoices();
     <?php print $ui->creamyHeader($user); ?>
     <?php print $ui->getSidebar($user->getUserId(), $user->getUserName(), $user->getUserRole(), $user->getUserAvatar()); ?>
 
-    <aside class="right-side">
-        <section class="content-header">
-            <h1>
-                <i class="fa fa-magic"></i> Criar Novo Agente de Voz com IA
-                <small>Configure o comportamento, a voz e as regras da sua inteligência artificial</small>
-            </h1>
-            <ol class="breadcrumb">
-                <li><a href="./index.php"><i class="fa fa-home"></i> Home</a></li>
-                <li><a href="ai_agents.php">Agentes de IA</a></li>
-                <li class="active">Novo Agente</li>
-            </ol>
-        </section>
+    <aside class="right-side" style="margin-left: 220px; background-color: #0d0f12;">
+        <form id="form_add_vapi_agent" method="POST" action="php/SaveAIAgent.php">
+            <input type="hidden" name="agent_id" value="0" />
+            <input type="hidden" name="model_preset" id="input_model_preset" value="balanced" />
+            <input type="hidden" name="first_message_mode" id="input_first_message_mode" value="assistant_speaks_first" />
+            
+            <input type="hidden" name="stt_provider" id="input_stt_provider" value="deepgram" />
+            <input type="hidden" name="stt_model" id="input_stt_model" value="nova-2" />
+            <input type="hidden" name="stt_language" id="input_stt_language" value="pt-BR" />
+            <input type="hidden" name="intelligent_turn_taking" id="input_intelligent_turn_taking" value="Y" />
+            <input type="hidden" name="background_denoising" id="input_background_denoising" value="Y" />
+            <input type="hidden" name="silence_timeout_ms" id="input_silence_timeout_ms" value="500" />
+            
+            <input type="hidden" name="llm_provider" id="input_llm_provider" value="groq" />
+            <input type="hidden" name="llm_model" id="input_llm_model" value="llama-3.3-70b-versatile" />
+            <input type="hidden" name="temperature" id="input_temperature" value="0.7" />
+            <input type="hidden" name="max_tokens" id="input_max_tokens" value="250" />
+            <input type="hidden" name="prompt_cache_retention" id="input_prompt_cache_retention" value="in_memory" />
+            <input type="hidden" name="tool_strict_compatibility" id="input_tool_strict_compatibility" value="N" />
 
-        <section class="content">
-            <div class="row">
-                <div class="col-md-10 col-md-offset-1">
-                    <div class="box box-primary">
-                        <div class="box-header with-border">
-                            <h3 class="box-title"><i class="fa fa-sliders"></i> Parâmetros do Agente de IA</h3>
+            <input type="hidden" name="voice_provider" id="input_voice_provider" value="cartesia" />
+            <input type="hidden" name="voice_id" id="input_voice_id" value="cartesia-pt-br-sofia" />
+            <input type="hidden" name="voice_name" id="input_voice_name" value="Sofia (Cartesia Português BR)" />
+            <input type="hidden" name="voice_speed" id="input_voice_speed" value="1.00" />
+            <input type="hidden" name="voice_stability" id="input_voice_stability" value="0.70" />
+            <input type="hidden" name="voice_clarity" id="input_voice_clarity" value="0.60" />
+            <input type="hidden" name="voice_style_exaggeration" id="input_voice_style_exaggeration" value="0.20" />
+            <input type="hidden" name="voice_optimize_latency" id="input_voice_optimize_latency" value="1" />
+            <input type="hidden" name="background_sound" id="input_background_sound" value="off" />
+
+            <input type="hidden" name="tools_json" id="input_tools_json" value="<?=htmlspecialchars(json_encode($defaultTools))?>" />
+            <input type="hidden" name="status" value="Y" />
+            <input type="hidden" name="transfer_phone_or_queue" value="8300" />
+
+            <div class="vapi-container">
+                <div class="vapi-header">
+                    <div class="vapi-title-area">
+                        <div class="vapi-agent-icon"><i class="fa fa-magic"></i></div>
+                        <div>
+                            <input type="text" name="agent_name" class="vapi-agent-name-input" placeholder="Nome do Agente (Ex: Sofia SDR)" required />
+                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; padding-left: 4px;">
+                                <span class="vapi-badge vapi-badge-new"><i class="fa fa-plus"></i> Novo Agente</span>
+                                <span class="vapi-badge">v1.0</span>
+                            </div>
                         </div>
-                        <form id="form_ai_agent" method="POST" action="php/SaveAIAgent.php">
-                            <div class="box-body" style="padding: 25px;">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <div class="form-group">
-                                            <label>Nome do Agente <span class="text-danger">*</span></label>
-                                            <input type="text" name="agent_name" class="form-control input-lg" placeholder="Ex: Sofia - SDR Qualificação" required />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label>Status</label>
-                                            <select name="status" class="form-control input-lg">
-                                                <option value="Y">Ativo (Pronto para discar)</option>
-                                                <option value="N">Inativo</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Descrição do Objetivo</label>
-                                    <input type="text" name="description" class="form-control" placeholder="Ex: Qualificar leads de consignado e transferir para a equipe de fechamento" />
-                                </div>
-
-                                <hr/>
-                                <h4><i class="fa fa-microphone"></i> Voz e Cérebro da IA</h4>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Provedor de Voz (TTS Ultrarrealista)</label>
-                                            <select name="voice_provider" id="voice_provider" class="form-control">
-                                                <?php foreach ($voices as $k => $prov): ?>
-                                                    <option value="<?=$k?>" <?=$k == 'cartesia' ? 'selected' : ''?>><?=htmlspecialchars($prov['name'])?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Voz Selecionada</label>
-                                            <div class="input-group" style="width:100%;">
-                                                <select name="voice_id" id="voice_id" class="form-control">
-                                                    <!-- Populated dynamically via JS -->
-                                                </select>
-                                            </div>
-                                            <input type="hidden" name="voice_name" id="voice_name" value="" />
-                                        </div>
-
-                                        <!-- ElevenLabs Quick Actions Toolbar -->
-                                        <div id="elevenlabs_tools" style="display:none; margin-bottom: 12px;">
-                                            <button type="button" class="btn btn-default btn-sm" id="btn_toggle_import_modal" style="margin-right: 5px;">
-                                                <i class="fa fa-plus-circle text-purple"></i> <strong>Importar Voz por ID</strong>
-                                            </button>
-                                            <button type="button" class="btn btn-default btn-sm" id="btn_sync_eleven_voices">
-                                                <i class="fa fa-refresh text-blue"></i> Sincronizar Minhas Vozes
-                                            </button>
-                                            <span id="sync_status" style="margin-left: 8px; font-size: 12px;"></span>
-                                        </div>
-
-                                        <!-- ElevenLabs Import Box -->
-                                        <div id="elevenlabs_import_box" class="callout callout-info" style="display:none; background-color: #f4f7fb !important; border-left-color: #7c4dff !important; color: #333 !important; padding: 12px; margin-bottom: 15px;">
-                                            <h5 style="margin-top: 0; color: #512da8; font-weight: bold;"><i class="fa fa-id-card"></i> Importar Voz da ElevenLabs por ID</h5>
-                                            <div class="input-group">
-                                                <input type="text" id="import_voice_id_input" class="form-control" placeholder="Cole o Voice ID aqui (Ex: pNInz6obpgDQGcFmaJgB)" />
-                                                <span class="input-group-btn">
-                                                    <button class="btn btn-primary" type="button" id="btn_do_import_voice">
-                                                        <i class="fa fa-search"></i> Buscar Voz
-                                                    </button>
-                                                </span>
-                                            </div>
-                                            <div id="import_voice_preview" style="display:none; margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
-                                                <div id="import_voice_info" style="font-weight: bold; margin-bottom: 5px;"></div>
-                                                <div id="import_voice_audio_wrap" style="margin-bottom: 8px;"></div>
-                                                <button type="button" class="btn btn-success btn-sm" id="btn_apply_imported_voice">
-                                                    <i class="fa fa-check"></i> Selecionar Esta Voz Para o Agente
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group" id="custom_voice_wrapper" style="display:none;">
-                                            <label><i class="fa fa-id-badge text-yellow"></i> ID da Voz Clonada / Personalizada</label>
-                                            <input type="text" name="custom_voice_id" id="custom_voice_id" class="form-control" placeholder="Cole o Voice ID da ElevenLabs / Cartesia" />
-                                            <small class="text-muted">Ex: <code>pNInz6obpgDQGcFmaJgB</code> (ElevenLabs) ou ID do Cartesia.</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Provedor de LLM (Inteligência Artificial)</label>
-                                            <select name="llm_provider" id="llm_provider" class="form-control">
-                                                <?php foreach ($llms as $k => $prov): ?>
-                                                    <option value="<?=$k?>" <?=$k == 'groq' ? 'selected' : ''?>><?=htmlspecialchars($prov['name'])?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Modelo LLM</label>
-                                            <select name="llm_model" id="llm_model" class="form-control">
-                                                <!-- Populated dynamically via JS -->
-                                            </select>
-                                        </div>
-                                        <div class="form-group" id="custom_model_wrapper" style="display:none;">
-                                            <label><i class="fa fa-cogs text-yellow"></i> ID do Modelo Personalizado</label>
-                                            <input type="text" name="custom_llm_model" id="custom_llm_model" class="form-control" placeholder="Ex: gpt-4o-2024-11-20 ou llama-3.3-70b" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <hr/>
-                                <h4><i class="fa fa-commenting"></i> Roteiro e Comportamento</h4>
-
-                                <div class="form-group">
-                                    <label>Saudação Inicial (Primeira fala da IA ao atender)</label>
-                                    <textarea name="greeting_message" class="form-control" rows="2" placeholder="Ex: Olá, tudo bem? Falo com o titular da linha?">Olá, tudo bem? Falo com o titular da linha?</textarea>
-                                    <small class="text-muted">Dica: Mantenha curto (1 frase) para capturar a atenção imediata do cliente.</small>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Prompt do Sistema / Instruções da IA (System Prompt)</label>
-                                    <textarea name="system_prompt" class="form-control" rows="8" style="font-family: monospace; font-size: 13px;" required>Você é a Sofia, uma especialista de atendimento e vendas cordial, ágil e persuasiva.
-Seu objetivo é qualificar o cliente com clareza, empatia e sem enrolação.
-
-Diretrizes da conversa:
-1. Seja direta, amigável e use um tom de voz conversacional e humano.
-2. Responda em no máximo 2 frases por turno para manter a conversa dinâmica.
-3. Se o cliente tiver interesse ou pedir para falar com um humano, transfira a ligação imediatamente confirmando antes.
-4. Se o cliente disser que não tem interesse, agradeça educadamente e encerre a ligação.</textarea>
-                                </div>
-
-                                <hr/>
-                                <h4><i class="fa fa-exchange"></i> Ações & Live Transfer</h4>
-
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Ramal / Fila de Transferência Humana</label>
-                                            <input type="text" name="transfer_phone_or_queue" class="form-control" placeholder="Ex: 8300 ou 101" value="8300" />
-                                            <small class="text-muted">Ramal ou Ingroup do GOautodial para onde a chamada será transferida quando o cliente tiver interesse.</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Desligar em Caixa Postal / Secretária</label>
-                                            <select name="hangup_on_voicemail" class="form-control">
-                                                <option value="Y" selected>Sim (Desliga imediatamente sem gastar tokens)</option>
-                                                <option value="N">Não</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="box-footer" style="padding: 20px;">
-                                <button type="submit" class="btn btn-success btn-lg"><i class="fa fa-check"></i> Salvar Agente de IA</button>
-                                <a href="ai_agents.php" class="btn btn-default btn-lg pull-right">Cancelar</a>
-                            </div>
-                        </form>
+                    </div>
+                    <div class="vapi-actions">
+                        <a href="ai_agents.php" class="vapi-btn"><i class="fa fa-arrow-left"></i> Cancelar</a>
+                        <button type="submit" class="vapi-btn vapi-btn-primary" id="btn_create_agent"><i class="fa fa-check"></i> Criar & Publicar Agente</button>
                     </div>
                 </div>
+
+                <!-- Telemetry -->
+                <div class="vapi-telemetry">
+                    <div class="vapi-telemetry-item">
+                        <div class="vapi-telemetry-header">
+                            <span class="vapi-telemetry-label">Custo Estimado</span>
+                            <span class="vapi-telemetry-value" id="disp_total_cost">~$0.038<span style="font-size:14px; color:#94a3b8;">/min</span></span>
+                        </div>
+                        <div class="vapi-progress-bar">
+                            <div class="vapi-seg-stt" style="width: 25%;"></div>
+                            <div class="vapi-seg-llm" style="width: 35%;"></div>
+                            <div class="vapi-seg-tts" style="width: 40%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="vapi-telemetry-item">
+                        <div class="vapi-telemetry-header">
+                            <span class="vapi-telemetry-label">Latência Estimada</span>
+                            <span class="vapi-telemetry-value" id="disp_total_latency">~460<span style="font-size:14px; color:#94a3b8;">ms</span></span>
+                        </div>
+                        <div class="vapi-progress-bar">
+                            <div class="vapi-seg-stt" style="width: 26%;"></div>
+                            <div class="vapi-seg-llm" style="width: 39%;"></div>
+                            <div class="vapi-seg-tts" style="width: 35%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Presets -->
+                <div class="vapi-presets-bar">
+                    <span class="vapi-preset-label">Model Presets:</span>
+                    <div class="vapi-preset-pill active" data-preset="balanced">Balanced</div>
+                    <div class="vapi-preset-pill" data-preset="high_intelligence">High Intelligence</div>
+                    <div class="vapi-preset-pill" data-preset="ultra_fast">Ultra Fast (<350ms)</div>
+                    <div class="vapi-preset-pill" data-preset="cost_saver">Cost Saver</div>
+                    <div class="vapi-preset-pill" data-preset="customized">Customized</div>
+                </div>
+
+                <!-- 3 Cards -->
+                <div class="vapi-cards-grid">
+                    <div class="vapi-card" id="card_transcriber">
+                        <div class="vapi-card-header">
+                            <span class="vapi-card-type"><span class="vapi-dot vapi-dot-stt"></span> TRANSCRIBER</span>
+                            <button type="button" class="btn btn-link text-muted"><i class="fa fa-pencil"></i></button>
+                        </div>
+                        <div class="vapi-card-title">Deepgram Nova-2</div>
+                        <div class="vapi-card-provider"><i class="fa fa-globe text-green"></i> Deepgram • Brazilian Portuguese</div>
+                        <div class="vapi-card-stats">
+                            <div><div class="vapi-card-stat-label">Latency</div><div class="vapi-card-stat-val">120ms</div></div>
+                            <div><div class="vapi-card-stat-label">Cost</div><div class="vapi-card-stat-val">$0.005/min</div></div>
+                            <div><div class="vapi-card-stat-label">Accuracy</div><div class="vapi-card-stat-val">98.4%</div></div>
+                        </div>
+                    </div>
+
+                    <div class="vapi-card" id="card_model">
+                        <div class="vapi-card-header">
+                            <span class="vapi-card-type"><span class="vapi-dot vapi-dot-llm"></span> MODEL</span>
+                            <button type="button" class="btn btn-link text-muted"><i class="fa fa-pencil"></i></button>
+                        </div>
+                        <div class="vapi-card-title">Llama 3.3 70B</div>
+                        <div class="vapi-card-provider"><i class="fa fa-bolt text-blue"></i> Groq • Versatile</div>
+                        <div class="vapi-card-stats">
+                            <div><div class="vapi-card-stat-label">Latency</div><div class="vapi-card-stat-val">180ms</div></div>
+                            <div><div class="vapi-card-stat-label">Cost</div><div class="vapi-card-stat-val">$0.008/min</div></div>
+                            <div><div class="vapi-card-stat-label">Intelligence</div><div class="vapi-card-stat-val">92</div></div>
+                        </div>
+                    </div>
+
+                    <div class="vapi-card" id="card_voice">
+                        <div class="vapi-card-header">
+                            <span class="vapi-card-type"><span class="vapi-dot vapi-dot-tts"></span> VOICE</span>
+                            <button type="button" class="btn btn-link text-muted"><i class="fa fa-pencil"></i></button>
+                        </div>
+                        <div class="vapi-card-title">Sofia (Natural PT-BR)</div>
+                        <div class="vapi-card-provider"><i class="fa fa-volume-up text-purple"></i> Cartesia • Sonic Multilingual</div>
+                        <div class="vapi-card-stats">
+                            <div><div class="vapi-card-stat-label">Latency</div><div class="vapi-card-stat-val">90ms</div></div>
+                            <div><div class="vapi-card-stat-label">Cost</div><div class="vapi-card-stat-val">$0.020/min</div></div>
+                            <div><div class="vapi-card-stat-label">Humanness</div><div class="vapi-card-stat-val">96</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- First Message -->
+                <div class="vapi-section-box">
+                    <div class="vapi-section-header">
+                        <span class="vapi-section-title"><i class="fa fa-commenting-o text-green"></i> First Message</span>
+                        <select id="select_first_message_mode" class="vapi-select-dark">
+                            <option value="assistant_speaks_first">Assistant speaks first (A IA fala primeiro)</option>
+                            <option value="user_speaks_first">User speaks first (A IA aguarda o cliente falar)</option>
+                        </select>
+                    </div>
+                    <textarea name="greeting_message" class="vapi-textarea-dark" rows="3" placeholder="Olá! Eu sou a Sofia da DDM. Como posso te ajudar hoje?">Olá, tudo bem? Falo com o titular da linha?</textarea>
+                </div>
+
+                <!-- System Prompt -->
+                <div class="vapi-section-box">
+                    <div class="vapi-section-header">
+                        <span class="vapi-section-title"><i class="fa fa-code text-blue"></i> System Prompt & Instructions</span>
+                    </div>
+                    <textarea name="system_prompt" id="textarea_prompt" class="vapi-textarea-dark vapi-prompt-editor" rows="12" required><?=htmlspecialchars($defaultPrompt)?></textarea>
+                </div>
             </div>
-        </section>
+        </form>
     </aside>
 </div>
 
 <?php print $ui->standardizedThemeJS(); ?>
 <script type="text/javascript">
-var llmCatalog = <?=json_encode($llms)?>;
-var voiceCatalog = <?=json_encode($voices)?>;
-
-function updateLLMModels(selectedProvider, preselectModel) {
-    var $modelSelect = $('#llm_model');
-    $modelSelect.empty();
-    
-    if (llmCatalog[selectedProvider] && llmCatalog[selectedProvider].models) {
-        var models = llmCatalog[selectedProvider].models;
-        var first = true;
-        $.each(models, function(val, text) {
-            var selected = (preselectModel && preselectModel === val) || (!preselectModel && first);
-            $modelSelect.append($('<option>', {
-                value: val,
-                text: text,
-                selected: selected
-            }));
-            first = false;
-        });
-    }
-    toggleCustomModel();
-}
-
-function updateVoices(selectedProvider, preselectVoice) {
-    var $voiceSelect = $('#voice_id');
-    $voiceSelect.empty();
-    
-    if (voiceCatalog[selectedProvider] && voiceCatalog[selectedProvider].voices) {
-        var voices = voiceCatalog[selectedProvider].voices;
-        var first = true;
-        $.each(voices, function(val, text) {
-            var selected = (preselectVoice && preselectVoice === val) || (!preselectVoice && first);
-            $voiceSelect.append($('<option>', {
-                value: val,
-                text: text,
-                selected: selected,
-                'data-name': text
-            }));
-            first = false;
-        });
-    }
-    
-    if (selectedProvider === 'elevenlabs') {
-        $('#elevenlabs_tools').show();
-    } else {
-        $('#elevenlabs_tools').hide();
-        $('#elevenlabs_import_box').hide();
-    }
-
-    updateVoiceName();
-    toggleCustomVoice();
-}
-
-function updateVoiceName() {
-    var selected = $('#voice_id option:selected');
-    if ($('#voice_id').val() === 'custom') {
-        var customId = $('#custom_voice_id').val();
-        $('#voice_name').val('Voz Customizada (' + (customId || 'ID') + ')');
-    } else {
-        $('#voice_name').val(selected.data('name') || selected.text());
-    }
-}
-
-function toggleCustomModel() {
-    if ($('#llm_model').val() === 'custom') {
-        $('#custom_model_wrapper').show();
-        $('#custom_llm_model').attr('required', true);
-    } else {
-        $('#custom_model_wrapper').hide();
-        $('#custom_llm_model').removeAttr('required');
-    }
-}
-
-function toggleCustomVoice() {
-    if ($('#voice_id').val() === 'custom') {
-        $('#custom_voice_wrapper').show();
-        $('#custom_voice_id').attr('required', true);
-    } else {
-        $('#custom_voice_wrapper').hide();
-        $('#custom_voice_id').removeAttr('required');
-    }
-}
-
-var lastImportedVoice = null;
-
 $(document).ready(function() {
-    // Initial populate
-    updateVoices($('#voice_provider').val(), 'cartesia-pt-br-sofia');
-    updateLLMModels($('#llm_provider').val(), 'llama-3.3-70b-versatile');
-
-    $('#voice_provider').change(function() {
-        updateVoices($(this).val());
+    $('#select_first_message_mode').change(function() {
+        $('#input_first_message_mode').val($(this).val());
     });
 
-    $('#voice_id').change(function() {
-        updateVoiceName();
-        toggleCustomVoice();
-    });
-
-    $('#custom_voice_id').on('input', function() {
-        updateVoiceName();
-    });
-
-    $('#llm_provider').change(function() {
-        updateLLMModels($(this).val());
-    });
-
-    $('#llm_model').change(function() {
-        toggleCustomModel();
-    });
-
-    // ElevenLabs Toggle Import Box
-    $('#btn_toggle_import_modal').click(function() {
-        $('#elevenlabs_import_box').slideToggle();
-        $('#import_voice_id_input').focus();
-    });
-
-    // ElevenLabs Fetch Voice by ID
-    $('#btn_do_import_voice').click(function() {
-        var vId = $.trim($('#import_voice_id_input').val());
-        if (!vId) {
-            alert('Por favor, cole o Voice ID da ElevenLabs.');
-            return;
-        }
-
-        var $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Buscando...');
-        $('#import_voice_preview').hide();
-
-        $.post('php/FetchElevenLabsVoice.php', { action: 'fetch_one', voice_id: vId }, function(res) {
-            $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Buscar Voz');
-            if (res.status === 1 && res.voice) {
-                lastImportedVoice = res.voice;
-                $('#import_voice_info').html('<span class="text-success"><i class="fa fa-check-circle"></i> ' + res.voice.name + '</span> <small class="text-muted">(ID: ' + res.voice.voice_id + ')</small>');
-                
-                if (res.voice.preview_url) {
-                    $('#import_voice_audio_wrap').html('<audio controls style="width:100%; height:32px;"><source src="' + res.voice.preview_url + '" type="audio/mpeg">Seu navegador não suporta áudio.</audio>');
-                } else {
-                    $('#import_voice_audio_wrap').html('<small class="text-muted">Sem áudio de prévia disponível na API.</small>');
-                }
-
-                $('#import_voice_preview').slideDown();
-            } else {
-                alert(res.message || 'Erro ao importar voz da ElevenLabs.');
-            }
-        }, 'json').fail(function() {
-            $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Buscar Voz');
-            alert('Erro de comunicação ao importar voz. Verifique sua chave da ElevenLabs.');
-        });
-    });
-
-    // Apply Imported Voice
-    $('#btn_apply_imported_voice').click(function() {
-        if (!lastImportedVoice) return;
-        
-        var vId = lastImportedVoice.voice_id;
-        var vName = lastImportedVoice.name;
-
-        // Check if option already exists
-        var exists = $('#voice_id option[value="' + vId + '"]').length > 0;
-        if (!exists) {
-            $('#voice_id').prepend($('<option>', {
-                value: vId,
-                text: vName,
-                'data-name': vName
-            }));
-        }
-
-        $('#voice_id').val(vId);
-        $('#voice_name').val(vName);
-        $('#elevenlabs_import_box').slideUp();
-        toggleCustomVoice();
-        alert('Voz "' + lastImportedVoice.raw_name + '" selecionada com sucesso!');
-    });
-
-    // ElevenLabs Sync All Account Voices
-    $('#btn_sync_eleven_voices').click(function() {
-        var $btn = $(this);
-        var $status = $('#sync_status');
-        $btn.prop('disabled', true);
-        $status.html('<i class="fa fa-spinner fa-spin text-blue"></i> Sincronizando vozes...');
-
-        $.post('php/FetchElevenLabsVoice.php', { action: 'fetch_all' }, function(res) {
-            $btn.prop('disabled', false);
-            if (res.status === 1 && res.voices) {
-                var $voiceSelect = $('#voice_id');
-                $voiceSelect.empty();
-
-                $.each(res.voices, function(i, v) {
-                    $voiceSelect.append($('<option>', {
-                        value: v.voice_id,
-                        text: v.name,
-                        'data-name': v.name
-                    }));
-                });
-
-                $voiceSelect.append($('<option>', {
-                    value: 'custom',
-                    text: 'Voz Clonada / Personalizada (Digitar ID)',
-                    'data-name': 'Voz Customizada'
-                }));
-
-                updateVoiceName();
-                $status.html('<span class="text-green"><i class="fa fa-check"></i> ' + res.count + ' vozes sincronizadas!</span>');
-            } else {
-                $status.html('<span class="text-danger"><i class="fa fa-times"></i> ' + (res.message || 'Erro ao sincronizar.') + '</span>');
-            }
-        }, 'json').fail(function() {
-            $btn.prop('disabled', false);
-            $status.html('<span class="text-danger"><i class="fa fa-times"></i> Erro de conexão com ElevenLabs.</span>');
-        });
-    });
-
-    $('#form_ai_agent').submit(function(e) {
+    $('#form_add_vapi_agent').submit(function(e) {
         e.preventDefault();
+        var $btn = $('#btn_create_agent');
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Criando Agente...');
+
         var formData = $(this).serialize();
         $.post('php/SaveAIAgent.php', formData, function(res) {
+            $btn.prop('disabled', false).html('<i class="fa fa-check"></i> Criar & Publicar Agente');
             if (res.status == 1) {
-                alert(res.message);
-                window.location.href = 'ai_agents.php';
+                alert("✨ Agente de IA criado e publicado com sucesso!");
+                window.location.href = 'edit_ai_agent.php?id=' + (res.agent_id || 1);
             } else {
-                alert(res.message || 'Erro ao salvar agente.');
+                alert(res.message || 'Erro ao criar agente.');
             }
         }, 'json').fail(function() {
-            alert('Erro de conexão com o servidor.');
+            $btn.prop('disabled', false).html('<i class="fa fa-check"></i> Criar & Publicar Agente');
+            alert('Erro de comunicação com o servidor.');
         });
     });
 });

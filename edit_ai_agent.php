@@ -1072,16 +1072,17 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
         </div>
         <div class="vapi-drawer-subtitle">
-            Configure the LLM brain that generates conversational responses and handles function calling.
+            Configure the LLM model that powers your assistant's reasoning, and conversation abilities.
         </div>
 
         <div class="vapi-form-group">
-            <label class="vapi-form-label">Model</label>
+            <label class="vapi-form-label">Model <i class="fa fa-info-circle text-muted"></i></label>
             <select id="modal_llm_model_select" class="vapi-input-dark">
                 <option value="groq|llama-3.3-70b-versatile">Groq Llama 3.3 70B (180ms • $0.008/min • 92 Intel)</option>
                 <option value="groq|llama-3.1-8b-instant">Groq Llama 3.1 8B Instant (80ms • $0.002/min • 75 Intel)</option>
                 <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (420ms • $0.006/min • 88 Intel)</option>
                 <option value="openai|gpt-4o">OpenAI GPT-4o (690ms • $0.023/min • 99 Intel)</option>
+                <option value="openai|gpt-4.1">OpenAI GPT-4.1 (690ms • $0.023/min • 20 Intel)</option>
                 <option value="anthropic|claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (750ms • $0.030/min • 98 Intel)</option>
                 <option value="deepseek|deepseek-chat">DeepSeek V3 (300ms • $0.003/min • 90 Intel)</option>
             </select>
@@ -1092,11 +1093,11 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <label class="vapi-form-label" style="margin-bottom:0;"><i class="fa fa-thermometer-half"></i> Temperature</label>
                 <span class="vapi-badge" id="disp_temp_badge"><?=$agent['temperature']?></span>
             </div>
-            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Controls randomness. Lower is more deterministic, higher is more creative.</div>
+            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Controls randomness. Lower values are more deterministic, higher values more creative.</div>
             <input type="range" id="modal_temp_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="<?=$agent['temperature']?>" />
             <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                <span>Precise (0.0)</span>
-                <span>Creative (1.0)</span>
+                <span>Precise</span>
+                <span>Creative</span>
             </div>
         </div>
 
@@ -1107,28 +1108,39 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         </div>
         <div id="adv_llm_body" style="padding-top: 15px;">
             <div class="vapi-form-group">
-                <label class="vapi-form-label">Max Tokens</label>
+                <label class="vapi-form-label"><i class="fa fa-comment"></i> Max Tokens</label>
+                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Max number of tokens the assistant can generate in each turn of the conversation.</div>
                 <input type="number" id="modal_max_tokens_input" class="vapi-input-dark" value="<?=$max_tokens?>" />
-                <small style="color:#64748b; font-size:11px;">Max number of tokens generated per turn (Recomendado 150-300 para voz ágil).</small>
             </div>
 
             <div class="vapi-form-group">
-                <label class="vapi-form-label">Prompt Cache Retention</label>
+                <label class="vapi-form-label"><i class="fa fa-forward"></i> Fast Turns</label>
+                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">How many turns at the start of the call to answer with a smaller, faster model before switching.</div>
+                <input type="number" id="modal_fast_turns_input" class="vapi-input-dark" value="0" min="0" max="10" />
+            </div>
+
+            <div class="vapi-form-group">
+                <label class="vapi-form-label"><i class="fa fa-database"></i> Prompt Cache Retention</label>
+                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Controls how long cached prompts are retained. Use 24h for extended caching.</div>
                 <div class="vapi-pill-group">
                     <div class="vapi-pill-opt <?=($prompt_cache_retention=='in_memory'?'active':'')?>" data-cache="in_memory">In memory</div>
                     <div class="vapi-pill-opt <?=($prompt_cache_retention=='24_hours'?'active':'')?>" data-cache="24_hours">24 hours</div>
                 </div>
             </div>
 
-            <div class="vapi-switch-row">
-                <div class="vapi-switch-info">
-                    <div class="vapi-switch-title">Tool Strict Compatibility</div>
-                    <div class="vapi-switch-desc">Adapt tool schemas for strict-mode validation endpoints.</div>
-                </div>
-                <label class="vapi-switch">
-                    <input type="checkbox" id="modal_strict_tools" <?=$tool_strict_compatibility=='Y'?'checked':''?> />
-                    <span class="vapi-slider"></span>
-                </label>
+            <div class="vapi-form-group">
+                <label class="vapi-form-label"><i class="fa fa-key"></i> Prompt Cache Key</label>
+                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Optional key to share cached prefixes across requests. Max 64 characters.</div>
+                <input type="text" id="modal_prompt_cache_key" class="vapi-input-dark" placeholder="Optional cache key" maxlength="64" />
+            </div>
+
+            <div class="vapi-form-group">
+                <label class="vapi-form-label"><i class="fa fa-wrench"></i> Tool Strict Compatibility</label>
+                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">How to adapt tool schemas for endpoints that reject strict-mode validation keywords.</div>
+                <select id="modal_tool_strict_select" class="vapi-input-dark">
+                    <option value="N">Off</option>
+                    <option value="Y">On (Strict Mode)</option>
+                </select>
             </div>
         </div>
 
@@ -1146,19 +1158,40 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
         </div>
         <div class="vapi-drawer-subtitle">
-            Configure the text-to-speech voice and acoustic parameters your assistant uses to speak.
+            Configure the text-to-speech voice your assistant uses to speak.
         </div>
 
         <div class="vapi-form-group">
-            <label class="vapi-form-label">Voice Provider & Model</label>
+            <label class="vapi-form-label">Voice model <i class="fa fa-info-circle text-muted"></i></label>
             <select id="modal_voice_provider_select" class="vapi-input-dark">
-                <option value="cartesia|cartesia-pt-br-sofia|Sofia (Cartesia Português BR)">Cartesia Sonic (90ms • $0.020/min • Sofia PT-BR)</option>
-                <option value="cartesia|cartesia-pt-br-lucas|Lucas (Cartesia Português BR)">Cartesia Sonic (90ms • $0.020/min • Lucas PT-BR)</option>
-                <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM|Rachel (ElevenLabs)">ElevenLabs Turbo v2.5 (320ms • $0.036/min • Rachel)</option>
-                <option value="elevenlabs|AZnzlk1XvdvUeBnXmlld|Domi (ElevenLabs)">ElevenLabs Turbo v2.5 (320ms • $0.036/min • Domi)</option>
-                <option value="openai|nova|Nova (OpenAI TTS)">OpenAI TTS-1 (380ms • $0.015/min • Nova)</option>
-                <option value="openai|alloy|Alloy (OpenAI TTS)">OpenAI TTS-1 (380ms • $0.015/min • Alloy)</option>
+                <option value="elevenlabs|eleven_multilingual_v2">Eleven Multilingual v2 (810ms • $0.036/min • 76 Humanness)</option>
+                <option value="cartesia|sonic-multilingual">Cartesia Sonic (90ms • $0.020/min • 96 Humanness)</option>
+                <option value="openai|tts-1">OpenAI TTS-1 (380ms • $0.015/min • 82 Humanness)</option>
+                <option value="deepgram|aura">Deepgram Aura (140ms • $0.015/min • 80 Humanness)</option>
             </select>
+        </div>
+
+        <div class="vapi-form-group">
+            <label class="vapi-form-label">Voice</label>
+            <div class="vapi-pill-group" style="margin-bottom: 8px;">
+                <div class="vapi-pill-opt active" id="tab_voice_library">Voice library</div>
+                <div class="vapi-pill-opt" id="tab_custom_voice_id">Custom voice ID</div>
+            </div>
+            
+            <div id="voice_library_view">
+                <select id="modal_voice_id_select" class="vapi-input-dark">
+                    <option value="cartesia-pt-br-sofia">Sofia • Young adult woman with natural, confident tone (PT-BR)</option>
+                    <option value="cartesia-pt-br-lucas">Lucas • Professional, authoritative male voice (PT-BR)</option>
+                    <option value="21m00Tcm4TlvDq8ikWAM">Rachel • Calm and conversational (ElevenLabs)</option>
+                    <option value="PznTnBc8X6pvixs9UkQm">Sarah • Mature, reassuring young adult woman (ElevenLabs)</option>
+                    <option value="AZnzlk1XvdvUeBnXmlld">Domi • Strong and energetic (ElevenLabs)</option>
+                    <option value="nova">Nova • Energetic and friendly (OpenAI)</option>
+                </select>
+            </div>
+
+            <div id="custom_voice_id_view" style="display:none;">
+                <input type="text" id="modal_custom_voice_id_input" class="vapi-input-dark" placeholder="Cole o Voice ID customizado aqui..." />
+            </div>
         </div>
 
         <div class="vapi-form-group">
@@ -1166,22 +1199,29 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <label class="vapi-form-label" style="margin-bottom:0;"><i class="fa fa-tachometer"></i> Speed</label>
                 <span class="vapi-badge" id="disp_speed_badge"><?=$voice_speed?>x</span>
             </div>
+            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">The speed of the voice output.</div>
             <input type="range" id="modal_speed_slider" class="vapi-range-slider" min="0.75" max="1.50" step="0.05" value="<?=$voice_speed?>" />
             <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                <span>Slower (0.75x)</span>
-                <span>Faster (1.50x)</span>
+                <span>Slower</span>
+                <span>Faster</span>
             </div>
         </div>
 
         <div class="vapi-form-group">
             <label class="vapi-form-label"><i class="fa fa-music"></i> Background Sound</label>
+            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Background sound played in the call. Default for phone calls is 'office' and for web calls is 'off'.</div>
             <div class="vapi-pill-group" id="bg_sound_pills">
                 <div class="vapi-pill-opt <?=($background_sound=='off'?'active':'')?>" data-bgsound="off">Off</div>
                 <div class="vapi-pill-opt <?=($background_sound=='office'?'active':'')?>" data-bgsound="office">Office</div>
                 <div class="vapi-pill-opt <?=($background_sound=='default'?'active':'')?>" data-bgsound="default">Default</div>
                 <div class="vapi-pill-opt <?=($background_sound=='custom'?'active':'')?>" data-bgsound="custom">Custom</div>
             </div>
-            <small style="color:#64748b; font-size:11px;">Background sound played in the call (e.g. ambient office noise for human realism).</small>
+        </div>
+
+        <div class="vapi-form-group">
+            <label class="vapi-form-label"><i class="fa fa-book"></i> Pronunciation Dictionaries</label>
+            <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Override pronunciation for specific words on this voice.</div>
+            <button type="button" class="vapi-btn" style="width:100%; justify-content:center;"><i class="fa fa-plus"></i> Create dictionary</button>
         </div>
 
         <!-- Collapsible Advanced -->
@@ -1193,7 +1233,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <div class="vapi-switch-row">
                 <div class="vapi-switch-info">
                     <div class="vapi-switch-title">Voice Caching</div>
-                    <div class="vapi-switch-desc">Reuses audio for repeated phrases instead of re-synthesising them.</div>
+                    <div class="vapi-switch-desc">Reuses audio for repeated phrases instead of re-synthesising them, which cuts latency and cost.</div>
                 </div>
                 <label class="vapi-switch">
                     <input type="checkbox" id="modal_voice_caching" checked />
@@ -1207,6 +1247,10 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                     <span class="vapi-badge" id="disp_stability_badge"><?=$voice_stability?></span>
                 </div>
                 <input type="range" id="modal_stability_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="<?=$voice_stability?>" />
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
+                    <span>More Variable <i class="fa fa-info-circle"></i></span>
+                    <span>More Stable <i class="fa fa-info-circle"></i></span>
+                </div>
             </div>
 
             <div class="vapi-form-group">
@@ -1215,6 +1259,106 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                     <span class="vapi-badge" id="disp_clarity_badge"><?=$voice_clarity?></span>
                 </div>
                 <input type="range" id="modal_clarity_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="<?=$voice_clarity?>" />
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
+                    <span>Low <i class="fa fa-info-circle"></i></span>
+                    <span>High <i class="fa fa-info-circle"></i></span>
+                </div>
+            </div>
+
+            <div class="vapi-form-group">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <label class="vapi-form-label" style="margin-bottom:0;">Style Exaggeration</label>
+                    <span class="vapi-badge" id="disp_style_badge"><?=$voice_style_exaggeration?></span>
+                </div>
+                <input type="range" id="modal_style_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="<?=$voice_style_exaggeration?>" />
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
+                    <span>None (Fastest)</span>
+                    <span>Exaggerated</span>
+                </div>
+            </div>
+
+            <div class="vapi-form-group">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                    <label class="vapi-form-label" style="margin-bottom:0;">Optimize Streaming Latency</label>
+                    <span class="vapi-badge" id="disp_opt_lat_badge"><?=$voice_optimize_latency?></span>
+                </div>
+                <input type="range" id="modal_opt_lat_slider" class="vapi-range-slider" min="0" max="4" step="1" value="<?=$voice_optimize_latency?>" />
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
+                    <span>More Latency</span>
+                    <span>Less Latency</span>
+                </div>
+            </div>
+
+            <div class="vapi-switch-row">
+                <div class="vapi-switch-info">
+                    <div class="vapi-switch-title">Use speaker boost</div>
+                    <div class="vapi-switch-desc">Boost the similarity of the synthesized speech and the voice at the cost of some generation speed.</div>
+                </div>
+                <label class="vapi-switch">
+                    <input type="checkbox" id="modal_speaker_boost" />
+                    <span class="vapi-slider"></span>
+                </label>
+            </div>
+
+            <div class="vapi-switch-row">
+                <div class="vapi-switch-info">
+                    <div class="vapi-switch-title">Auto mode</div>
+                    <div class="vapi-switch-desc">Reduces latency for complete sentences but may affect quality with partial phrases.</div>
+                </div>
+                <label class="vapi-switch">
+                    <input type="checkbox" id="modal_auto_mode" />
+                    <span class="vapi-slider"></span>
+                </label>
+            </div>
+
+            <div class="vapi-switch-row">
+                <div class="vapi-switch-info">
+                    <div class="vapi-switch-title"><i class="fa fa-code"></i> SSML Parsing</div>
+                    <div class="vapi-switch-desc">Interprets SSML tags in the text, so you can control pronunciation and pauses. Off by default to save latency.</div>
+                </div>
+                <label class="vapi-switch">
+                    <input type="checkbox" id="modal_ssml_parsing" />
+                    <span class="vapi-slider"></span>
+                </label>
+            </div>
+
+            <!-- Fallback Voices -->
+            <div style="margin-top: 20px; border-top: 1px solid #1c222e; padding-top: 16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                    <div>
+                        <div style="font-weight:700; color:#fff; font-size:13px;"><i class="fa fa-shield text-yellow"></i> Fallback Voices</div>
+                        <div style="font-size:11px; color:#64748b;">Voice used when the primary voice fails.</div>
+                    </div>
+                    <button type="button" class="vapi-btn" style="padding:4px 10px; font-size:12px;"><i class="fa fa-plus"></i> Add</button>
+                </div>
+
+                <div style="background:#161922; border: 1px solid #232a38; border-radius:8px; padding:14px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="font-weight:700; font-size:12px; color:#cbd5e1;">Fallback 1 • ElevenLabs</span>
+                        <i class="fa fa-trash text-muted" style="cursor:pointer;"></i>
+                    </div>
+                    <div class="vapi-form-group" style="margin-bottom:10px;">
+                        <label class="vapi-form-label" style="font-size:11px;">Provider</label>
+                        <select class="vapi-input-dark" style="padding:6px 10px; font-size:12px;">
+                            <option>ElevenLabs</option>
+                            <option>Cartesia</option>
+                            <option>OpenAI</option>
+                        </select>
+                    </div>
+                    <div class="vapi-form-group" style="margin-bottom:10px;">
+                        <label class="vapi-form-label" style="font-size:11px;">Voice</label>
+                        <select class="vapi-input-dark" style="padding:6px 10px; font-size:12px;">
+                            <option>Sarah mature, reassuring (Young adult woman)</option>
+                            <option>Rachel (Calm & conversational)</option>
+                        </select>
+                    </div>
+                    <div class="vapi-form-group" style="margin-bottom:0;">
+                        <label class="vapi-form-label" style="font-size:11px;">Model</label>
+                        <select class="vapi-input-dark" style="padding:6px 10px; font-size:12px;">
+                            <option>Eleven Multilingual v2 (810ms • $0.036/min • 76 Humanness)</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
 
