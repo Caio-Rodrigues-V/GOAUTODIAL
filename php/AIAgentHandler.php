@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        AIAgentHandler.php
  * @brief       AI Voice Agents Handler & Database Manager
@@ -58,7 +58,7 @@ class AIAgentHandler {
                 `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (`agent_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 
             // Table for AI API Keys & Provider Settings
             $this->db->rawQuery("CREATE TABLE IF NOT EXISTS `go_ai_settings` (
@@ -66,10 +66,11 @@ class AIAgentHandler {
                 `setting_value` text,
                 `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (`setting_key`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 
             // Insert default sample agent if none exists
-            if ($this->db->has('go_ai_agents') === false) {
+            $existing = $this->db->get('go_ai_agents');
+            if (empty($existing)) {
                 $defaultPrompt = "Você é a Sofia, uma especialista de atendimento e vendas cordial, ágil e persuasiva.
 Seu objetivo é qualificar o cliente com clareza, empatia e sem enrolação.
 

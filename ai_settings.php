@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        ai_settings.php
  * @brief       AI Voice Engine API Keys & Settings
@@ -18,10 +18,11 @@ $lh = \creamy\LanguageHandler::getInstance();
 $user = \creamy\CreamyUser::currentUser();
 $aiHandler = \creamy\AIAgentHandler::getInstance();
 
-if ($user->getUserRole() != CRM_DEFAULTS_USER_ROLE_ADMIN) {
-    header("location: agent.php");
-    exit;
-}
+	//proper user redirects
+	if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
+		header("location: agent.php");
+		exit();
+	}
 
 $groqKey = $aiHandler->getSetting('groq_api_key', '');
 $deepgramKey = $aiHandler->getSetting('deepgram_api_key', '');

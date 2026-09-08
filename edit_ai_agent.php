@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        edit_ai_agent.php
  * @brief       Edit AI Agent
@@ -18,10 +18,11 @@ $lh = \creamy\LanguageHandler::getInstance();
 $user = \creamy\CreamyUser::currentUser();
 $aiHandler = \creamy\AIAgentHandler::getInstance();
 
-if ($user->getUserRole() != CRM_DEFAULTS_USER_ROLE_ADMIN) {
-    header("location: agent.php");
-    exit;
-}
+	//proper user redirects
+	if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
+		header("location: agent.php");
+		exit();
+	}
 
 $agent_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $agent = $aiHandler->getAgentById($agent_id);
