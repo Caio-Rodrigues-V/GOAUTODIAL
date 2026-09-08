@@ -130,11 +130,16 @@ if (empty($aiResponseText)) {
 
 // 2. Generate Audio (TTS)
 $audioBase64 = '';
+$ttsError = '';
 
 if ($voiceProvider === 'elevenlabs') {
     $elevenKey = $aiHandler->getSetting('elevenlabs_api_key', '');
-    if (!empty($elevenKey) && !empty($voiceId)) {
-        $ch = curl_init('https://api.elevenlabs.io/v1/text-to-speech/' . urlencode($voiceId));
+    if (empty($elevenKey)) {
+        $ttsError = 'Chave da ElevenLabs não configurada nas Configurações de IA.';
+    } else {
+        // Fallback default voice if not specified
+        $targetVoice = !empty($voiceId) ? $voiceId : '21m00Tcm4TlvDq8ikWAM';
+        $ch = curl_init('https://api.elevenlabs.io/v1/text-to-speech/' . urlencode($targetVoice));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
@@ -150,7 +155,7 @@ if ($voiceProvider === 'elevenlabs') {
                 'similarity_boost' => 0.75
             )
         )));
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         $audioData = curl_exec($ch);
@@ -159,11 +164,54 @@ if ($voiceProvider === 'elevenlabs') {
 
         if ($httpCode === 200 && $audioData) {
             $audioBase64 = 'data:audio/mpeg;base64,' . base64_encode($audioData);
+        } else {
+            $ttsError = 'Erro ElevenLabs (HTTP ' . $httpCode . '): ' . $audioData;
+        }
+    }
+} elseif ($voiceProvider === 'cartesia') {
+    $cartesiaKey = $aiHandler->getSetting('cartesia_api_key', '');
+    if (empty($cartesiaKey)) {
+        $ttsError = 'Chave do Cartesia não configurada nas Configurações de IA.';
+    } else {
+        $ch = curl_init('https://api.cartesia.ai/tts/bytes');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'X-API-Key: ' . $cartesiaKey,
+            'Cartesia-Version: 2024-06-10',
+            'Content-Type: application/json'
+        ));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
+            'model_id' => 'sonic-multilingual',
+            'transcript' => $aiResponseText,
+            'voice' => array(
+                'mode' => 'id',
+                'id' => (!empty($voiceId) && $voiceId !== 'custom') ? $voiceId : '79a125e8-cd45-4c13-8a67-188112f4dd22'
+            ),
+            'output_format' => array(
+                'container' => 'wav',
+                'encoding' => 'pcm_s16le',
+                'sample_rate' => 44100
+            )
+        )));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $audioData = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $audioData) {
+            $audioBase64 = 'data:audio/wav;base64,' . base64_encode($audioData);
+        } else {
+            $ttsError = 'Erro Cartesia (HTTP ' . $httpCode . '): ' . $audioData;
         }
     }
 } elseif ($voiceProvider === 'openai') {
     $openAIKey = $aiHandler->getSetting('openai_api_key', '');
-    if (!empty($openAIKey)) {
+    if (empty($openAIKey)) {
+        $ttsError = 'Chave da OpenAI não configurada nas Configurações de IA.';
+    } else {
         $ch = curl_init('https://api.openai.com/v1/audio/speech');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -174,7 +222,7 @@ if ($voiceProvider === 'elevenlabs') {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
             'model' => 'tts-1',
             'input' => $aiResponseText,
-            'voice' => $voiceId
+            'voice' => !empty($voiceId) ? $voiceId : 'nova'
         )));
         curl_setopt($ch, CURLOPT_TIMEOUT, 20);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -185,6 +233,8 @@ if ($voiceProvider === 'elevenlabs') {
 
         if ($httpCode === 200 && $audioData) {
             $audioBase64 = 'data:audio/mpeg;base64,' . base64_encode($audioData);
+        } else {
+            $ttsError = 'Erro OpenAI TTS (HTTP ' . $httpCode . '): ' . $audioData;
         }
     }
 }
@@ -193,6 +243,7 @@ echo json_encode(array(
     'status' => 1,
     'agent_name' => $agent['agent_name'],
     'response_text' => $aiResponseText,
-    'audio_url' => $audioBase64
+    'audio_url' => $audioBase64,
+    'tts_error' => $ttsError
 ));
 ?>

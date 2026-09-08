@@ -187,31 +187,47 @@ $agents = $aiHandler->getAllAgents();
 var currentTestAgentId = null;
 var testConversationHistory = [];
 
-function appendChatMessage(sender, text, isAI) {
+function appendChatMessage(sender, text, isAI, audioUrl) {
     var $box = $('#test_chat_box');
     var align = isAI ? 'left' : 'right';
     var bg = isAI ? '#e0f2fe' : '#2563eb';
     var color = isAI ? '#0369a1' : '#ffffff';
     var icon = isAI ? '<i class="fa fa-magic"></i>' : '<i class="fa fa-user"></i>';
 
-    var html = '<div style="margin-bottom: 12px; text-align: ' + align + ';">' +
+    var audioBtn = '';
+    if (isAI && audioUrl) {
+        audioBtn = '<div style="margin-top: 6px;"><button type="button" class="btn btn-xs btn-primary btn-play-msg-audio" style="background:#0284c7; border:none; padding: 2px 8px;"><i class="fa fa-volume-up"></i> Ouvir Voz</button></div>';
+    }
+
+    var $msgElem = $('<div style="margin-bottom: 12px; text-align: ' + align + ';">' +
         '<div style="display: inline-block; max-width: 80%; text-align: left; padding: 10px 14px; border-radius: 12px; background: ' + bg + '; color: ' + color + '; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">' +
             '<div style="font-size: 11px; opacity: 0.85; margin-bottom: 3px;">' + icon + ' <strong>' + sender + '</strong></div>' +
             '<div style="font-size: 13px; line-height: 1.4;">' + text + '</div>' +
+            audioBtn +
         '</div>' +
-    '</div>';
+    '</div>');
 
-    $box.append(html);
+    if (audioUrl) {
+        $msgElem.find('.btn-play-msg-audio').click(function() {
+            playVoiceAudio(audioUrl);
+        });
+    }
+
+    $box.append($msgElem);
     $box.scrollTop($box[0].scrollHeight);
 }
 
 function playVoiceAudio(audioUrl) {
     if (!audioUrl) return;
-    var audio = document.getElementById('tts_audio_player');
-    audio.src = audioUrl;
-    audio.play().catch(function(e) {
-        console.log('Audio playback info:', e);
-    });
+    try {
+        var audio = new Audio(audioUrl);
+        audio.play().catch(function(e) {
+            console.log('Autoplay notice:', e);
+            $('#test_agent_status').html('<span class="text-info"><i class="fa fa-info-circle"></i> Clique em "Ouvir Voz" no balão para escutar o áudio.</span>');
+        });
+    } catch(e) {
+        console.error(e);
+    }
 }
 
 $(document).ready(function() {
@@ -235,10 +251,6 @@ $(document).ready(function() {
         $('#test_chat_box').empty();
         testConversationHistory = [];
 
-        // Add greeting message
-        appendChatMessage(agentName, greeting, true);
-        testConversationHistory.push({ role: 'assistant', content: greeting });
-
         $('#modal_test_agent').modal('show');
         setTimeout(function() {
             $('#test_user_input').focus();
@@ -249,13 +261,21 @@ $(document).ready(function() {
         $.post('php/TestAIAgent.php', {
             agent_id: currentTestAgentId,
             message: '',
-            history: JSON.stringify(testConversationHistory)
+            history: JSON.stringify([])
         }, function(res) {
             $('#test_agent_status').html('<i class="fa fa-circle text-success"></i> Pronto para conversar');
+            var greetingText = (res.response_text && res.response_text.length > 0) ? res.response_text : greeting;
+            appendChatMessage(agentName, greetingText, true, res.audio_url);
+            testConversationHistory.push({ role: 'assistant', content: greetingText });
+
             if (res.status === 1 && res.audio_url) {
                 playVoiceAudio(res.audio_url);
+            } else if (res.tts_error) {
+                $('#test_agent_status').html('<span class="text-warning"><i class="fa fa-exclamation-triangle"></i> ' + res.tts_error + '</span>');
             }
         }, 'json').fail(function() {
+            appendChatMessage(agentName, greeting, true);
+            testConversationHistory.push({ role: 'assistant', content: greeting });
             $('#test_agent_status').html('<i class="fa fa-circle text-success"></i> Pronto para conversar');
         });
     });
@@ -282,11 +302,13 @@ $(document).ready(function() {
             $('#test_agent_status').html('<i class="fa fa-circle text-success"></i> Pronto para conversar');
 
             if (res.status === 1 && res.response_text) {
-                appendChatMessage(res.agent_name || 'IA', res.response_text, true);
+                appendChatMessage(res.agent_name || 'IA', res.response_text, true, res.audio_url);
                 testConversationHistory.push({ role: 'assistant', content: res.response_text });
 
                 if (res.audio_url) {
                     playVoiceAudio(res.audio_url);
+                } else if (res.tts_error) {
+                    $('#test_agent_status').html('<span class="text-warning"><i class="fa fa-exclamation-triangle"></i> ' + res.tts_error + '</span>');
                 }
             } else {
                 alert(res.message || 'Erro ao processar resposta da IA.');
