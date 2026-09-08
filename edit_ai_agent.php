@@ -118,11 +118,45 @@ $voices = $aiHandler->getAvailableVoices();
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Voz Selecionada</label>
-                                            <select name="voice_id" id="voice_id" class="form-control">
-                                                <!-- Populated dynamically via JS -->
-                                            </select>
+                                            <div class="input-group" style="width:100%;">
+                                                <select name="voice_id" id="voice_id" class="form-control">
+                                                    <!-- Populated dynamically via JS -->
+                                                </select>
+                                            </div>
                                             <input type="hidden" name="voice_name" id="voice_name" value="<?=htmlspecialchars($agent['voice_name'])?>" />
                                         </div>
+
+                                        <!-- ElevenLabs Quick Actions Toolbar -->
+                                        <div id="elevenlabs_tools" style="display:none; margin-bottom: 12px;">
+                                            <button type="button" class="btn btn-default btn-sm" id="btn_toggle_import_modal" style="margin-right: 5px;">
+                                                <i class="fa fa-plus-circle text-purple"></i> <strong>Importar Voz por ID</strong>
+                                            </button>
+                                            <button type="button" class="btn btn-default btn-sm" id="btn_sync_eleven_voices">
+                                                <i class="fa fa-refresh text-blue"></i> Sincronizar Minhas Vozes
+                                            </button>
+                                            <span id="sync_status" style="margin-left: 8px; font-size: 12px;"></span>
+                                        </div>
+
+                                        <!-- ElevenLabs Import Box -->
+                                        <div id="elevenlabs_import_box" class="callout callout-info" style="display:none; background-color: #f4f7fb !important; border-left-color: #7c4dff !important; color: #333 !important; padding: 12px; margin-bottom: 15px;">
+                                            <h5 style="margin-top: 0; color: #512da8; font-weight: bold;"><i class="fa fa-id-card"></i> Importar Voz da ElevenLabs por ID</h5>
+                                            <div class="input-group">
+                                                <input type="text" id="import_voice_id_input" class="form-control" placeholder="Cole o Voice ID aqui (Ex: pNInz6obpgDQGcFmaJgB)" />
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-primary" type="button" id="btn_do_import_voice">
+                                                        <i class="fa fa-search"></i> Buscar Voz
+                                                    </button>
+                                                </span>
+                                            </div>
+                                            <div id="import_voice_preview" style="display:none; margin-top: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
+                                                <div id="import_voice_info" style="font-weight: bold; margin-bottom: 5px;"></div>
+                                                <div id="import_voice_audio_wrap" style="margin-bottom: 8px;"></div>
+                                                <button type="button" class="btn btn-success btn-sm" id="btn_apply_imported_voice">
+                                                    <i class="fa fa-check"></i> Selecionar Esta Voz Para o Agente
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <div class="form-group" id="custom_voice_wrapper" style="display:none;">
                                             <label><i class="fa fa-id-badge text-yellow"></i> ID da Voz Clonada / Personalizada</label>
                                             <input type="text" name="custom_voice_id" id="custom_voice_id" class="form-control" value="<?=htmlspecialchars($agent['voice_id'])?>" placeholder="Cole o Voice ID da ElevenLabs / Cartesia" />
@@ -256,7 +290,14 @@ function updateVoices(selectedProvider, preselectVoice) {
         });
     }
 
-    // If current voice is not in standard list, select custom
+    if (selectedProvider === 'elevenlabs') {
+        $('#elevenlabs_tools').show();
+    } else {
+        $('#elevenlabs_tools').hide();
+        $('#elevenlabs_import_box').hide();
+    }
+
+    // If current voice is not in standard list, select custom or insert it
     if (!found && preselectVoice) {
         $voiceSelect.val('custom');
         $('#custom_voice_id').val(preselectVoice);
@@ -296,6 +337,8 @@ function toggleCustomVoice() {
     }
 }
 
+var lastImportedVoice = null;
+
 $(document).ready(function() {
     // Initial populate with saved data
     updateVoices($('#voice_provider').val(), currentVoiceId);
@@ -320,6 +363,108 @@ $(document).ready(function() {
 
     $('#llm_model').change(function() {
         toggleCustomModel();
+    });
+
+    // ElevenLabs Toggle Import Box
+    $('#btn_toggle_import_modal').click(function() {
+        $('#elevenlabs_import_box').slideToggle();
+        $('#import_voice_id_input').focus();
+    });
+
+    // ElevenLabs Fetch Voice by ID
+    $('#btn_do_import_voice').click(function() {
+        var vId = $.trim($('#import_voice_id_input').val());
+        if (!vId) {
+            alert('Por favor, cole o Voice ID da ElevenLabs.');
+            return;
+        }
+
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Buscando...');
+        $('#import_voice_preview').hide();
+
+        $.post('php/FetchElevenLabsVoice.php', { action: 'fetch_one', voice_id: vId }, function(res) {
+            $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Buscar Voz');
+            if (res.status === 1 && res.voice) {
+                lastImportedVoice = res.voice;
+                $('#import_voice_info').html('<span class="text-success"><i class="fa fa-check-circle"></i> ' + res.voice.name + '</span> <small class="text-muted">(ID: ' + res.voice.voice_id + ')</small>');
+                
+                if (res.voice.preview_url) {
+                    $('#import_voice_audio_wrap').html('<audio controls style="width:100%; height:32px;"><source src="' + res.voice.preview_url + '" type="audio/mpeg">Seu navegador não suporta áudio.</audio>');
+                } else {
+                    $('#import_voice_audio_wrap').html('<small class="text-muted">Sem áudio de prévia disponível na API.</small>');
+                }
+
+                $('#import_voice_preview').slideDown();
+            } else {
+                alert(res.message || 'Erro ao importar voz da ElevenLabs.');
+            }
+        }, 'json').fail(function() {
+            $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Buscar Voz');
+            alert('Erro de comunicação ao importar voz. Verifique sua chave da ElevenLabs.');
+        });
+    });
+
+    // Apply Imported Voice
+    $('#btn_apply_imported_voice').click(function() {
+        if (!lastImportedVoice) return;
+        
+        var vId = lastImportedVoice.voice_id;
+        var vName = lastImportedVoice.name;
+
+        // Check if option already exists
+        var exists = $('#voice_id option[value="' + vId + '"]').length > 0;
+        if (!exists) {
+            $('#voice_id').prepend($('<option>', {
+                value: vId,
+                text: vName,
+                'data-name': vName
+            }));
+        }
+
+        $('#voice_id').val(vId);
+        $('#voice_name').val(vName);
+        $('#elevenlabs_import_box').slideUp();
+        toggleCustomVoice();
+        alert('Voz "' + lastImportedVoice.raw_name + '" selecionada com sucesso!');
+    });
+
+    // ElevenLabs Sync All Account Voices
+    $('#btn_sync_eleven_voices').click(function() {
+        var $btn = $(this);
+        var $status = $('#sync_status');
+        $btn.prop('disabled', true);
+        $status.html('<i class="fa fa-spinner fa-spin text-blue"></i> Sincronizando vozes...');
+
+        $.post('php/FetchElevenLabsVoice.php', { action: 'fetch_all' }, function(res) {
+            $btn.prop('disabled', false);
+            if (res.status === 1 && res.voices) {
+                var $voiceSelect = $('#voice_id');
+                $voiceSelect.empty();
+
+                $.each(res.voices, function(i, v) {
+                    $voiceSelect.append($('<option>', {
+                        value: v.voice_id,
+                        text: v.name,
+                        'data-name': v.name
+                    }));
+                });
+
+                $voiceSelect.append($('<option>', {
+                    value: 'custom',
+                    text: 'Voz Clonada / Personalizada (Digitar ID)',
+                    'data-name': 'Voz Customizada'
+                }));
+
+                updateVoiceName();
+                $status.html('<span class="text-green"><i class="fa fa-check"></i> ' + res.count + ' vozes sincronizadas!</span>');
+            } else {
+                $status.html('<span class="text-danger"><i class="fa fa-times"></i> ' + (res.message || 'Erro ao sincronizar.') + '</span>');
+            }
+        }, 'json').fail(function() {
+            $btn.prop('disabled', false);
+            $status.html('<span class="text-danger"><i class="fa fa-times"></i> Erro de conexão com ElevenLabs.</span>');
+        });
     });
 
     $('#form_edit_ai_agent').submit(function(e) {
