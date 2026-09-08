@@ -39,17 +39,38 @@ class AIAgentHandler {
                 `agent_name` varchar(100) NOT NULL,
                 `description` varchar(255) DEFAULT '',
                 `status` enum('Y','N') NOT NULL DEFAULT 'Y',
+                `first_message_mode` varchar(50) NOT NULL DEFAULT 'assistant_speaks_first',
+                `model_preset` varchar(50) NOT NULL DEFAULT 'balanced',
                 `llm_provider` varchar(50) NOT NULL DEFAULT 'groq',
                 `llm_model` varchar(100) NOT NULL DEFAULT 'llama-3.3-70b-versatile',
+                `temperature` decimal(3,2) NOT NULL DEFAULT '0.70',
+                `max_tokens` int(11) NOT NULL DEFAULT '250',
+                `prompt_cache_retention` varchar(50) NOT NULL DEFAULT 'in_memory',
+                `prompt_cache_key` varchar(100) DEFAULT '',
+                `tool_strict_compatibility` enum('Y','N') NOT NULL DEFAULT 'N',
                 `voice_provider` varchar(50) NOT NULL DEFAULT 'cartesia',
-                `voice_id` varchar(100) NOT NULL DEFAULT 'sonic-multilingual-pt-br',
-                `voice_name` varchar(100) DEFAULT 'Cartesia Português Brasil',
+                `voice_id` varchar(100) NOT NULL DEFAULT 'cartesia-pt-br-sofia',
+                `voice_name` varchar(100) DEFAULT 'Sofia (Cartesia Português BR - Natural)',
+                `voice_speed` decimal(3,2) NOT NULL DEFAULT '1.00',
+                `voice_stability` decimal(3,2) NOT NULL DEFAULT '0.70',
+                `voice_clarity` decimal(3,2) NOT NULL DEFAULT '0.60',
+                `voice_style_exaggeration` decimal(3,2) NOT NULL DEFAULT '0.20',
+                `voice_optimize_latency` int(11) NOT NULL DEFAULT '1',
+                `voice_speaker_boost` enum('Y','N') NOT NULL DEFAULT 'N',
+                `voice_caching` enum('Y','N') NOT NULL DEFAULT 'Y',
+                `background_sound` varchar(50) NOT NULL DEFAULT 'off',
                 `stt_provider` varchar(50) NOT NULL DEFAULT 'deepgram',
                 `stt_model` varchar(50) NOT NULL DEFAULT 'nova-2',
                 `stt_language` varchar(20) NOT NULL DEFAULT 'pt-BR',
+                `intelligent_turn_taking` enum('Y','N') NOT NULL DEFAULT 'Y',
+                `background_denoising` enum('Y','N') NOT NULL DEFAULT 'Y',
+                `silence_timeout_ms` int(11) NOT NULL DEFAULT '500',
+                `stt_fallback_provider` varchar(50) NOT NULL DEFAULT 'openai',
+                `stt_fallback_model` varchar(50) NOT NULL DEFAULT 'whisper-1',
                 `greeting_message` text,
                 `system_prompt` longtext,
-                `temperature` decimal(3,2) NOT NULL DEFAULT '0.70',
+                `tools_json` longtext,
+                `analysis_schema_json` longtext,
                 `max_duration_seconds` int(11) NOT NULL DEFAULT '600',
                 `interruption_sensitivity` decimal(3,2) NOT NULL DEFAULT '0.80',
                 `transfer_phone_or_queue` varchar(100) DEFAULT '',
@@ -59,6 +80,40 @@ class AIAgentHandler {
                 `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (`agent_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
+            // Migration for existing databases
+            $columnsToEnsure = array(
+                'first_message_mode' => "VARCHAR(50) NOT NULL DEFAULT 'assistant_speaks_first'",
+                'model_preset' => "VARCHAR(50) NOT NULL DEFAULT 'balanced'",
+                'max_tokens' => "INT(11) NOT NULL DEFAULT '250'",
+                'prompt_cache_retention' => "VARCHAR(50) NOT NULL DEFAULT 'in_memory'",
+                'prompt_cache_key' => "VARCHAR(100) DEFAULT ''",
+                'tool_strict_compatibility' => "ENUM('Y','N') NOT NULL DEFAULT 'N'",
+                'voice_speed' => "DECIMAL(3,2) NOT NULL DEFAULT '1.00'",
+                'voice_stability' => "DECIMAL(3,2) NOT NULL DEFAULT '0.70'",
+                'voice_clarity' => "DECIMAL(3,2) NOT NULL DEFAULT '0.60'",
+                'voice_style_exaggeration' => "DECIMAL(3,2) NOT NULL DEFAULT '0.20'",
+                'voice_optimize_latency' => "INT(11) NOT NULL DEFAULT '1'",
+                'voice_speaker_boost' => "ENUM('Y','N') NOT NULL DEFAULT 'N'",
+                'voice_caching' => "ENUM('Y','N') NOT NULL DEFAULT 'Y'",
+                'background_sound' => "VARCHAR(50) NOT NULL DEFAULT 'off'",
+                'intelligent_turn_taking' => "ENUM('Y','N') NOT NULL DEFAULT 'Y'",
+                'background_denoising' => "ENUM('Y','N') NOT NULL DEFAULT 'Y'",
+                'silence_timeout_ms' => "INT(11) NOT NULL DEFAULT '500'",
+                'stt_fallback_provider' => "VARCHAR(50) NOT NULL DEFAULT 'openai'",
+                'stt_fallback_model' => "VARCHAR(50) NOT NULL DEFAULT 'whisper-1'",
+                'tools_json' => "LONGTEXT",
+                'analysis_schema_json' => "LONGTEXT"
+            );
+            foreach ($columnsToEnsure as $col => $typeDef) {
+                try {
+                    $this->db->rawQuery("ALTER TABLE `go_ai_agents` ADD COLUMN IF NOT EXISTS `$col` $typeDef;");
+                } catch (\Throwable $e) {
+                    try {
+                        $this->db->rawQuery("ALTER TABLE `go_ai_agents` ADD COLUMN `$col` $typeDef;");
+                    } catch (\Throwable $e2) {}
+                }
+            }
 
             // Table for AI API Keys & Provider Settings
             $this->db->rawQuery("CREATE TABLE IF NOT EXISTS `go_ai_settings` (
@@ -315,6 +370,83 @@ Diretrizes da conversa:
                     'aura-orion-en' => 'Orion (Masculina - Firme)',
                     'aura-zeus-en' => 'Zeus (Masculina - Profunda)'
                 )
+            )
+        );
+    }
+
+    public function getAvailableSTTs() {
+        return array(
+            'deepgram' => array(
+                'name' => 'Deepgram Nova-2 (Ultrarrápido ~120ms • Otimizado para Telefonia)',
+                'models' => array(
+                    'nova-2' => 'Nova-2 General (Recomendado - 98.4% Precisão)',
+                    'nova-2-phonecall' => 'Nova-2 Phonecall (Específico para Áudio 8kHz)',
+                    'nova-2-conversationalai' => 'Nova-2 Conversational AI'
+                )
+            ),
+            'groq' => array(
+                'name' => 'Groq Whisper Turbo (~100ms)',
+                'models' => array(
+                    'whisper-large-v3-turbo' => 'Whisper Large v3 Turbo',
+                    'whisper-large-v3' => 'Whisper Large v3'
+                )
+            ),
+            'openai' => array(
+                'name' => 'OpenAI Whisper',
+                'models' => array(
+                    'whisper-1' => 'Whisper v1'
+                )
+            ),
+            'azure' => array(
+                'name' => 'Azure Speech',
+                'models' => array(
+                    'azure-default' => 'Azure Speech to Text'
+                )
+            )
+        );
+    }
+
+    public function getDefaultTools() {
+        return array(
+            array(
+                'id' => 'end_call',
+                'name' => 'end_call',
+                'type' => 'End call',
+                'description' => "Encerra a chamada imediatamente após a fala de despedida ou conclusão do atendimento (ex: 'Tenha um ótimo dia!', 'Tchau', 'Até logo').",
+                'enabled' => true,
+                'version' => 'Latest'
+            ),
+            array(
+                'id' => 'voicemail_tool',
+                'name' => 'voicemail_tool',
+                'type' => 'Voicemail',
+                'description' => "End the call immediately when the audio indicates that the call reached voicemail, answering machine, mailbox, or an automated unavailable message.",
+                'enabled' => true,
+                'version' => 'Latest'
+            ),
+            array(
+                'id' => 'response_control',
+                'name' => 'response_control',
+                'type' => 'Custom tool',
+                'description' => "This tool enforces maximum responsiveness and high interruption sensitivity behavior. It ensures the assistant responds immediately after the user finishes speaking.",
+                'enabled' => true,
+                'version' => 'Latest'
+            ),
+            array(
+                'id' => 'transfer_call',
+                'name' => 'transfer_call',
+                'type' => 'Transfer call',
+                'description' => "Transfere a chamada para um ramal SIP ou fila de atendimento humano quando o cliente demonstrar interesse ou solicitar um atendente.",
+                'enabled' => true,
+                'version' => 'Latest'
+            ),
+            array(
+                'id' => 'capturar_cpf',
+                'name' => 'capturar_cpf',
+                'type' => 'Custom tool',
+                'description' => "Use this tool when the user provides digits of their CPF or document. Captures and validates format for CRM lookup.",
+                'enabled' => false,
+                'version' => 'Latest'
             )
         );
     }

@@ -323,14 +323,20 @@ class DirectSIPEngine:
 
     async def start_ai_conversation(self, call: OktorSIPCall, remote_ip: str, remote_port: int, codec: str = "PCMA"):
         """
-        Orquestra a fala inicial e a interação contínua da IA na linha telefônica (STT -> LLM -> TTS).
+        Orquestra a fala inicial e a interação contínua da IA na linha telefônica (STT -> LLM -> TTS)
+        com suporte a ferramentas Vapi (end_call, voicemail_tool, transfer_call).
         """
         try:
-            call.rtp_session = RTPAudioSession(call.rtp_port, remote_ip, remote_port, codec=codec)
+            agent = call.agent_config or {}
+            
+            # Configurações do Agente de IA
+            silence_timeout_ms = int(agent.get("silence_timeout_ms") or 500)
+            silence_timeout_sec = max(0.2, min(5.0, silence_timeout_ms / 1000.0))
+            
+            call.rtp_session = RTPAudioSession(call.rtp_port, remote_ip, remote_port, codec=codec, silence_timeout=silence_timeout_sec)
             call.rtp_session.start_socket()
 
-            # Configurações do Agente de IA
-            agent = call.agent_config or {}
+            first_message_mode = agent.get("first_message_mode") or "assistant_speaks_first"
             greeting = agent.get("greeting_message") or "Olá, tudo bem? Falo com o titular da linha?"
             system_prompt = agent.get("system_prompt") or "Você é um assistente virtual gentil e direto. Responda em no máximo 2 frases curtas."
             voice_provider = agent.get("voice_provider") or "openai"
@@ -339,12 +345,14 @@ class DirectSIPEngine:
             llm_model = agent.get("llm_model") or "llama-3.3-70b-versatile"
             stt_provider = agent.get("stt_provider") or "deepgram"
             temperature = float(agent.get("temperature", 0.7))
+            hangup_on_vm = agent.get("hangup_on_voicemail", "Y") == "Y"
 
             # Histórico da Conversa
             call.conversation_history = [
-                {"role": "system", "content": system_prompt},
-                {"role": "assistant", "content": greeting}
+                {"role": "system", "content": system_prompt}
             ]
+            if first_message_mode == "assistant_speaks_first":
+                call.conversation_history.append({"role": "assistant", "content": greeting})
 
             # Trava para garantir processamento de um turno por vez
             speech_lock = asyncio.Lock()
@@ -366,6 +374,14 @@ class DirectSIPEngine:
                         logger.info(f"🗣️ [Cliente Disse]: \"{transcript}\"")
                         call.conversation_history.append({"role": "user", "content": transcript})
 
+                        # Detecção de Caixa Postal / Secretária Eletrônica (Voicemail Tool)
+                        lower_text = transcript.lower()
+                        vm_keywords = ["deixe seu recado", "após o sinal", "caixa postal", "deixe recado", "não pode atender", "chamada encaminhada"]
+                        if hangup_on_vm and any(k in lower_text for k in vm_keywords):
+                            logger.info(f"🛑 [Voicemail Tool]: Caixa postal detectada ('{transcript}'). Encerrando chamada...")
+                            await self.send_bye(call.call_id)
+                            return
+
                         # 2. Cérebro LLM (Groq / OpenAI)
                         ai_reply = await AIVoiceBrain.chat_completion(
                             call.conversation_history, 
@@ -377,11 +393,20 @@ class DirectSIPEngine:
                         logger.info(f"🤖 [IA Formulou Resposta]: \"{ai_reply}\"")
                         call.conversation_history.append({"role": "assistant", "content": ai_reply})
 
+                        # Checa se o encerramento foi solicitado (end_call tool)
+                        should_end_call = "[END_CALL]" in ai_reply or "tchau" in ai_reply.lower() and len(call.conversation_history) > 4
+                        clean_reply = ai_reply.replace("[END_CALL]", "").strip()
+
                         # 3. Text-to-Speech (TTS)
-                        pcm_reply = await AIVoiceBrain.synthesize(ai_reply, voice_provider, voice_id, call.api_keys)
+                        pcm_reply = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys)
                         if pcm_reply and len(pcm_reply) > 0:
                             # 4. Transmitir áudio da resposta para o telefone
                             await call.rtp_session.stream_pcm_audio(pcm_reply)
+
+                        if should_end_call:
+                            logger.info("👋 [End Call Tool]: Encerrando chamada após fala de despedida...")
+                            await asyncio.sleep(0.8)
+                            await self.send_bye(call.call_id)
 
                     except Exception as ex:
                         logger.error(f"Erro no ciclo de conversa: {ex}")
@@ -390,14 +415,17 @@ class DirectSIPEngine:
             call.rtp_session.on_speech_ready = handle_user_speech
             call.rtp_session.on_barge_in = lambda: logger.info("Barge-in acionado: IA parou de falar para escutar o cliente.")
 
-            # 1. Saudação Inicial do Agente
-            logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
-            pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys)
-            
-            if pcm_audio and len(pcm_audio) > 0:
-                await call.rtp_session.stream_pcm_audio(pcm_audio)
+            # 1. Saudação Inicial do Agente (se configurado para falar primeiro)
+            if first_message_mode == "assistant_speaks_first":
+                logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
+                pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys)
+                
+                if pcm_audio and len(pcm_audio) > 0:
+                    await call.rtp_session.stream_pcm_audio(pcm_audio)
+                else:
+                    logger.warning("Nenhum áudio gerado para a saudação inicial.")
             else:
-                logger.warning("Nenhum áudio gerado para a saudação inicial.")
+                logger.info("⏳ [Modo User Speaks First]: Aguardando cliente iniciar a conversa na linha...")
 
         except Exception as e:
             logger.error(f"Erro ao iniciar diálogo de voz da IA: {e}")

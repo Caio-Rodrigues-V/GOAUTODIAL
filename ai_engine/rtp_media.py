@@ -176,7 +176,7 @@ def calculate_rms(pcm_bytes: bytes) -> float:
         return math.sqrt(total / count) if count > 0 else 0.0
 
 class RTPAudioSession:
-    def __init__(self, local_port: int, remote_ip: str, remote_port: int, codec: str = "PCMA"):
+    def __init__(self, local_port: int, remote_ip: str, remote_port: int, codec: str = "PCMA", silence_timeout: float = 0.50):
         self.local_port = local_port
         self.remote_ip = remote_ip
         self.remote_port = remote_port
@@ -200,7 +200,7 @@ class RTPAudioSession:
         self.last_speech_time = 0.0
         self.last_transmit_end_time = 0.0
         self.vad_threshold = 550.0  # Threshold calibrado para voz humana clara
-        self.silence_timeout = 0.70  # 700ms de pausa natural finaliza o turno de fala
+        self.silence_timeout = silence_timeout  # Pausa natural antes de fechar o turno de fala
         self._rx_task: Optional[asyncio.Task] = None
 
     def start_socket(self):
