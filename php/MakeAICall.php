@@ -19,8 +19,22 @@ $rawPhone = isset($_POST['phone_number']) ? trim($_POST['phone_number']) : '';
 // Clean phone number (leave only digits)
 $phone = preg_replace('/\D/', '', $rawPhone);
 
-if (empty($phone) || strlen($phone) < 10) {
-    echo json_encode(array('status' => 0, 'message' => 'Número de telefone inválido. Informe DDD + Número (ex: 11987654321).'));
+// Remove leading 0 if present (e.g. 011945656909 -> 11945656909)
+if (substr($phone, 0, 1) === '0') {
+    $phone = substr($phone, 1);
+}
+
+// Build E.164 format (55 + DDD + Number)
+if (substr($phone, 0, 2) === '55' && strlen($phone) >= 12) {
+    $e164 = $phone;
+    $localPhone = substr($phone, 2);
+} else {
+    $e164 = '55' . $phone;
+    $localPhone = $phone;
+}
+
+if (strlen($localPhone) < 10) {
+    echo json_encode(array('status' => 0, 'message' => 'Número de telefone inválido. Informe DDD + Número (ex: 11945656909).'));
     exit;
 }
 
@@ -30,9 +44,10 @@ if (!$agent) {
     exit;
 }
 
-// Oktor Tech Prefix
-$oktorPrefix = '5908355';
-$dialNumber = $oktorPrefix . $phone;
+// Oktor Tech Prefix: 59083 (Automação IA com Bina Local)
+// Formato de envio: 59083 + 5511945656909 = 590835511945656909
+$oktorPrefix = '59083';
+$dialNumber = $oktorPrefix . $e164;
 
 // Asterisk Channel String
 $channel = "SIP/oktor_ia_pri/" . $dialNumber;
