@@ -311,38 +311,45 @@ class DirectSIPEngine:
                 {"role": "assistant", "content": greeting}
             ]
 
+            # Trava para garantir processamento de um turno por vez
+            speech_lock = asyncio.Lock()
+
             # Callback quando o cliente termina de falar
             async def handle_user_speech(pcm_audio: bytes):
-                try:
-                    logger.info(f"Processando fala do cliente ({len(pcm_audio)} bytes PCM)...")
-                    
-                    # 1. Speech-to-Text (STT)
-                    transcript = await AIVoiceBrain.transcribe(pcm_audio, stt_provider, call.api_keys)
-                    if not transcript or len(transcript.strip()) < 2:
-                        return
+                if speech_lock.locked():
+                    return
+                
+                async with speech_lock:
+                    try:
+                        logger.info(f"Processando fala do cliente ({len(pcm_audio)} bytes PCM)...")
+                        
+                        # 1. Speech-to-Text (STT)
+                        transcript = await AIVoiceBrain.transcribe(pcm_audio, stt_provider, call.api_keys)
+                        if not transcript or len(transcript.strip()) < 2:
+                            return
 
-                    logger.info(f"🗣️ [Cliente Disse]: \"{transcript}\"")
-                    conversation_history.append({"role": "user", "content": transcript})
+                        logger.info(f"🗣️ [Cliente Disse]: \"{transcript}\"")
+                        conversation_history.append({"role": "user", "content": transcript})
 
-                    # 2. Cérebro LLM (Groq / OpenAI)
-                    ai_reply = await AIVoiceBrain.chat_completion(
-                        conversation_history, 
-                        llm_provider, 
-                        llm_model, 
-                        temperature, 
-                        call.api_keys
-                    )
-                    logger.info(f"🤖 [IA Formulou Resposta]: \"{ai_reply}\"")
-                    conversation_history.append({"role": "assistant", "content": ai_reply})
+                        # 2. Cérebro LLM (Groq / OpenAI)
+                        ai_reply = await AIVoiceBrain.chat_completion(
+                            conversation_history, 
+                            llm_provider, 
+                            llm_model, 
+                            temperature, 
+                            call.api_keys
+                        )
+                        logger.info(f"🤖 [IA Formulou Resposta]: \"{ai_reply}\"")
+                        conversation_history.append({"role": "assistant", "content": ai_reply})
 
-                    # 3. Text-to-Speech (TTS)
-                    pcm_reply = await AIVoiceBrain.synthesize(ai_reply, voice_provider, voice_id, call.api_keys)
-                    if pcm_reply and len(pcm_reply) > 0:
-                        # 4. Transmitir áudio da resposta para o telefone
-                        await call.rtp_session.stream_pcm_audio(pcm_reply)
+                        # 3. Text-to-Speech (TTS)
+                        pcm_reply = await AIVoiceBrain.synthesize(ai_reply, voice_provider, voice_id, call.api_keys)
+                        if pcm_reply and len(pcm_reply) > 0:
+                            # 4. Transmitir áudio da resposta para o telefone
+                            await call.rtp_session.stream_pcm_audio(pcm_reply)
 
-                except Exception as ex:
-                    logger.error(f"Erro no ciclo de conversa: {ex}")
+                    except Exception as ex:
+                        logger.error(f"Erro no ciclo de conversa: {ex}")
 
             # Vincular callbacks na sessão RTP
             call.rtp_session.on_speech_ready = handle_user_speech

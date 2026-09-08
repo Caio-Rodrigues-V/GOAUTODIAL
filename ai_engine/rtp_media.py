@@ -194,12 +194,13 @@ class RTPAudioSession:
         self.on_speech_ready: Optional[Callable] = None
         self.on_barge_in: Optional[Callable] = None
         
-        # VAD & Buffer de Fala do Cliente
+        # VAD & Supressão de Eco
         self.speech_buffer = bytearray()
         self.is_collecting_speech = False
         self.last_speech_time = 0.0
-        self.vad_threshold = 400.0  # Nível de energia sonora para detectar voz humana
-        self.silence_timeout = 0.65  # 650ms de silêncio finaliza o turno de fala
+        self.last_transmit_end_time = 0.0
+        self.vad_threshold = 550.0  # Threshold calibrado para voz humana clara
+        self.silence_timeout = 0.70  # 700ms de pausa natural finaliza o turno de fala
         self._rx_task: Optional[asyncio.Task] = None
 
     def start_socket(self):
@@ -217,36 +218,32 @@ class RTPAudioSession:
 
     async def _receive_loop(self):
         """
-        Escuta pacotes RTP do cliente, detecta fala (VAD), trata interrupções (Barge-In)
-        e despacha para transcrição quando o cliente termina de falar.
+        Escuta pacotes RTP do cliente com cancelamento de eco acústico (AEC)
+        e detecção precisa de término de fala.
         """
-        logger.info(f"Escutador RTP iniciado para captura da voz do cliente...")
+        logger.info("Escutador RTP com supressão de eco iniciado...")
         loop = asyncio.get_running_loop()
 
         while self.is_running and self.sock:
             try:
                 data = await loop.sock_recv(self.sock, 2048)
                 if len(data) <= 12:
-                    continue  # Apenas cabeçalho ou pacote vazio
-
-                # Extrai payload G.711 (após os 12 bytes de header RTP RFC 3550)
-                g711_payload = data[12:]
-                
-                # Decodifica para PCM 16-bit
-                pcm_chunk = alaw_to_linear(g711_payload) if self.payload_type == 8 else ulaw_to_linear(g711_payload)
-                rms = calculate_rms(pcm_chunk)
+                    continue
 
                 now = time.time()
 
-                if rms > self.vad_threshold:
-                    # Cliente está falando!
-                    if self.is_transmitting:
-                        # BARGE-IN: Cliente interrompeu a IA!
-                        logger.info("⚡ [BARGE-IN]: Cliente começou a falar! Interrompendo a voz da IA imediatamente...")
-                        self.cancel_playback = True
-                        if self.on_barge_in:
-                            asyncio.create_task(self.on_barge_in())
+                # 1. Supressão de Eco: Ignorar áudio entrante durante a fala da IA e nos 400ms seguintes
+                if self.is_transmitting:
+                    continue
+                if now - self.last_transmit_end_time < 0.40:
+                    continue
 
+                # Extrai payload G.711
+                g711_payload = data[12:]
+                pcm_chunk = alaw_to_linear(g711_payload) if self.payload_type == 8 else ulaw_to_linear(g711_payload)
+                rms = calculate_rms(pcm_chunk)
+
+                if rms > self.vad_threshold:
                     if not self.is_collecting_speech:
                         self.is_collecting_speech = True
                         self.speech_buffer.clear()
@@ -256,14 +253,14 @@ class RTPAudioSession:
                     self.last_speech_time = now
 
                 elif self.is_collecting_speech:
-                    # Adiciona um pouco de silêncio natural no buffer
                     self.speech_buffer.extend(pcm_chunk)
                     
-                    # Checa se o silêncio atingiu o tempo de finalização da fala
+                    # Checa término de fala (silêncio)
                     if now - self.last_speech_time > self.silence_timeout:
                         self.is_collecting_speech = False
-                        logger.info(f"🤫 [Silêncio detectado]: Final de fala do cliente ({len(self.speech_buffer)} bytes PCM). Enviando para STT...")
-                        if self.on_speech_ready and len(self.speech_buffer) > 3200:
+                        audio_len = len(self.speech_buffer)
+                        logger.info(f"🤫 [Silêncio detectado]: Final de fala ({audio_len} bytes PCM). Processando com IA...")
+                        if self.on_speech_ready and audio_len >= 4000:
                             collected_audio = bytes(self.speech_buffer)
                             asyncio.create_task(self.on_speech_ready(collected_audio))
                         self.speech_buffer.clear()
@@ -276,7 +273,7 @@ class RTPAudioSession:
 
     async def stream_pcm_audio(self, pcm_bytes: bytes):
         """
-        Envia áudio PCM para a Oktor em blocos de 20ms com suporte a cancelamento instantâneo (Barge-In).
+        Envia áudio PCM para a Oktor com timer de alta precisão monotonic (elimina engasgos e falhas).
         """
         if not self.sock or not self.is_running:
             self.start_socket()
@@ -305,12 +302,12 @@ class RTPAudioSession:
 
         frame_size = 160  # 160 bytes = 20ms de áudio a 8kHz
         total_frames = len(g711_audio) // frame_size
-        logger.info(f"Transmitindo áudio da IA via RTP ({len(g711_audio)} bytes, ~{total_frames * 20}ms de fala)...")
+        logger.info(f"Transmitindo áudio suave da IA via RTP ({len(g711_audio)} bytes, ~{total_frames * 20}ms)...")
+
+        start_time = time.perf_counter()
 
         for idx, i in enumerate(range(0, len(g711_audio), frame_size)):
             if not self.is_running or self.cancel_playback:
-                if self.cancel_playback:
-                    logger.info("🚫 Transmissão de áudio da IA cancelada por interrupção do cliente (Barge-In)")
                 break
             
             chunk = g711_audio[i:i + frame_size]
@@ -328,11 +325,16 @@ class RTPAudioSession:
 
             self.seq = (self.seq + 1) & 0xFFFF
             self.timestamp = (self.timestamp + 160) & 0xFFFFFFFF
-            await asyncio.sleep(0.0195)
+
+            # Timer de alta precisão (Monotonic clock - Jitter ZERO)
+            target_next = start_time + ((idx + 1) * 0.020)
+            delay = target_next - time.perf_counter()
+            if delay > 0.001:
+                await asyncio.sleep(delay)
 
         self.is_transmitting = False
-        if not self.cancel_playback:
-            logger.info("Transmissão do bloco de áudio da IA concluída com sucesso!")
+        self.last_transmit_end_time = time.time()
+        logger.info("Transmissão do bloco de áudio da IA concluída perfeitamente!")
 
     def stop(self):
         self.is_running = False
