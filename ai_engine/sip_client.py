@@ -62,11 +62,12 @@ class OktorSIPCall:
             f"INVITE sip:{self.dial_string}@{OKTOR_PRIMARY_IP}:{OKTOR_PORT} SIP/2.0\r\n"
             f"Via: SIP/2.0/UDP {server_ip}:{self.local_port};branch=z9hG4bK-{uuid.uuid4().hex[:12]};rport\r\n"
             f"Max-Forwards: 70\r\n"
-            f"From: <sip:59083@{server_ip}>;tag={self.from_tag}\r\n"
-            f"To: <sip:{self.dial_string}@{OKTOR_PRIMARY_IP}>\r\n"
+            f"From: \"Dial GO AI\" <sip:{self.dial_string}@{server_ip}>;tag={self.from_tag}\r\n"
+            f"To: <sip:{self.dial_string}@{OKTOR_PRIMARY_IP}:{OKTOR_PORT}>\r\n"
             f"Call-ID: {self.call_id}\r\n"
             f"CSeq: {self.cseq} INVITE\r\n"
-            f"Contact: <sip:59083@{server_ip}:{self.local_port}>\r\n"
+            f"Contact: <sip:{self.dial_string}@{server_ip}:{self.local_port}>\r\n"
+            "Allow: INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, NOTIFY, MESSAGE, SUBSCRIBE, INFO\r\n"
             "User-Agent: DialGO-VoiceAI/1.0\r\n"
             "Content-Type: application/sdp\r\n"
             f"Content-Length: {content_length}\r\n"
@@ -80,8 +81,8 @@ class OktorSIPCall:
             f"ACK sip:{self.dial_string}@{OKTOR_PRIMARY_IP}:{OKTOR_PORT} SIP/2.0\r\n"
             f"Via: SIP/2.0/UDP {server_ip}:{self.local_port};branch=z9hG4bK-{uuid.uuid4().hex[:12]};rport\r\n"
             f"Max-Forwards: 70\r\n"
-            f"From: <sip:59083@{server_ip}>;tag={self.from_tag}\r\n"
-            f"To: <sip:{self.dial_string}@{OKTOR_PRIMARY_IP}>" + (f";tag={self.to_tag}" if self.to_tag else "") + "\r\n"
+            f"From: \"Dial GO AI\" <sip:{self.dial_string}@{server_ip}>;tag={self.from_tag}\r\n"
+            f"To: <sip:{self.dial_string}@{OKTOR_PRIMARY_IP}:{OKTOR_PORT}>" + (f";tag={self.to_tag}" if self.to_tag else "") + "\r\n"
             f"Call-ID: {self.call_id}\r\n"
             f"CSeq: {self.cseq} ACK\r\n"
             "User-Agent: DialGO-VoiceAI/1.0\r\n"
@@ -96,8 +97,8 @@ class OktorSIPCall:
             f"BYE sip:{self.dial_string}@{OKTOR_PRIMARY_IP}:{OKTOR_PORT} SIP/2.0\r\n"
             f"Via: SIP/2.0/UDP {server_ip}:{self.local_port};branch=z9hG4bK-{uuid.uuid4().hex[:12]};rport\r\n"
             f"Max-Forwards: 70\r\n"
-            f"From: <sip:59083@{server_ip}>;tag={self.from_tag}\r\n"
-            f"To: <sip:{self.dial_string}@{OKTOR_PRIMARY_IP}>" + (f";tag={self.to_tag}" if self.to_tag else "") + "\r\n"
+            f"From: \"Dial GO AI\" <sip:{self.dial_string}@{server_ip}>;tag={self.from_tag}\r\n"
+            f"To: <sip:{self.dial_string}@{OKTOR_PRIMARY_IP}:{OKTOR_PORT}>" + (f";tag={self.to_tag}" if self.to_tag else "") + "\r\n"
             f"Call-ID: {self.call_id}\r\n"
             f"CSeq: {self.cseq} BYE\r\n"
             "User-Agent: DialGO-VoiceAI/1.0\r\n"
@@ -122,10 +123,36 @@ class SIPProtocol(asyncio.DatagramProtocol):
 class DirectSIPEngine:
     def __init__(self, port: int = 5060):
         self.port = port
+        self.public_ip = "127.0.0.1"
         self.active_calls: Dict[str, OktorSIPCall] = {}
         self.transport = None
 
+    async def detect_public_ip(self):
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                r = await client.get("https://api.ipify.org")
+                if r.status_code == 200:
+                    self.public_ip = r.text.strip()
+                    logger.info(f"============================================================")
+                    logger.info(f"📡 IP Público do Servidor Detectado: {self.public_ip}")
+                    logger.info(f"👉 Confirme se o IP '{self.public_ip}' está autorizado na sua conta da OKTOR!")
+                    logger.info(f"============================================================")
+                    return
+        except Exception as e:
+            logger.warning(f"Não foi possível obter IP público via API: {e}")
+
+        # Fallback local socket
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect((OKTOR_PRIMARY_IP, 80))
+            self.public_ip = s.getsockname()[0]
+            s.close()
+        except:
+            self.public_ip = "127.0.0.1"
+
     async def start(self):
+        await self.detect_public_ip()
         loop = asyncio.get_running_loop()
         try:
             # Bind to 0.0.0.0:5060 or ephemeral port if 5060 is taken
@@ -144,24 +171,27 @@ class DirectSIPEngine:
             logger.info(f"SIP Engine ativo na porta alternativa {self.port}")
 
     async def dial(self, agent_id: int, phone_number: str) -> Dict[str, Any]:
-        call = OktorSIPCall(agent_id, phone_number, local_port=self.port)
+        call = OktorSIPCall(agent_id, phone_number, local_ip=self.public_ip, local_port=self.port)
         self.active_calls[call.call_id] = call
         
-        # Get public or outbound IP
-        server_ip = "127.0.0.1"
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect((OKTOR_PRIMARY_IP, 80))
-            server_ip = s.getsockname()[0]
-            s.close()
-        except:
-            pass
-
-        invite_msg = call.build_invite(server_ip)
+        invite_msg = call.build_invite(self.public_ip)
         logger.info(f"Disparando SIP INVITE para Oktor ({OKTOR_PRIMARY_IP}:{OKTOR_PORT}) - Destino: {call.dial_string}")
         
         if self.transport:
+            # Send to Primary SBC
             self.transport.sendto(invite_msg.encode('utf-8'), (OKTOR_PRIMARY_IP, OKTOR_PORT))
+            # Also send to Secondary SBC
+            self.transport.sendto(invite_msg.encode('utf-8'), (OKTOR_SECONDARY_IP, OKTOR_PORT))
+        
+        call.status = "ringing"
+        return {
+            "status": "success",
+            "call_id": call.call_id,
+            "destination": call.dial_string,
+            "server_ip": self.public_ip,
+            "agent_id": agent_id,
+            "message": f"Chamada SIP INVITE enviada para a Oktor ({call.dial_string})"
+        }
         
         call.status = "ringing"
         return {
