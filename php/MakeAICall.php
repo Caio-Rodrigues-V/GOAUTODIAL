@@ -47,49 +47,42 @@ if (!$agent) {
 // Oktor Tech Prefix: 59083 (Automação IA com Bina Local)
 // Formato de envio: 59083 + 5511945656909 = 590835511945656909
 $oktorPrefix = '59083';
-$dialNumber = $oktorPrefix . $e164;
+$aiServerUrl = $aiHandler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
+$dialEndpoint = rtrim($aiServerUrl, '/') . '/api/dial';
 
-// Asterisk Channel String
-$channel = "SIP/oktor_ia_pri/" . $dialNumber;
+// 1. Send HTTP request to Python Direct SIP Server
+$ch = curl_init($dialEndpoint);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
+    'agent_id' => $agentId,
+    'phone_number' => $phone
+)));
+curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-// Unique call file ID
-$callId = "dialgo_ai_" . $agentId . "_" . time() . "_" . mt_rand(1000, 9999);
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curlErr = curl_error($ch);
+curl_close($ch);
 
-// Asterisk Call File Content
-$callContent = "Channel: {$channel}\n" .
-               "MaxRetries: 0\n" .
-               "RetryTime: 10\n" .
-               "WaitTime: 45\n" .
-               "Context: dialgo-ai\n" .
-               "Extension: 8300\n" .
-               "Priority: 1\n" .
-               "Set: AGENT_ID={$agentId}\n" .
-               "Set: PHONE_NUMBER={$phone}\n" .
-               "Set: AGENT_NAME=" . addslashes($agent['agent_name']) . "\n" .
-               "Callerid: \"Dial GO AI\" <{$phone}>\n";
-
-$tempFile = sys_get_temp_dir() . "/" . $callId . ".call";
-$spoolDir = "/var/spool/asterisk/outgoing";
-$targetFile = $spoolDir . "/" . $callId . ".call";
-
-// 1. Try direct Asterisk originate CLI command
-$cmd = "asterisk -rx \"channel originate {$channel} extension 8300@dialgo-ai\" 2>&1";
-$cliOutput = @shell_exec($cmd);
-
-// 2. Also write call file to spooler
-$written = @file_put_contents($tempFile, $callContent);
-
-if (is_dir($spoolDir)) {
-    @rename($tempFile, $targetFile);
-    @shell_exec("sudo mv {$tempFile} {$targetFile} 2>/dev/null");
+if ($httpCode === 200 && $response) {
+    $resData = json_decode($response, true);
+    echo json_encode(array(
+        'status' => 1,
+        'message' => "Chamada SIP enviada com sucesso para a OKTOR Telecom! Destino: {$dialNumber}. Aguarde o toque no seu celular.",
+        'dial_number' => $dialNumber,
+        'data' => $resData
+    ));
+    exit;
 }
 
+// Fallback: If python server is not running on 8765, inform user to start it
 echo json_encode(array(
-    'status' => 1,
-    'message' => "Chamada disparada via Tronco Oktor para o número ({$phone})! Destino: {$dialNumber}",
-    'dial_number' => $dialNumber,
-    'channel' => $channel,
-    'cli_response' => trim($cliOutput)
+    'status' => 0,
+    'message' => "O Servidor de Voz Python não está rodando no momento. No terminal do servidor, execute: 'cd /home/grpia/apps/goautodial/ai_engine && python3 server.py' para ligar o discador!",
+    'dial_number' => $dialNumber
 ));
 exit;
 ?>
