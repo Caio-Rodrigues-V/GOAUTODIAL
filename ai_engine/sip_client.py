@@ -173,11 +173,11 @@ class DirectSIPEngine:
         self.active_calls[call.call_id] = call
         
         invite_msg = call.build_invite(self.public_ip)
-        logger.info(f"Disparando SIP INVITE para Oktor ({OKTOR_PRIMARY_IP}:{OKTOR_PORT}) - Destino: {call.dial_string}")
+        logger.info(f"Disparando SIP INVITE para Oktor Primário ({OKTOR_PRIMARY_IP}:{OKTOR_PORT}) - Destino: {call.dial_string}")
         
         if self.transport:
+            # Envia exclusivamente para o SBC Primário da Oktor
             self.transport.sendto(invite_msg.encode('utf-8'), (OKTOR_PRIMARY_IP, OKTOR_PORT))
-            self.transport.sendto(invite_msg.encode('utf-8'), (OKTOR_SECONDARY_IP, OKTOR_PORT))
         
         call.status = "ringing"
         return {
@@ -239,6 +239,14 @@ class DirectSIPEngine:
             logger.info(f"Chamada {call.dial_string} está TOCANDO no celular do cliente!")
 
         elif " 200 OK" in first_line:
+            # Evita processar 200 OK duplicado
+            if call.status == "answered":
+                # Apenas reenviar ACK para confirmar
+                ack_msg = call.build_ack(call.local_ip)
+                if self.transport:
+                    self.transport.sendto(ack_msg.encode('utf-8'), addr)
+                return
+
             call.status = "answered"
             logger.info(f"Chamada {call.dial_string} foi ATENDIDA! Conectando áudio com a IA...")
             
@@ -254,10 +262,15 @@ class DirectSIPEngine:
             remote_media_ip = c_match.group(1) if c_match else addr[0]
             remote_media_port = int(m_match.group(1)) if m_match else 10000
             
-            logger.info(f"Conexão RTP estabelecida: Destino Oktor Mídia = {remote_media_ip}:{remote_media_port}")
+            # Detectar codec preferido no SDP (PCMA = 8, PCMU = 0)
+            codec = "PCMA"
+            if "PCMU" in msg and "PCMA" not in msg:
+                codec = "PCMU"
+
+            logger.info(f"Conexão RTP estabelecida: Destino Oktor Mídia = {remote_media_ip}:{remote_media_port} (Codec: {codec})")
             
             # Iniciar Streaming RTP da IA
-            asyncio.create_task(self.start_ai_conversation(call, remote_media_ip, remote_media_port))
+            asyncio.create_task(self.start_ai_conversation(call, remote_media_ip, remote_media_port, codec))
 
         elif " 486 Busy" in first_line or " 603 Decline" in first_line or " 487 Request Terminated" in first_line:
             call.status = "busy"
@@ -273,12 +286,12 @@ class DirectSIPEngine:
                 call.rtp_session.stop()
             self.active_calls.pop(call_id, None)
 
-    async def start_ai_conversation(self, call: OktorSIPCall, remote_ip: str, remote_port: int):
+    async def start_ai_conversation(self, call: OktorSIPCall, remote_ip: str, remote_port: int, codec: str = "PCMA"):
         """
         Orquestra a fala inicial e a interação da IA na linha telefônica
         """
         try:
-            call.rtp_session = RTPAudioSession(call.rtp_port, remote_ip, remote_port, codec="PCMA")
+            call.rtp_session = RTPAudioSession(call.rtp_port, remote_ip, remote_port, codec=codec)
             call.rtp_session.start_socket()
 
             # Mensagem de saudação do Agente
