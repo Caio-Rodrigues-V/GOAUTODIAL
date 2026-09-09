@@ -77,7 +77,7 @@ class AIVoiceBrain:
                             return transcript
 
                 # 3. OpenAI Whisper
-                if api_keys.get("openai_api_key"):
+                elif stt_provider == "openai" and api_keys.get("openai_api_key"):
                     api_key = api_keys.get("openai_api_key")
                     files = {
                         "file": ("audio.wav", wav_data, "audio/wav")
@@ -96,6 +96,35 @@ class AIVoiceBrain:
                         if transcript:
                             logger.info(f"[OpenAI Whisper STT]: '{transcript}'")
                             return transcript
+
+                # 4. Microsoft Azure Speech to Text (STT)
+                elif (stt_provider == "azure" or not stt_provider) and api_keys.get("azure_speech_key"):
+                    api_key = api_keys.get("azure_speech_key")
+                    region = api_keys.get("azure_speech_region") or "eastus"
+                    url = f"https://{region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=pt-BR&format=detailed"
+                    headers = {
+                        "Ocp-Apim-Subscription-Key": api_key,
+                        "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=8000"
+                    }
+                    r = await client.post(url, content=wav_data, headers=headers)
+                    if r.status_code == 200:
+                        data = r.json()
+                        if data.get("RecognitionStatus") == "Success":
+                            transcript = data.get("DisplayText", "").strip()
+                            if transcript:
+                                logger.info(f"[Azure Speech STT]: '{transcript}'")
+                                return transcript
+                    else:
+                        logger.error(f"Erro Azure Speech STT [{r.status_code}]: {r.text}")
+
+                # Fallback genérico para qualquer chave STT disponível
+                elif api_keys.get("openai_api_key"):
+                    api_key = api_keys.get("openai_api_key")
+                    files = {"file": ("audio.wav", wav_data, "audio/wav")}
+                    data = {"model": "whisper-1", "language": "pt"}
+                    r = await client.post("https://api.openai.com/v1/audio/transcriptions", files=files, data=data, headers={"Authorization": f"Bearer {api_key}"})
+                    if r.status_code == 200:
+                        return r.json().get("text", "").strip()
 
             except Exception as e:
                 logger.error(f"Erro no reconhecimento de fala (STT): {e}")
@@ -195,6 +224,29 @@ class AIVoiceBrain:
                         return r.content
                     else:
                         logger.error(f"Erro Cartesia TTS: {r.status_code} - {r.text}")
+
+                # 4. Microsoft Azure Speech TTS
+                elif voice_provider == "azure":
+                    api_key = api_keys.get("azure_speech_key", "")
+                    region = api_keys.get("azure_speech_region", "eastus")
+                    if not api_key:
+                        logger.error("Chave da Azure Speech não configurada")
+                        return b''
+
+                    azure_voice = voice_id if voice_id and voice_id != "custom" else "pt-BR-FranciscaNeural"
+                    url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
+                    ssml = f"<speak version='1.0' xml:lang='pt-BR'><voice xml:lang='pt-BR' name='{azure_voice}'>{text}</voice></speak>"
+                    headers = {
+                        "Ocp-Apim-Subscription-Key": api_key,
+                        "Content-Type": "application/ssml+xml",
+                        "X-Microsoft-OutputFormat": "raw-8khz-16bit-mono-pcm",
+                        "User-Agent": "DialGO-VoiceEngine"
+                    }
+                    r = await client.post(url, content=ssml.encode('utf-8'), headers=headers)
+                    if r.status_code == 200:
+                        return r.content
+                    else:
+                        logger.error(f"Erro Azure TTS [{r.status_code}]: {r.text}")
 
             except Exception as e:
                 logger.error(f"Exceção durante síntese de áudio: {e}")

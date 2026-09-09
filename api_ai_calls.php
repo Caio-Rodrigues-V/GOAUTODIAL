@@ -96,7 +96,9 @@ switch ($action) {
             'deepgram_api_key' => $handler->getSetting('deepgram_api_key', ''),
             'gemini_api_key' => $handler->getSetting('gemini_api_key', ''),
             'anthropic_api_key' => $handler->getSetting('anthropic_api_key', ''),
-            'deepseek_api_key' => $handler->getSetting('deepseek_api_key', '')
+            'deepseek_api_key' => $handler->getSetting('deepseek_api_key', ''),
+            'azure_speech_key' => $handler->getSetting('azure_speech_key', ''),
+            'azure_speech_region' => $handler->getSetting('azure_speech_region', 'eastus')
         );
 
         $aiServerUrl = $handler->getSetting('ai_server_url', 'http://127.0.0.1:8765');

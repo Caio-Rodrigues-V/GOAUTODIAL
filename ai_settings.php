@@ -126,6 +126,18 @@ $aiServerUrl = $aiHandler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
                                     <small class="text-muted">Obtenha em: <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></small>
                                 </div>
 
+                                <div class="form-group">
+                                    <label><i class="fa fa-windows text-info"></i> Microsoft Azure Speech API Key (STT & TTS)</label>
+                                    <input type="password" name="azure_speech_key" class="form-control" value="<?=htmlspecialchars($aiHandler->getSetting('azure_speech_key', ''))?>" placeholder="Chave do Serviço de Fala da Azure (Key 1 ou 2)" />
+                                    <small class="text-muted">Obtenha em: <a href="https://portal.azure.com" target="_blank">portal.azure.com</a> (Cognitive Services / Speech)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fa fa-map-marker text-info"></i> Microsoft Azure Region</label>
+                                    <input type="text" name="azure_speech_region" class="form-control" value="<?=htmlspecialchars($aiHandler->getSetting('azure_speech_region', 'eastus'))?>" placeholder="ex: eastus, brazilsouth, westeurope" />
+                                    <small class="text-muted">Região onde o recurso do Speech foi criado na Azure (padrão: <code>eastus</code> ou <code>brazilsouth</code>).</small>
+                                </div>
+
                                 <hr/>
 
                                 <div class="form-group">

@@ -20,6 +20,8 @@ $keys = array(
     'gemini_api_key',
     'anthropic_api_key',
     'deepseek_api_key',
+    'azure_speech_key',
+    'azure_speech_region',
     'ai_server_url'
 );
 
