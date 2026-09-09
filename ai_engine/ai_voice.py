@@ -431,11 +431,18 @@ class AIVoiceBrain:
                 # 5. OpenAI (GPT-4o, GPT-4o Mini, o3-mini, o1, o1-mini, GPT-4 Turbo, GPT-3.5 Turbo) ou Fallback
                 if api_keys.get("openai_api_key"):
                     api_key = api_keys.get("openai_api_key")
-                    model = llm_model if llm_model and llm_model != "custom" else "gpt-4o-mini"
-                    is_reasoning = any(model.startswith(prefix) for prefix in ["o1", "o3"])
+                    raw_model = llm_model if llm_model and llm_model != "custom" else "gpt-4o-mini"
+                    
+                    # Se o modelo for gpt-5.* (ainda não disponível na API direta da OpenAI) ou preview, mapear para gpt-4o
+                    if raw_model in ["gpt-5.6", "gpt-5.5", "gpt-5-preview", "gpt-5"]:
+                        target_model = "gpt-4o"
+                    else:
+                        target_model = raw_model
+                        
+                    is_reasoning = any(target_model.startswith(prefix) for prefix in ["o1", "o3"])
 
                     payload = {
-                        "model": model,
+                        "model": target_model,
                         "messages": messages
                     }
                     
@@ -455,9 +462,23 @@ class AIVoiceBrain:
                         data = r.json()
                         return data["choices"][0]["message"]["content"].strip()
                     else:
-                        logger.error(f"Erro OpenAI API [{r.status_code}]: {r.text}")
+                        logger.error(f"Erro OpenAI API [{r.status_code}] com modelo '{target_model}': {r.text}")
+                        # Se deu erro 404 (model_not_found) ou 400, tenta fallback imediato para gpt-4o-mini
+                        if r.status_code in [400, 404] and target_model != "gpt-4o-mini":
+                            logger.info("Tentando fallback automático para 'gpt-4o-mini'...")
+                            payload["model"] = "gpt-4o-mini"
+                            payload.pop("max_completion_tokens", None)
+                            payload["temperature"] = 0.7
+                            payload["max_tokens"] = 150
+                            r_fb = await client.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers)
+                            if r_fb.status_code == 200:
+                                data = r_fb.json()
+                                return data["choices"][0]["message"]["content"].strip()
+                            else:
+                                logger.error(f"Erro no fallback OpenAI [{r_fb.status_code}]: {r_fb.text}")
 
             except Exception as e:
                 logger.error(f"Exceção na LLM ({llm_provider}): {e}")
 
+        logger.warning(f"⚠️ Nenhuma LLM respondeu com sucesso. Verifique as chaves de API e provedor '{llm_provider}'.")
         return "Entendi perfeitamente. Como posso te ajudar?"
