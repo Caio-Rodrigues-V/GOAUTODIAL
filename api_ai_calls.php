@@ -122,8 +122,10 @@ switch ($action) {
         if ($httpCode === 200 && $response) {
             echo $response;
         } else {
-            http_response_code(502);
-            echo json_encode(array('status' => 'error', 'message' => 'Failed to connect to Voice Engine'));
+            echo json_encode(array(
+                'status' => 'error',
+                'message' => 'O Motor de Voz (ai_engine) não está rodando no servidor na porta 8765. No terminal do servidor, execute: cd ai_engine && bash setup_service.sh (ou python3 server.py)'
+            ));
         }
         break;
 

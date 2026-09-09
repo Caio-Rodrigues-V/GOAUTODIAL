@@ -1991,11 +1991,16 @@ $(document).ready(function() {
                 if (res.status === 'ringing' || res.status === 1 || res.status === 'ok') {
                     alert("📞 Ligação disparada com sucesso para " + phone + "! O telefone tocará em instantes.");
                 } else {
-                    alert("Resposta da discagem: " + (res.message || JSON.stringify(res)));
+                    alert(res.message || 'Erro ao discar: ' + JSON.stringify(res));
                 }
-            }, 'json').fail(function() {
+            }, 'json').fail(function(xhr) {
                 $(self).prop('disabled', false).html('<i class="fa fa-phone"></i> Talk / Testar Chamada');
-                alert("Erro ao contatar servidor de telefonia.");
+                var msg = "Erro ao contatar servidor de telefonia.";
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data && data.message) msg = data.message;
+                } catch(e) {}
+                alert(msg);
             });
         }
     });
