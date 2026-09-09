@@ -61,9 +61,7 @@
         <!-- CHOSEN-->
    		<link rel="stylesheet" href="js/dashboard/chosen_v1.2.0/chosen.min.css">
 		
-		<!-- Date Range Picker -->
-		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>	
-	        <script type="text/javascript" src="js/plugins/daterangepicker/daterangepickerv3.js"></script>
+		<!-- Date Range Picker CSS -->
 		<link rel="stylesheet" href="css/daterangepicker/daterangepickerv3.css"></link>  	
     </head>
 
@@ -566,6 +564,9 @@
 <!-- end of modals -->
 
 		<?php print $ui->standardizedThemeJS();?>
+		<!-- Date Range Picker Scripts -->
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>	
+		<script type="text/javascript" src="js/plugins/daterangepicker/daterangepickerv3.js"></script>
 		<!-- JQUERY STEPS-->
   		<script src="js/dashboard/js/jquery.steps/build/jquery.steps.js"></script>
 	

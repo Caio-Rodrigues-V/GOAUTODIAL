@@ -3547,7 +3547,8 @@ error_reporting(E_ERROR | E_PARSE);
 		$result = $this->generateTableHeaderWithItems($columns, "T_userslist", "responsive display no-wrap table-bordered table-striped", true, false, '', '', '');
 
 		// iterate through all users
-		for($i=0;$i<count($output->user_id);$i++) {
+		$userCount = (isset($output->user_id) && is_array($output->user_id)) ? count($output->user_id) : 0;
+		for($i=0; $i<$userCount; $i++) {
 			$user_id = $output->user_id[$i];
 			$user = $output->user[$i];
 			$full_name = $output->full_name[$i];
@@ -3879,9 +3880,8 @@ error_reporting(E_ERROR | E_PARSE);
 			# Result was OK!
 			$checkbox_all = $this->getCheckAll("phone");
 			$columns = array($this->lh->translationFor("extension"), $this->lh->translationFor("protocol"),$this->lh->translationFor("server_ip"), $this->lh->translationFor("status"), $this->lh->translationFor("voicemail"), $checkbox_all, $this->lh->translationFor("action"));
-			$result = $this->generateTableHeaderWithItems($columns, "T_phones", "responsive display no-wrap table-bordered table-striped", true, false, '', '', '');
-
-			for ($i=0;$i < count($output->extension);$i++) {
+			$phoneCount = (isset($output->extension) && is_array($output->extension)) ? count($output->extension) : 0;
+			for ($i=0; $i < $phoneCount; $i++) {
 				if ($output->active[$i] == "Y") {
 					$output->active[$i] = $this->lh->translationFor("active");
 				} else{
@@ -5997,25 +5997,6 @@ error_reporting(E_ERROR | E_PARSE);
 					new Vue(goOptions);
 				}
 			} catch(e) { console.warn('Avatar Vue init:', e); }
-
-			// Universal Sidebar Treeview Click Handler
-			$(document).ready(function() {
-				$(document).off('click.goSidebarTree').on('click.goSidebarTree', '.sidebar .treeview > a', function(e) {
-					var \$li = $(this).parent();
-					var \$menu = \$li.find('> .treeview-menu');
-					if (\$menu.length) {
-						e.preventDefault();
-						if (\$li.hasClass('active')) {
-							\$li.removeClass('active');
-							\$menu.slideUp(200);
-						} else {
-							\$li.siblings('.treeview.active').removeClass('active').find('> .treeview-menu').slideUp(200);
-							\$li.addClass('active');
-							\$menu.slideDown(200);
-						}
-					}
-				});
-			});
 		</script>\n";
 
 		return $js;
