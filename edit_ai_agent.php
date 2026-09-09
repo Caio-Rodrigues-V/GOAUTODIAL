@@ -1,7 +1,7 @@
 <?php
 /**
  * @file        edit_ai_agent.php
- * @brief       Vapi-Style Voice AI Agent Builder & Manager
+ * @brief       Vapi-Style Voice AI Agent Builder & Manager (Fully Dynamic)
  * @copyright   (c) Dial GO Voice AI Engine
  */
 
@@ -31,15 +31,11 @@ if (!$agent) {
     exit;
 }
 
-$llms = $aiHandler->getAvailableLLMs();
-$voices = $aiHandler->getAvailableVoices();
-$stts = $aiHandler->getAvailableSTTs();
 $defaultTools = $aiHandler->getDefaultTools();
-
 $agentTools = !empty($agent['tools_json']) ? json_decode($agent['tools_json'], true) : $defaultTools;
 if (!is_array($agentTools)) $agentTools = $defaultTools;
 
-// Defaults for new Vapi fields
+// Defaults for Vapi fields
 $first_message_mode = !empty($agent['first_message_mode']) ? $agent['first_message_mode'] : 'assistant_speaks_first';
 $model_preset = !empty($agent['model_preset']) ? $agent['model_preset'] : 'balanced';
 $silence_timeout_ms = !empty($agent['silence_timeout_ms']) ? (int)$agent['silence_timeout_ms'] : 500;
@@ -70,7 +66,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
     <link href="css/style.css" rel="stylesheet" type="text/css" />
     
     <style>
-        /* MODERN VAPI DARK THEME & PREMIUM POLISH */
+        /* MODERN VAPI DARK THEME */
         body, .right-side, .wrapper {
             background-color: #0b0d11 !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif !important;
@@ -250,22 +246,21 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             letter-spacing: 0.8px;
         }
         .vapi-telemetry-value {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
             color: #ffffff;
             letter-spacing: -0.5px;
         }
         .vapi-progress-bar {
-            height: 6px;
-            background: rgba(255, 255, 255, 0.06);
+            height: 7px;
+            background: #1c222e;
             border-radius: 4px;
             overflow: hidden;
             display: flex;
-            gap: 2px;
         }
-        .vapi-seg-stt { background: #10b981; border-radius: 3px; }
-        .vapi-seg-llm { background: #38bdf8; border-radius: 3px; }
-        .vapi-seg-tts { background: #ec4899; border-radius: 3px; }
+        .vapi-seg-stt { background: #10b981; transition: width 0.3s; }
+        .vapi-seg-llm { background: #38bdf8; transition: width 0.3s; }
+        .vapi-seg-tts { background: #a855f7; transition: width 0.3s; }
 
         /* Presets Bar */
         .vapi-presets-bar {
@@ -273,44 +268,42 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             align-items: center;
             gap: 10px;
             margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             flex-wrap: wrap;
-            background: #11141b;
-            padding: 8px 14px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
         }
         .vapi-preset-label {
             font-size: 12px;
-            color: #64748b;
             font-weight: 700;
-            margin-right: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: #8392a5;
+            margin-right: 6px;
         }
         .vapi-preset-pill {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            color: #cbd5e1;
-            padding: 6px 14px;
-            border-radius: 8px;
+            background: #141822;
+            color: #94a3b8;
             font-size: 12px;
             font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             cursor: pointer;
             transition: all 0.2s;
         }
         .vapi-preset-pill:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.15);
-            color: #fff;
+            background: #1e2433;
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
         }
         .vapi-preset-pill.active {
-            background: rgba(56, 189, 248, 0.12);
-            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
             color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.4);
             font-weight: 700;
         }
 
-        /* 3 Pipeline Cards */
+        /* 3 Main Pipeline Cards Grid */
         .vapi-cards-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -322,15 +315,15 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 14px;
             padding: 22px;
-            position: relative;
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+            position: relative;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
         }
         .vapi-card:hover {
             border-color: rgba(56, 189, 248, 0.4);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
         .vapi-card-header {
             display: flex;
@@ -341,11 +334,11 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         .vapi-card-type {
             font-size: 11px;
             font-weight: 800;
-            letter-spacing: 0.9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: #94a3b8;
+            gap: 6px;
         }
         .vapi-dot {
             width: 8px;
@@ -353,29 +346,29 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             border-radius: 50%;
             display: inline-block;
         }
-        .vapi-dot-stt { background: #10b981; box-shadow: 0 0 10px #10b981; }
-        .vapi-dot-llm { background: #38bdf8; box-shadow: 0 0 10px #38bdf8; }
-        .vapi-dot-tts { background: #ec4899; box-shadow: 0 0 10px #ec4899; }
-        
+        .vapi-dot-stt { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .vapi-dot-llm { background: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
+        .vapi-dot-tts { background: #a855f7; box-shadow: 0 0 8px #a855f7; }
+
         .vapi-card-edit-btn {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: #94a3b8;
-            font-size: 13px;
             width: 28px;
             height: 28px;
-            display: inline-flex;
+            border-radius: 6px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            border-radius: 6px;
+            font-size: 12px;
             transition: all 0.2s;
         }
         .vapi-card:hover .vapi-card-edit-btn {
-            color: #38bdf8;
-            background: rgba(56, 189, 248, 0.1);
-            border-color: rgba(56, 189, 248, 0.3);
+            background: #38bdf8;
+            color: #0b0d11;
+            border-color: #38bdf8;
         }
+
         .vapi-card-title {
             font-size: 17px;
             font-weight: 700;
@@ -385,17 +378,15 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         }
         .vapi-card-provider {
             font-size: 12px;
-            color: #94a3b8;
+            color: #8392a5;
             margin-bottom: 18px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
         .vapi-card-stats {
-            display: flex;
-            justify-content: space-between;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
             padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
             font-size: 11px;
         }
         .vapi-card-stat-label {
@@ -551,7 +542,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         }
         .vapi-drawer {
             background: #0f1218;
-            width: 480px;
+            width: 500px;
             max-width: 100%;
             height: 100%;
             overflow-y: auto;
@@ -599,11 +590,11 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         }
         .vapi-input-dark {
             width: 100%;
-            background: #161922;
+            background: #141720;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f1f5f9;
-            padding: 11px 16px;
-            border-radius: 9px;
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 10px 14px;
             font-size: 13px;
             box-sizing: border-box;
             transition: all 0.2s;
@@ -611,15 +602,16 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         .vapi-input-dark:focus {
             border-color: #38bdf8;
             outline: none;
-            background: #1b202b;
             box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
         }
+
+        /* Switches & Sliders */
         .vapi-switch-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 14px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
         .vapi-switch-info {
             max-width: 80%;
@@ -633,22 +625,21 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             font-size: 11px;
             color: #64748b;
             margin-top: 2px;
-            line-height: 1.4;
         }
         
-        /* Toggle Switch */
         .vapi-switch {
             position: relative;
             display: inline-block;
             width: 44px;
             height: 24px;
+            margin-bottom: 0;
         }
         .vapi-switch input { opacity: 0; width: 0; height: 0; }
         .vapi-slider {
             position: absolute; cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #232a38;
-            transition: .25s;
+            background-color: #272d3b;
+            transition: .3s;
             border-radius: 24px;
         }
         .vapi-slider:before {
@@ -656,29 +647,27 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             height: 18px; width: 18px;
             left: 3px; bottom: 3px;
             background-color: white;
-            transition: .25s;
+            transition: .3s;
             border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
         input:checked + .vapi-slider { background-color: #10b981; }
         input:checked + .vapi-slider:before { transform: translateX(20px); }
 
-        /* Range Slider */
         .vapi-range-slider {
             width: 100%;
             accent-color: #10b981;
             height: 6px;
-            background: #232a38;
+            background: #272d3b;
             border-radius: 3px;
             outline: none;
+            cursor: pointer;
         }
 
-        /* Collapsible Section */
         .vapi-accordion-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 0;
+            padding: 14px 0;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
             cursor: pointer;
             color: #cbd5e1;
@@ -686,12 +675,11 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             font-size: 13px;
         }
 
-        /* Pill segmented control */
         .vapi-pill-group {
             display: flex;
             background: #14171f;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
             padding: 3px;
             gap: 4px;
         }
@@ -701,7 +689,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             padding: 7px 10px;
             font-size: 12px;
             font-weight: 600;
-            border-radius: 7px;
+            border-radius: 6px;
             cursor: pointer;
             color: #94a3b8;
             transition: all 0.2s;
@@ -709,7 +697,6 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         .vapi-pill-opt.active {
             background: #222b3a;
             color: #38bdf8;
-            font-weight: 700;
         }
     </style>
 </head>
@@ -719,9 +706,9 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
     <?php print $ui->creamyHeader($user); ?>
     <?php print $ui->getSidebar($user->getUserId(), $user->getUserName(), $user->getUserRole(), $user->getUserAvatar()); ?>
 
-    <aside class="right-side" style="background-color: #0d0f12;">
+    <aside class="right-side" style="background-color: #0b0d11;">
         <form id="form_vapi_agent" method="POST" action="php/SaveAIAgent.php">
-            <input type="hidden" name="agent_id" value="<?=$agent['agent_id']?>" />
+            <input type="hidden" name="agent_id" id="input_agent_id" value="<?=$agent['agent_id']?>" />
             <input type="hidden" name="model_preset" id="input_model_preset" value="<?=$model_preset?>" />
             <input type="hidden" name="first_message_mode" id="input_first_message_mode" value="<?=$first_message_mode?>" />
             <input type="hidden" name="stt_provider" id="input_stt_provider" value="<?=$agent['stt_provider']?>" />
@@ -763,7 +750,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                             <input type="text" name="agent_name" class="vapi-agent-name-input" value="<?=htmlspecialchars($agent['agent_name'])?>" required />
                             <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; padding-left: 8px;">
                                 <span class="vapi-badge">ID: #<?=$agent['agent_id']?></span>
-                                <span class="vapi-badge">v1.2</span>
+                                <span class="vapi-badge" id="badge_status_indicator"><?=$agent['status']=='Y'?'Ativo':'Inativo'?></span>
                                 <span class="vapi-badge vapi-badge-published"><i class="fa fa-check-circle"></i> Published</span>
                             </div>
                         </div>
@@ -843,7 +830,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                                 </div>
                                 <div>
                                     <div class="vapi-card-stat-label">Accuracy</div>
-                                    <div class="vapi-card-stat-val">98.4%</div>
+                                    <div class="vapi-card-stat-val" id="disp_stt_acc">98.4%</div>
                                 </div>
                             </div>
                         </div>
@@ -867,7 +854,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                                 </div>
                                 <div>
                                     <div class="vapi-card-stat-label">Intelligence</div>
-                                    <div class="vapi-card-stat-val">92</div>
+                                    <div class="vapi-card-stat-val" id="disp_llm_intel">92</div>
                                 </div>
                             </div>
                         </div>
@@ -891,7 +878,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                                 </div>
                                 <div>
                                     <div class="vapi-card-stat-label">Humanness</div>
-                                    <div class="vapi-card-stat-val">96</div>
+                                    <div class="vapi-card-stat-val" id="disp_voice_hum">96</div>
                                 </div>
                             </div>
                         </div>
@@ -906,7 +893,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                                 <option value="user_speaks_first" <?=$first_message_mode=='user_speaks_first'?'selected':''?>>User speaks first (A IA aguarda o cliente falar)</option>
                             </select>
                         </div>
-                        <textarea name="greeting_message" id="textarea_greeting" class="vapi-textarea-dark" rows="3" placeholder="Olá! Eu sou a Sofia da DDM. Como posso te ajudar hoje?"><?=htmlspecialchars($agent['greeting_message'])?></textarea>
+                        <textarea name="greeting_message" id="textarea_greeting" class="vapi-textarea-dark" rows="3" placeholder="Olá! Eu sou a Sofia da nossa empresa. Como posso te ajudar hoje?"><?=htmlspecialchars($agent['greeting_message'])?></textarea>
                     </div>
 
                     <!-- System Prompt -->
@@ -949,50 +936,25 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <div id="view_tools" class="vapi-tab-view" style="display:none;">
                     <div class="vapi-section-box">
                         <div class="vapi-section-header">
-                            <span class="vapi-section-title"><i class="fa fa-wrench text-orange"></i> Available Tools & Function Calling</span>
-                            <button type="button" class="vapi-btn" id="btn_add_custom_tool"><i class="fa fa-plus"></i> Add Tool</button>
+                            <div>
+                                <span class="vapi-section-title"><i class="fa fa-wrench text-orange"></i> Tools (Funções & Webhooks da IA)</span>
+                                <div style="font-size:12px; color:#8392a5; margin-top:4px;">Ferramentas que o modelo de IA pode chamar automaticamente durante a conversa.</div>
+                            </div>
+                            <button type="button" class="vapi-btn vapi-btn-primary" id="btn_add_custom_tool"><i class="fa fa-plus"></i> Criar Custom Tool</button>
                         </div>
 
-                        <table class="vapi-tools-table">
+                        <table class="vapi-tools-table" id="tools_table_element">
                             <thead>
                                 <tr>
-                                    <th>Tool Name</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Assign Tool Version</th>
-                                    <th>Actions</th>
+                                    <th style="width: 50px;">Status</th>
+                                    <th>Ferramenta</th>
+                                    <th>Tipo</th>
+                                    <th>Descrição / Ação</th>
+                                    <th style="width: 110px; text-align: right;">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="tools_table_body">
-                                <?php foreach ($agentTools as $t): ?>
-                                    <tr data-tool-id="<?=htmlspecialchars($t['id'])?>">
-                                        <td>
-                                            <div style="display: flex; align-items: flex-start;">
-                                                <div class="vapi-tool-icon" style="background: <?=($t['id']=='end_call'?'#ef4444':($t['id']=='voicemail_tool'?'#8b5cf6':($t['id']=='transfer_call'?'#3b82f6':'#f59e0b')))?>; color:#fff;">
-                                                    <i class="fa <?=($t['id']=='end_call'?'fa-phone':($t['id']=='voicemail_tool'?'fa-microphone-slash':($t['id']=='transfer_call'?'fa-exchange':'fa-bolt')))?>"></i>
-                                                </div>
-                                                <div>
-                                                    <span class="vapi-tool-name"><?=htmlspecialchars($t['name'])?></span>
-                                                    <div class="vapi-tool-desc"><?=htmlspecialchars($t['description'])?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td><span class="vapi-badge"><?=htmlspecialchars($t['type'])?></span></td>
-                                        <td>
-                                            <label class="vapi-switch">
-                                                <input type="checkbox" class="tool-toggle" data-tool-id="<?=htmlspecialchars($t['id'])?>" <?=!empty($t['enabled'])?'checked':''?> />
-                                                <span class="vapi-slider"></span>
-                                            </label>
-                                        </td>
-                                        <td><span class="vapi-badge"><?=!empty($t['version'])?htmlspecialchars($t['version']):'Latest'?></span></td>
-                                        <td>
-                                            <div style="display: flex; gap: 6px;">
-                                                <button type="button" class="vapi-action-btn btn-edit-tool" data-tool-id="<?=htmlspecialchars($t['id'])?>" title="Editar Ferramenta"><i class="fa fa-pencil"></i></button>
-                                                <button type="button" class="vapi-action-btn btn-danger-tool btn-delete-tool" data-tool-id="<?=htmlspecialchars($t['id'])?>" title="Excluir Ferramenta"><i class="fa fa-trash"></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
+                            <tbody id="tools_table_tbody">
+                                <!-- Rendered dynamically via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -1006,8 +968,8 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                         </div>
                         <p style="color:#94a3b8; font-size:13px;">Defina o esquema de qualificação automática de leads ao término de cada ligação.</p>
                         <div class="vapi-form-group">
-                            <label class="vapi-form-label">Critérios de Sucesso da Chamada (Structured Output)</label>
-                            <textarea name="analysis_schema_json" class="vapi-textarea-dark vapi-prompt-editor" rows="8">{"qualification": ["Interessado", "Sem interesse", "Caixa Postal", "Pediu para retornar"], "extract_fields": ["nome", "cpf", "horario_preferencial", "resumo_conversa"]}</textarea>
+                            <label class="vapi-form-label">Critérios de Sucesso da Chamada (Structured Output JSON)</label>
+                            <textarea name="analysis_schema_json" class="vapi-textarea-dark vapi-prompt-editor" rows="8"><?=!empty($agent['analysis_schema_json']) ? htmlspecialchars($agent['analysis_schema_json']) : '{"qualification": ["Interessado", "Sem interesse", "Caixa Postal", "Pediu para retornar"], "extract_fields": ["nome", "cpf", "horario_preferencial", "resumo_conversa"]}'?></textarea>
                         </div>
                     </div>
                 </div>
@@ -1042,7 +1004,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                             <div class="col-md-6">
                                 <div class="vapi-form-group">
                                     <label class="vapi-form-label">Status do Agente</label>
-                                    <select name="status" class="vapi-select-dark" style="width:100%;">
+                                    <select name="status" id="select_agent_status" class="vapi-select-dark" style="width:100%;">
                                         <option value="Y" <?=$agent['status']=='Y'?'selected':''?>>Ativo (Pronto para discar)</option>
                                         <option value="N" <?=$agent['status']=='N'?'selected':''?>>Inativo</option>
                                     </select>
@@ -1073,18 +1035,18 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <label class="vapi-form-label">Model / Provider</label>
             <select id="modal_stt_provider_select" class="vapi-input-dark">
                 <option value="deepgram|nova-2">Deepgram Nova-2 (120ms • $0.005/min)</option>
-                <option value="groq|whisper-large-v3-turbo">Groq Whisper Turbo (100ms • $0.004/min)</option>
-                <option value="openai|whisper-1">OpenAI Whisper (1040ms • $0.012/min)</option>
-                <option value="azure|azure-default">Azure Speech (750ms • $0.034/min)</option>
+                <option value="groq|whisper-large-v3-turbo">Groq Whisper Turbo (90ms • $0.003/min)</option>
+                <option value="openai|whisper-1">OpenAI Whisper (950ms • $0.012/min)</option>
+                <option value="azure|azure-default">Azure Speech (650ms • $0.025/min)</option>
             </select>
         </div>
 
         <div class="vapi-form-group">
             <label class="vapi-form-label"><i class="fa fa-globe"></i> Language</label>
             <select id="modal_stt_language_select" class="vapi-input-dark">
-                <option value="pt-BR">Brazilian Portuguese</option>
-                <option value="en-US">English (US)</option>
-                <option value="es-ES">Spanish</option>
+                <option value="pt-BR">Brazilian Portuguese (pt-BR)</option>
+                <option value="en-US">English (en-US)</option>
+                <option value="es-ES">Spanish (es-ES)</option>
             </select>
         </div>
 
@@ -1133,7 +1095,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <label class="vapi-form-label"><i class="fa fa-shield"></i> Transcriber Fallback Provider</label>
                 <select id="modal_stt_fallback_select" class="vapi-input-dark">
                     <option value="openai">OpenAI Whisper (Auto-Fallback)</option>
-                    <option value="groq">Groq Whisper Large v3</option>
+                    <option value="groq">Groq Whisper Turbo</option>
                     <option value="deepgram">Deepgram Nova-2</option>
                 </select>
             </div>
@@ -1153,7 +1115,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
         </div>
         <div class="vapi-drawer-subtitle">
-            Configure the LLM model that powers your assistant's reasoning, and conversation abilities.
+            Configure the LLM model that powers your assistant's reasoning and conversation abilities.
         </div>
 
         <div class="vapi-form-group">
@@ -1161,11 +1123,10 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <select id="modal_llm_model_select" class="vapi-input-dark">
                 <option value="groq|llama-3.3-70b-versatile">Groq Llama 3.3 70B (180ms • $0.008/min • 92 Intel)</option>
                 <option value="groq|llama-3.1-8b-instant">Groq Llama 3.1 8B Instant (80ms • $0.002/min • 75 Intel)</option>
-                <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (420ms • $0.006/min • 88 Intel)</option>
-                <option value="openai|gpt-4o">OpenAI GPT-4o (690ms • $0.023/min • 99 Intel)</option>
-                <option value="openai|gpt-4.1">OpenAI GPT-4.1 (690ms • $0.023/min • 20 Intel)</option>
+                <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (380ms • $0.006/min • 88 Intel)</option>
+                <option value="openai|gpt-4o">OpenAI GPT-4o (680ms • $0.025/min • 99 Intel)</option>
                 <option value="anthropic|claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (750ms • $0.030/min • 98 Intel)</option>
-                <option value="deepseek|deepseek-chat">DeepSeek V3 (300ms • $0.003/min • 90 Intel)</option>
+                <option value="deepseek|deepseek-chat">DeepSeek V3 (280ms • $0.003/min • 90 Intel)</option>
             </select>
         </div>
 
@@ -1195,32 +1156,18 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             </div>
 
             <div class="vapi-form-group">
-                <label class="vapi-form-label"><i class="fa fa-forward"></i> Fast Turns</label>
-                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">How many turns at the start of the call to answer with a smaller, faster model before switching.</div>
-                <input type="number" id="modal_fast_turns_input" class="vapi-input-dark" value="0" min="0" max="10" />
-            </div>
-
-            <div class="vapi-form-group">
                 <label class="vapi-form-label"><i class="fa fa-database"></i> Prompt Cache Retention</label>
-                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Controls how long cached prompts are retained. Use 24h for extended caching.</div>
-                <div class="vapi-pill-group">
-                    <div class="vapi-pill-opt <?=($prompt_cache_retention=='in_memory'?'active':'')?>" data-cache="in_memory">In memory</div>
-                    <div class="vapi-pill-opt <?=($prompt_cache_retention=='24_hours'?'active':'')?>" data-cache="24_hours">24 hours</div>
-                </div>
+                <select id="modal_cache_select" class="vapi-input-dark">
+                    <option value="in_memory">In-Memory Prompt Cache (Fastest)</option>
+                    <option value="disabled">Disabled</option>
+                </select>
             </div>
 
             <div class="vapi-form-group">
-                <label class="vapi-form-label"><i class="fa fa-key"></i> Prompt Cache Key</label>
-                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Optional key to share cached prefixes across requests. Max 64 characters.</div>
-                <input type="text" id="modal_prompt_cache_key" class="vapi-input-dark" placeholder="Optional cache key" maxlength="64" />
-            </div>
-
-            <div class="vapi-form-group">
-                <label class="vapi-form-label"><i class="fa fa-wrench"></i> Tool Strict Compatibility</label>
-                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">How to adapt tool schemas for endpoints that reject strict-mode validation keywords.</div>
+                <label class="vapi-form-label"><i class="fa fa-check-square-o"></i> Tool Strict Compatibility</label>
                 <select id="modal_tool_strict_select" class="vapi-input-dark">
-                    <option value="N">Off</option>
-                    <option value="Y">On (Strict Mode)</option>
+                    <option value="N" <?=$tool_strict_compatibility=='N'?'selected':''?>>Off</option>
+                    <option value="Y" <?=$tool_strict_compatibility=='Y'?'selected':''?>>On (Strict Mode)</option>
                 </select>
             </div>
         </div>
@@ -1243,17 +1190,16 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         </div>
 
         <div class="vapi-form-group">
-            <label class="vapi-form-label">Voice model <i class="fa fa-info-circle text-muted"></i></label>
+            <label class="vapi-form-label">Voice Provider & Engine</label>
             <select id="modal_voice_provider_select" class="vapi-input-dark">
-                <option value="elevenlabs|eleven_multilingual_v2">Eleven Multilingual v2 (810ms • $0.036/min • 76 Humanness)</option>
-                <option value="cartesia|sonic-multilingual">Cartesia Sonic (90ms • $0.020/min • 96 Humanness)</option>
-                <option value="openai|tts-1">OpenAI TTS-1 (380ms • $0.015/min • 82 Humanness)</option>
-                <option value="deepgram|aura">Deepgram Aura (140ms • $0.015/min • 80 Humanness)</option>
+                <option value="cartesia">Cartesia Sonic (90ms • $0.020/min • 96 Humanness)</option>
+                <option value="elevenlabs">ElevenLabs Multilingual v2 (650ms • $0.036/min • 92 Humanness)</option>
+                <option value="openai">OpenAI TTS-1 (350ms • $0.015/min • 84 Humanness)</option>
             </select>
         </div>
 
         <div class="vapi-form-group">
-            <label class="vapi-form-label">Voice</label>
+            <label class="vapi-form-label">Voice Model</label>
             <div class="vapi-pill-group" style="margin-bottom: 8px;">
                 <div class="vapi-pill-opt active" id="tab_voice_library">Voice library</div>
                 <div class="vapi-pill-opt" id="tab_custom_voice_id">Custom voice ID</div>
@@ -1261,17 +1207,18 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             
             <div id="voice_library_view">
                 <select id="modal_voice_id_select" class="vapi-input-dark">
-                    <option value="cartesia-pt-br-sofia">Sofia • Young adult woman with natural, confident tone (PT-BR)</option>
-                    <option value="cartesia-pt-br-lucas">Lucas • Professional, authoritative male voice (PT-BR)</option>
-                    <option value="21m00Tcm4TlvDq8ikWAM">Rachel • Calm and conversational (ElevenLabs)</option>
-                    <option value="PznTnBc8X6pvixs9UkQm">Sarah • Mature, reassuring young adult woman (ElevenLabs)</option>
-                    <option value="AZnzlk1XvdvUeBnXmlld">Domi • Strong and energetic (ElevenLabs)</option>
-                    <option value="nova">Nova • Energetic and friendly (OpenAI)</option>
+                    <option value="cartesia|cartesia-pt-br-sofia">Sofia • Cartesia Sonic (Natural PT-BR Female)</option>
+                    <option value="cartesia|cartesia-pt-br-lucas">Lucas • Cartesia Sonic (Professional PT-BR Male)</option>
+                    <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM">Rachel • ElevenLabs (Conversational Female)</option>
+                    <option value="elevenlabs|PznTnBc8X6pvixs9UkQm">Sarah • ElevenLabs (Reassuring Female)</option>
+                    <option value="elevenlabs|AZnzlk1XvdvUeBnXmlld">Domi • ElevenLabs (Energetic Female)</option>
+                    <option value="openai|nova">Nova • OpenAI (Energetic & Friendly)</option>
+                    <option value="openai|alloy">Alloy • OpenAI (Neutral Male)</option>
                 </select>
             </div>
 
             <div id="custom_voice_id_view" style="display:none;">
-                <input type="text" id="modal_custom_voice_id_input" class="vapi-input-dark" placeholder="Cole o Voice ID customizado aqui..." />
+                <input type="text" id="modal_custom_voice_id_input" class="vapi-input-dark" placeholder="Cole o Voice ID customizado aqui..." value="<?=$agent['voice_id']?>" />
             </div>
         </div>
 
@@ -1280,22 +1227,22 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <label class="vapi-form-label" style="margin-bottom:0;"><i class="fa fa-tachometer"></i> Speed</label>
                 <span class="vapi-badge" id="disp_speed_badge"><?=$voice_speed?>x</span>
             </div>
-            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">The speed of the voice output.</div>
             <input type="range" id="modal_speed_slider" class="vapi-range-slider" min="0.75" max="1.50" step="0.05" value="<?=$voice_speed?>" />
             <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                <span>Slower</span>
-                <span>Faster</span>
+                <span>Slower (0.75x)</span>
+                <span>Normal (1.0x)</span>
+                <span>Faster (1.5x)</span>
             </div>
         </div>
 
         <div class="vapi-form-group">
             <label class="vapi-form-label"><i class="fa fa-volume-up"></i> Ruído de Fundo (Ambiente de Escritório / Call Center)</label>
-            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Simula um ambiente sonoro realista (call center, digitação, murmúrios distantes) para eliminar o silêncio robótico.</div>
+            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Simula um ambiente sonoro realista para eliminar o silêncio robótico na chamada.</div>
             <div class="vapi-pill-group" id="bg_sound_pills">
                 <div class="vapi-pill-opt <?=($background_sound=='off'?'active':'')?>" data-bgsound="off">Desativado</div>
                 <div class="vapi-pill-opt <?=($background_sound=='office'||$background_sound=='default'||$background_sound=='callcenter'?'active':'')?>" data-bgsound="office">Escritório / Call Center</div>
                 <div class="vapi-pill-opt <?=($background_sound=='typing'?'active':'')?>" data-bgsound="typing">Digitação no Teclado</div>
-                <div class="vapi-pill-opt <?=($background_sound=='room'?'active':'')?>" data-bgsound="room">Ruído de Sala (Conforto)</div>
+                <div class="vapi-pill-opt <?=($background_sound=='room'?'active':'')?>" data-bgsound="room">Ruído de Sala</div>
             </div>
         </div>
 
@@ -1304,19 +1251,12 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <label class="vapi-form-label"><i class="fa fa-sliders"></i> Volume do Som de Fundo</label>
                 <span id="modal_bg_vol_val" style="font-size:12px; color:#38bdf8; font-weight:700;"><?=intval($background_sound_volume * 100)?>%</span>
             </div>
-            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Volume recomendado: 8% a 12% (muito natural).</div>
             <input type="range" id="modal_bg_vol_slider" class="vapi-range-slider" min="0.02" max="0.30" step="0.01" value="<?=$background_sound_volume?>" />
             <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
                 <span>Sutil (2%)</span>
-                <span>Médio (15%)</span>
+                <span>Recomendado (10%)</span>
                 <span>Forte (30%)</span>
             </div>
-        </div>
-
-        <div class="vapi-form-group">
-            <label class="vapi-form-label"><i class="fa fa-book"></i> Pronunciation Dictionaries</label>
-            <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Override pronunciation for specific words on this voice.</div>
-            <button type="button" class="vapi-btn" style="width:100%; justify-content:center;"><i class="fa fa-plus"></i> Create dictionary</button>
         </div>
 
         <!-- Collapsible Advanced -->
@@ -1325,27 +1265,12 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <i class="fa fa-chevron-down"></i>
         </div>
         <div id="adv_voice_body" style="padding-top: 15px;">
-            <div class="vapi-switch-row">
-                <div class="vapi-switch-info">
-                    <div class="vapi-switch-title">Voice Caching</div>
-                    <div class="vapi-switch-desc">Reuses audio for repeated phrases instead of re-synthesising them, which cuts latency and cost.</div>
-                </div>
-                <label class="vapi-switch">
-                    <input type="checkbox" id="modal_voice_caching" checked />
-                    <span class="vapi-slider"></span>
-                </label>
-            </div>
-
-            <div class="vapi-form-group" style="margin-top:14px;">
+            <div class="vapi-form-group">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
                     <label class="vapi-form-label" style="margin-bottom:0;">Stability</label>
                     <span class="vapi-badge" id="disp_stability_badge"><?=$voice_stability?></span>
                 </div>
                 <input type="range" id="modal_stability_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="<?=$voice_stability?>" />
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                    <span>More Variable <i class="fa fa-info-circle"></i></span>
-                    <span>More Stable <i class="fa fa-info-circle"></i></span>
-                </div>
             </div>
 
             <div class="vapi-form-group">
@@ -1354,10 +1279,6 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                     <span class="vapi-badge" id="disp_clarity_badge"><?=$voice_clarity?></span>
                 </div>
                 <input type="range" id="modal_clarity_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="<?=$voice_clarity?>" />
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                    <span>Low <i class="fa fa-info-circle"></i></span>
-                    <span>High <i class="fa fa-info-circle"></i></span>
-                </div>
             </div>
 
             <div class="vapi-form-group">
@@ -1366,94 +1287,14 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                     <span class="vapi-badge" id="disp_style_badge"><?=$voice_style_exaggeration?></span>
                 </div>
                 <input type="range" id="modal_style_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="<?=$voice_style_exaggeration?>" />
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                    <span>None (Fastest)</span>
-                    <span>Exaggerated</span>
-                </div>
             </div>
 
             <div class="vapi-form-group">
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <label class="vapi-form-label" style="margin-bottom:0;">Optimize Streaming Latency</label>
+                    <label class="vapi-form-label" style="margin-bottom:0;">Optimize Latency</label>
                     <span class="vapi-badge" id="disp_opt_lat_badge"><?=$voice_optimize_latency?></span>
                 </div>
                 <input type="range" id="modal_opt_lat_slider" class="vapi-range-slider" min="0" max="4" step="1" value="<?=$voice_optimize_latency?>" />
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                    <span>More Latency</span>
-                    <span>Less Latency</span>
-                </div>
-            </div>
-
-            <div class="vapi-switch-row">
-                <div class="vapi-switch-info">
-                    <div class="vapi-switch-title">Use speaker boost</div>
-                    <div class="vapi-switch-desc">Boost the similarity of the synthesized speech and the voice at the cost of some generation speed.</div>
-                </div>
-                <label class="vapi-switch">
-                    <input type="checkbox" id="modal_speaker_boost" />
-                    <span class="vapi-slider"></span>
-                </label>
-            </div>
-
-            <div class="vapi-switch-row">
-                <div class="vapi-switch-info">
-                    <div class="vapi-switch-title">Auto mode</div>
-                    <div class="vapi-switch-desc">Reduces latency for complete sentences but may affect quality with partial phrases.</div>
-                </div>
-                <label class="vapi-switch">
-                    <input type="checkbox" id="modal_auto_mode" />
-                    <span class="vapi-slider"></span>
-                </label>
-            </div>
-
-            <div class="vapi-switch-row">
-                <div class="vapi-switch-info">
-                    <div class="vapi-switch-title"><i class="fa fa-code"></i> SSML Parsing</div>
-                    <div class="vapi-switch-desc">Interprets SSML tags in the text, so you can control pronunciation and pauses. Off by default to save latency.</div>
-                </div>
-                <label class="vapi-switch">
-                    <input type="checkbox" id="modal_ssml_parsing" />
-                    <span class="vapi-slider"></span>
-                </label>
-            </div>
-
-            <!-- Fallback Voices -->
-            <div style="margin-top: 20px; border-top: 1px solid #1c222e; padding-top: 16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-                    <div>
-                        <div style="font-weight:700; color:#fff; font-size:13px;"><i class="fa fa-shield text-yellow"></i> Fallback Voices</div>
-                        <div style="font-size:11px; color:#64748b;">Voice used when the primary voice fails.</div>
-                    </div>
-                    <button type="button" class="vapi-btn" style="padding:4px 10px; font-size:12px;"><i class="fa fa-plus"></i> Add</button>
-                </div>
-
-                <div style="background:#161922; border: 1px solid #232a38; border-radius:8px; padding:14px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <span style="font-weight:700; font-size:12px; color:#cbd5e1;">Fallback 1 • ElevenLabs</span>
-                        <i class="fa fa-trash text-muted" style="cursor:pointer;"></i>
-                    </div>
-                    <div class="vapi-form-group" style="margin-bottom:10px;">
-                        <label class="vapi-form-label" style="font-size:11px;">Provider</label>
-                        <select class="vapi-input-dark" style="padding:6px 10px; font-size:12px;">
-                            <option>ElevenLabs</option>
-                            <option>Cartesia</option>
-                            <option>OpenAI</option>
-                        </select>
-                    </div>
-                    <div class="vapi-form-group" style="margin-bottom:10px;">
-                        <label class="vapi-form-label" style="font-size:11px;">Voice</label>
-                        <select class="vapi-input-dark" style="padding:6px 10px; font-size:12px;">
-                            <option>Sarah mature, reassuring (Young adult woman)</option>
-                            <option>Rachel (Calm & conversational)</option>
-                        </select>
-                    </div>
-                    <div class="vapi-form-group" style="margin-bottom:0;">
-                        <label class="vapi-form-label" style="font-size:11px;">Model</label>
-                        <select class="vapi-input-dark" style="padding:6px 10px; font-size:12px;">
-                            <option>Eleven Multilingual v2 (810ms • $0.036/min • 76 Humanness)</option>
-                        </select>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -1463,38 +1304,35 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
     </div>
 </div>
 
-<!-- 4. TOOLS SETTINGS / CREATE / EDIT DRAWER -->
+<!-- 4. CUSTOM TOOL DRAWER -->
 <div class="vapi-modal-backdrop" id="modal_tool_drawer">
     <div class="vapi-drawer" style="width: 540px;">
         <div class="vapi-drawer-header">
-            <span class="vapi-drawer-title" id="tool_drawer_modal_title"><i class="fa fa-wrench text-orange"></i> Ferramenta / Tool Settings</span>
+            <span class="vapi-drawer-title" id="tool_drawer_title"><i class="fa fa-wrench text-orange"></i> Custom Tool</span>
             <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
         </div>
         <div class="vapi-drawer-subtitle">
-            Configure funções e webhooks executados pelo agente de IA durante a chamada de voz.
+            Configure an external function, webhook or action that the assistant can execute.
         </div>
 
-        <input type="hidden" id="tool_edit_orig_id" value="" />
         <input type="hidden" id="tool_drawer_mode" value="add" />
+        <input type="hidden" id="tool_edit_orig_id" value="" />
 
-        <!-- Quick Templates -->
         <div class="vapi-form-group">
-            <label class="vapi-form-label">Modelo Pré-configurado (Template Rápido)</label>
+            <label class="vapi-form-label">Modelo Rápido / Template</label>
             <select id="tool_quick_template_select" class="vapi-input-dark">
-                <option value="">-- Selecione um modelo ou configure abaixo --</option>
-                <option value="custom_webhook">Custom Webhook / Integração Externa (API)</option>
-                <option value="end_call">End Call (Desligar a Chamada)</option>
-                <option value="transfer_call">Transfer Call (Transferir para Humano / Fila)</option>
-                <option value="voicemail_tool">Voicemail Detection (Caixa Postal)</option>
-                <option value="capturar_cpf">Capturar Dados / CPF do Cliente</option>
-                <option value="response_control">Response Control (Controle de Turno)</option>
+                <option value="">-- Selecione um Modelo Pré-configurado --</option>
+                <option value="custom_webhook">Custom Webhook (Chamar API Externa / CRM)</option>
+                <option value="end_call">End Call (Encerrar Ligação Telefônica)</option>
+                <option value="transfer_call">Transfer Call (Transferir para Ramal/Humano)</option>
+                <option value="voicemail_tool">Voicemail Tool (Detecção de Caixa Postal)</option>
+                <option value="capturar_cpf">Capturar & Validar CPF</option>
             </select>
         </div>
 
         <div class="vapi-form-group">
-            <label class="vapi-form-label">Nome da Função (Identifier / Chamada pelo Modelo) <span style="color:#ef4444;">*</span></label>
-            <input type="text" id="tool_input_name" class="vapi-input-dark" placeholder="Ex: consultar_pedido, transfer_call, end_call" required />
-            <div style="font-size:11px; color:#64748b; margin-top:4px;">Apenas letras minúsculas, números e sublinhados (_). Sem espaços.</div>
+            <label class="vapi-form-label">Identificador / Nome da Função (snake_case)</label>
+            <input type="text" id="tool_input_name" class="vapi-input-dark" placeholder="ex: transfer_call ou consultar_saldo" />
         </div>
 
         <div class="row">
@@ -1502,11 +1340,11 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <div class="vapi-form-group">
                     <label class="vapi-form-label">Tipo da Ferramenta</label>
                     <select id="tool_input_type" class="vapi-input-dark">
-                        <option value="Custom tool">Custom tool (Webhook)</option>
-                        <option value="Function">Function</option>
-                        <option value="End call">End call</option>
+                        <option value="Custom tool">Custom tool (Webhook / API)</option>
                         <option value="Transfer call">Transfer call</option>
+                        <option value="End call">End call</option>
                         <option value="Voicemail tool">Voicemail tool</option>
+                        <option value="Function">Function</option>
                     </select>
                 </div>
             </div>
@@ -1519,42 +1357,36 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         </div>
 
         <div class="vapi-form-group">
-            <label class="vapi-form-label">Descrição / Prompt da Ferramenta <span style="color:#ef4444;">*</span></label>
-            <textarea id="tool_input_desc" class="vapi-textarea-dark" rows="3" placeholder="Instruções claras para o LLM saber quando e como invocar esta ferramenta..."></textarea>
+            <label class="vapi-form-label">Descrição (Como o modelo deve saber quando chamar)</label>
+            <textarea id="tool_input_desc" class="vapi-textarea-dark" rows="3" placeholder="Descreva claramente o que esta função faz para que o LLM a acione na hora certa..."></textarea>
         </div>
 
-        <!-- Webhook Settings -->
-        <div id="tool_webhook_fields" style="background:#131720; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:16px; margin-bottom:20px;">
-            <div style="font-size:13px; font-weight:700; color:#cbd5e1; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-                <i class="fa fa-plug text-blue"></i> Configurações de Webhook / API
+        <div id="tool_webhook_fields">
+            <div class="vapi-form-group">
+                <label class="vapi-form-label">URL do Endpoint Webhook</label>
+                <input type="text" id="tool_input_url" class="vapi-input-dark" placeholder="https://api.empresa.com.br/v1/webhook" />
             </div>
-            <div class="vapi-form-group" style="margin-bottom:12px;">
-                <label class="vapi-form-label">Server / Webhook URL (POST)</label>
-                <input type="url" id="tool_input_url" class="vapi-input-dark" placeholder="https://sua-api.com.br/v1/ai-webhook" />
-            </div>
-            <div class="vapi-form-group" style="margin-bottom:0;">
+            <div class="vapi-form-group">
                 <label class="vapi-form-label">Método HTTP</label>
-                <select id="tool_input_method" class="vapi-input-dark" style="width:120px;">
-                    <option value="POST">POST</option>
+                <select id="tool_input_method" class="vapi-input-dark">
+                    <option value="POST">POST (application/json)</option>
                     <option value="GET">GET</option>
-                    <option value="PUT">PUT</option>
                 </select>
             </div>
         </div>
 
-        <!-- Parameters Schema -->
         <div class="vapi-form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <label class="vapi-form-label" style="margin-bottom:0;">Esquema de Parâmetros (JSON Schema)</label>
-                <button type="button" class="btn btn-xs btn-link text-info" id="btn_tool_format_json"><i class="fa fa-magic"></i> Formatar JSON</button>
+                <label class="vapi-form-label" style="margin-bottom:0;">Parâmetros (JSON Schema)</label>
+                <button type="button" class="vapi-btn" id="btn_tool_format_json" style="padding:2px 8px; font-size:11px;"><i class="fa fa-code"></i> Formatar JSON</button>
             </div>
-            <textarea id="tool_input_params" class="vapi-textarea-dark vapi-prompt-editor" rows="6" placeholder="Defina o JSON schema com type, properties e required..."></textarea>
+            <textarea id="tool_input_params" class="vapi-textarea-dark vapi-prompt-editor" rows="6">{}</textarea>
         </div>
 
         <div class="vapi-switch-row">
             <div class="vapi-switch-info">
-                <div class="vapi-switch-title">Ferramenta Ativa</div>
-                <div class="vapi-switch-desc">Permite que o assistente de voz utilize esta ferramenta em tempo real.</div>
+                <div class="vapi-switch-title">Ferramenta Habilitada</div>
+                <div class="vapi-switch-desc">Se ativada, a IA terá permissão de acioná-la durante a ligação.</div>
             </div>
             <label class="vapi-switch">
                 <input type="checkbox" id="tool_input_enabled" checked />
@@ -1562,130 +1394,125 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             </label>
         </div>
 
-        <div style="margin-top: 30px; display:flex; gap:10px;">
-            <button type="button" class="vapi-btn btn-close-drawer" style="flex:1; justify-content:center;">Cancelar</button>
-            <button type="button" class="vapi-btn vapi-btn-primary" id="btn_save_tool_drawer" style="flex:2; justify-content:center;"><i class="fa fa-check"></i> Salvar Ferramenta</button>
+        <div style="margin-top: 30px;">
+            <button type="button" class="vapi-btn vapi-btn-primary" id="btn_save_tool_drawer" style="width:100%; justify-content:center;">Salvar Ferramenta</button>
         </div>
     </div>
 </div>
 
 <?php print $ui->standardizedThemeJS(); ?>
 <script type="text/javascript">
-var currentTools = <?=json_encode($agentTools)?> || [];
-
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function getToolIconConfig(id, type) {
-    var toolId = (id || '').toLowerCase();
-    var toolType = (type || '').toLowerCase();
-    if (toolId === 'end_call' || toolType.indexOf('end') !== -1) {
-        return { icon: 'fa-phone', bg: '#ef4444' };
-    } else if (toolId === 'voicemail_tool' || toolType.indexOf('voicemail') !== -1) {
-        return { icon: 'fa-microphone-slash', bg: '#8b5cf6' };
-    } else if (toolId === 'transfer_call' || toolType.indexOf('transfer') !== -1) {
-        return { icon: 'fa-exchange', bg: '#3b82f6' };
-    } else if (toolId.indexOf('cpf') !== -1 || toolId.indexOf('captur') !== -1 || toolId.indexOf('lead') !== -1) {
-        return { icon: 'fa-id-card-o', bg: '#10b981' };
-    } else {
-        return { icon: 'fa-bolt', bg: '#f59e0b' };
+// ==========================================
+// VAPI REACTIVE CATALOG & LIVE PIPELINE SYNC
+// ==========================================
+var VAPI_CONFIG = {
+    stt: {
+        'deepgram|nova-2': { name: 'Deepgram Nova-2', provider: 'deepgram', model: 'nova-2', sub: 'Deepgram • Brazilian Portuguese', latency: 120, cost: 0.005, accuracy: '98.4%', icon: 'fa fa-globe text-green' },
+        'groq|whisper-large-v3-turbo': { name: 'Groq Whisper Turbo', provider: 'groq', model: 'whisper-large-v3-turbo', sub: 'Groq • Ultra-fast Whisper', latency: 90, cost: 0.003, accuracy: '97.8%', icon: 'fa fa-bolt text-yellow' },
+        'openai|whisper-1': { name: 'OpenAI Whisper', provider: 'openai', model: 'whisper-1', sub: 'OpenAI • Audio API', latency: 950, cost: 0.012, accuracy: '98.9%', icon: 'fa fa-circle-o-notch text-blue' },
+        'azure|azure-default': { name: 'Azure Speech', provider: 'azure', model: 'azure-default', sub: 'Microsoft Azure Speech', latency: 650, cost: 0.025, accuracy: '98.1%', icon: 'fa fa-windows text-info' }
+    },
+    llm: {
+        'groq|llama-3.3-70b-versatile': { name: 'Llama 3.3 70B', provider: 'groq', model: 'llama-3.3-70b-versatile', sub: 'Groq • Versatile & Fast', latency: 180, cost: 0.008, intel: 92, icon: 'fa fa-bolt text-blue' },
+        'groq|llama-3.1-8b-instant': { name: 'Llama 3.1 8B Instant', provider: 'groq', model: 'llama-3.1-8b-instant', sub: 'Groq • Ultra Fast (<100ms)', latency: 80, cost: 0.002, intel: 75, icon: 'fa fa-bolt text-yellow' },
+        'openai|gpt-4o-mini': { name: 'GPT-4o Mini', provider: 'openai', model: 'gpt-4o-mini', sub: 'OpenAI • Smart & Affordable', latency: 380, cost: 0.006, intel: 88, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4o': { name: 'GPT-4o', provider: 'openai', model: 'gpt-4o', sub: 'OpenAI • Flagship Multimodal', latency: 680, cost: 0.025, intel: 99, icon: 'fa fa-cube text-green' },
+        'anthropic|claude-3-5-sonnet-20241022': { name: 'Claude 3.5 Sonnet', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', sub: 'Anthropic • Deep Reasoning', latency: 750, cost: 0.030, intel: 98, icon: 'fa fa-diamond text-orange' },
+        'deepseek|deepseek-chat': { name: 'DeepSeek V3', provider: 'deepseek', model: 'deepseek-chat', sub: 'DeepSeek • Low Cost & High Intel', latency: 280, cost: 0.003, intel: 90, icon: 'fa fa-star text-blue' }
+    },
+    voice: {
+        'cartesia|cartesia-pt-br-sofia': { name: 'Sofia (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-sofia', sub: 'Cartesia Sonic • Natural PT-BR Female', latency: 90, cost: 0.020, humanness: 96, icon: 'fa fa-volume-up text-purple' },
+        'cartesia|cartesia-pt-br-lucas': { name: 'Lucas (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-lucas', sub: 'Cartesia Sonic • Professional PT-BR Male', latency: 90, cost: 0.020, humanness: 95, icon: 'fa fa-volume-up text-purple' },
+        'elevenlabs|21m00Tcm4TlvDq8ikWAM': { name: 'Rachel (ElevenLabs)', provider: 'elevenlabs', id: '21m00Tcm4TlvDq8ikWAM', sub: 'ElevenLabs • Conversational Female', latency: 650, cost: 0.036, humanness: 92, icon: 'fa fa-volume-up text-pink' },
+        'elevenlabs|PznTnBc8X6pvixs9UkQm': { name: 'Sarah (ElevenLabs)', provider: 'elevenlabs', id: 'PznTnBc8X6pvixs9UkQm', sub: 'ElevenLabs • Warm & Reassuring Female', latency: 650, cost: 0.036, humanness: 93, icon: 'fa fa-volume-up text-pink' },
+        'elevenlabs|AZnzlk1XvdvUeBnXmlld': { name: 'Domi (ElevenLabs)', provider: 'elevenlabs', id: 'AZnzlk1XvdvUeBnXmlld', sub: 'ElevenLabs • Energetic Female', latency: 650, cost: 0.036, humanness: 91, icon: 'fa fa-volume-up text-pink' },
+        'openai|nova': { name: 'Nova (OpenAI)', provider: 'openai', id: 'nova', sub: 'OpenAI TTS • Friendly Female', latency: 350, cost: 0.015, humanness: 84, icon: 'fa fa-volume-up text-green' },
+        'openai|alloy': { name: 'Alloy (OpenAI)', provider: 'openai', id: 'alloy', sub: 'OpenAI TTS • Neutral Male', latency: 350, cost: 0.015, humanness: 82, icon: 'fa fa-volume-up text-green' }
     }
-}
+};
 
-function renderToolsTable() {
-    var $tbody = $('#tools_table_body');
-    $tbody.empty();
-
-    if (!currentTools || currentTools.length === 0) {
-        $tbody.append('<tr><td colspan="5" style="text-align:center; padding:30px; color:#64748b;"><i class="fa fa-info-circle"></i> Nenhuma ferramenta configurada. Clique em "+ Add Tool" para adicionar uma ferramenta ou integração.</td></tr>');
-        return;
-    }
-
-    currentTools.forEach(function(t) {
-        var cfg = getToolIconConfig(t.id, t.type);
-        var isEnabled = (t.enabled !== false && t.enabled !== 0 && t.enabled !== '0' && t.enabled !== 'N');
-        var version = t.version || 'Latest';
-        var desc = t.description || '';
-        if (t.url) {
-            desc += ' <span style="color:#38bdf8; font-size:11px; font-family:monospace;">• Webhook: ' + escapeHtml(t.url) + '</span>';
-        }
-
-        var row = '<tr data-tool-id="' + escapeHtml(t.id) + '">' +
-            '<td>' +
-                '<div style="display: flex; align-items: flex-start;">' +
-                    '<div class="vapi-tool-icon" style="background:' + cfg.bg + '; color:#fff;">' +
-                        '<i class="fa ' + cfg.icon + '"></i>' +
-                    '</div>' +
-                    '<div>' +
-                        '<span class="vapi-tool-name">' + escapeHtml(t.name || t.id) + '</span>' +
-                        '<div class="vapi-tool-desc">' + desc + '</div>' +
-                    '</div>' +
-                '</div>' +
-            '</td>' +
-            '<td><span class="vapi-badge">' + escapeHtml(t.type || 'Custom tool') + '</span></td>' +
-            '<td>' +
-                '<label class="vapi-switch">' +
-                    '<input type="checkbox" class="tool-toggle" data-tool-id="' + escapeHtml(t.id) + '" ' + (isEnabled ? 'checked' : '') + ' />' +
-                    '<span class="vapi-slider"></span>' +
-                '</label>' +
-            '</td>' +
-            '<td><span class="vapi-badge">' + escapeHtml(version) + '</span></td>' +
-            '<td>' +
-                '<div style="display: flex; gap: 6px;">' +
-                    '<button type="button" class="vapi-action-btn btn-edit-tool" data-tool-id="' + escapeHtml(t.id) + '" title="Editar Ferramenta"><i class="fa fa-pencil"></i></button>' +
-                    '<button type="button" class="vapi-action-btn btn-danger-tool btn-delete-tool" data-tool-id="' + escapeHtml(t.id) + '" title="Excluir Ferramenta"><i class="fa fa-trash"></i></button>' +
-                '</div>' +
-            '</td>' +
-        '</tr>';
-
-        $tbody.append(row);
-    });
-}
+var currentTools = <?=json_encode($agentTools)?>;
+if (!Array.isArray(currentTools)) currentTools = [];
 
 function syncToolsHiddenInput() {
     $('#input_tools_json').val(JSON.stringify(currentTools));
 }
 
-function openToolDrawer(mode, toolData) {
-    $('#tool_drawer_mode').val(mode);
-    $('#tool_quick_template_select').val('');
+function renderToolsTable() {
+    var $tbody = $('#tools_table_tbody');
+    $tbody.empty();
 
-    if (mode === 'edit' && toolData) {
-        $('#tool_drawer_modal_title').html('<i class="fa fa-pencil text-yellow"></i> Editar Ferramenta (' + escapeHtml(toolData.name || toolData.id) + ')');
-        $('#tool_edit_orig_id').val(toolData.id);
-        $('#tool_input_name').val(toolData.name || toolData.id);
-        $('#tool_input_type').val(toolData.type || 'Custom tool');
-        $('#tool_input_version').val(toolData.version || 'Latest');
-        $('#tool_input_desc').val(toolData.description || '');
-        $('#tool_input_url').val(toolData.url || '');
-        $('#tool_input_method').val(toolData.method || 'POST');
+    if (!currentTools || currentTools.length === 0) {
+        $tbody.html('<tr><td colspan="5" style="text-align:center; color:#64748b; padding:30px;">Nenhuma ferramenta cadastrada. Clique em "Criar Custom Tool" para adicionar.</td></tr>');
+        return;
+    }
 
-        var paramsStr = '';
-        if (toolData.parameters) {
-            if (typeof toolData.parameters === 'object') {
-                paramsStr = JSON.stringify(toolData.parameters, null, 2);
-            } else {
-                try {
-                    paramsStr = JSON.stringify(JSON.parse(toolData.parameters), null, 2);
-                } catch(e) {
-                    paramsStr = toolData.parameters;
-                }
-            }
-        } else {
-            paramsStr = '{\n  "type": "object",\n  "properties": {},\n  "required": []\n}';
+    currentTools.forEach(function(tool) {
+        var isChecked = tool.enabled !== false ? 'checked' : '';
+        var typeBadgeColor = 'bg-blue';
+        var iconClass = 'fa-wrench text-blue';
+        var iconBg = 'rgba(56, 189, 248, 0.15)';
+
+        if (tool.type === 'Transfer call') {
+            typeBadgeColor = 'bg-green';
+            iconClass = 'fa-phone-square text-green';
+            iconBg = 'rgba(16, 185, 129, 0.15)';
+        } else if (tool.type === 'End call') {
+            typeBadgeColor = 'bg-red';
+            iconClass = 'fa-phone-slash text-red';
+            iconBg = 'rgba(239, 68, 68, 0.15)';
+        } else if (tool.type === 'Voicemail tool') {
+            typeBadgeColor = 'bg-yellow';
+            iconClass = 'fa-envelope-open text-yellow';
+            iconBg = 'rgba(245, 158, 11, 0.15)';
         }
-        $('#tool_input_params').val(paramsStr);
-        var isEnabled = (toolData.enabled !== false && toolData.enabled !== 0 && toolData.enabled !== '0' && toolData.enabled !== 'N');
-        $('#tool_input_enabled').prop('checked', isEnabled);
+
+        var html = '<tr>' +
+            '<td>' +
+                '<label class="vapi-switch">' +
+                    '<input type="checkbox" class="tool-toggle" data-tool-id="' + tool.id + '" ' + isChecked + ' />' +
+                    '<span class="vapi-slider"></span>' +
+                '</label>' +
+            '</td>' +
+            '<td>' +
+                '<div style="display:flex; align-items:center;">' +
+                    '<div class="vapi-tool-icon" style="background:' + iconBg + ';">' +
+                        '<i class="fa ' + iconClass + '"></i>' +
+                    '</div>' +
+                    '<div>' +
+                        '<div class="vapi-tool-name">' + (tool.name || tool.id) + '</div>' +
+                        '<div style="font-size:11px; color:#64748b;">v' + (tool.version || 'Latest') + '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</td>' +
+            '<td><span class="vapi-badge">' + (tool.type || 'Custom tool') + '</span></td>' +
+            '<td><div class="vapi-tool-desc">' + (tool.description || 'Sem descrição') + '</div></td>' +
+            '<td style="text-align: right;">' +
+                '<button type="button" class="vapi-action-btn btn-edit-tool" data-tool-id="' + tool.id + '" title="Editar"><i class="fa fa-pencil"></i></button> ' +
+                '<button type="button" class="vapi-action-btn btn-danger-tool btn-delete-tool" data-tool-id="' + tool.id + '" title="Remover"><i class="fa fa-trash"></i></button>' +
+            '</td>' +
+        '</tr>';
+
+        $tbody.append(html);
+    });
+}
+
+function openToolDrawer(mode, toolObj) {
+    $('#tool_drawer_mode').val(mode);
+    if (mode === 'edit' && toolObj) {
+        $('#tool_drawer_title').html('<i class="fa fa-pencil text-blue"></i> Editar Ferramenta: ' + toolObj.name);
+        $('#tool_edit_orig_id').val(toolObj.id);
+        $('#tool_input_name').val(toolObj.name || toolObj.id);
+        $('#tool_input_type').val(toolObj.type || 'Custom tool');
+        $('#tool_input_version').val(toolObj.version || 'Latest');
+        $('#tool_input_desc').val(toolObj.description || '');
+        $('#tool_input_url').val(toolObj.url || '');
+        $('#tool_input_method').val(toolObj.method || 'POST');
+        $('#tool_input_params').val(toolObj.parameters ? JSON.stringify(toolObj.parameters, null, 2) : '{}');
+        $('#tool_input_enabled').prop('checked', toolObj.enabled !== false);
+        $('#tool_quick_template_select').val('');
     } else {
-        $('#tool_drawer_modal_title').html('<i class="fa fa-plus text-orange"></i> Adicionar Nova Ferramenta');
+        $('#tool_drawer_title').html('<i class="fa fa-wrench text-orange"></i> Criar Custom Tool');
         $('#tool_edit_orig_id').val('');
         $('#tool_input_name').val('');
         $('#tool_input_type').val('Custom tool');
@@ -1693,16 +1520,80 @@ function openToolDrawer(mode, toolData) {
         $('#tool_input_desc').val('');
         $('#tool_input_url').val('');
         $('#tool_input_method').val('POST');
-        $('#tool_input_params').val('{\n  "type": "object",\n  "properties": {\n    "parametro": {\n      "type": "string",\n      "description": "Exemplo de parâmetro"\n    }\n  },\n  "required": []\n}');
+        $('#tool_input_params').val('{}');
         $('#tool_input_enabled').prop('checked', true);
+        $('#tool_quick_template_select').val('');
     }
-
     $('#modal_tool_drawer').fadeIn(200).css('display', 'flex');
 }
 
-$(document).ready(function() {
-    renderToolsTable();
+// Update all 3 Cards, Telemetry, and Sync Hidden Inputs
+function updatePipelineUI() {
+    var sttKey = $('#input_stt_provider').val() + '|' + $('#input_stt_model').val();
+    var llmKey = $('#input_llm_provider').val() + '|' + $('#input_llm_model').val();
+    var voiceKey = $('#input_voice_provider').val() + '|' + $('#input_voice_id').val();
 
+    var stt = VAPI_CONFIG.stt[sttKey] || { name: $('#input_stt_model').val(), sub: $('#input_stt_provider').val(), latency: 120, cost: 0.005, accuracy: '98.0%' };
+    var llm = VAPI_CONFIG.llm[llmKey] || { name: $('#input_llm_model').val(), sub: $('#input_llm_provider').val(), latency: 250, cost: 0.008, intel: 85 };
+    var voice = VAPI_CONFIG.voice[voiceKey] || { name: $('#input_voice_name').val() || $('#input_voice_id').val(), sub: $('#input_voice_provider').val(), latency: 150, cost: 0.020, humanness: 90 };
+
+    // 1. Update STT Card
+    $('#disp_stt_title').text(stt.name);
+    $('#disp_stt_sub').html('<i class="fa fa-globe text-green"></i> ' + stt.sub);
+    $('#disp_stt_lat').text(stt.latency + 'ms');
+    $('#disp_stt_cost').text('$' + stt.cost.toFixed(3) + '/min');
+    $('#disp_stt_acc').text(stt.accuracy || '98.4%');
+
+    // 2. Update LLM Card
+    $('#disp_llm_title').text(llm.name);
+    $('#disp_llm_sub').html('<i class="fa fa-bolt text-blue"></i> ' + llm.sub);
+    $('#disp_llm_lat').text(llm.latency + 'ms');
+    $('#disp_llm_cost').text('$' + llm.cost.toFixed(3) + '/min');
+    $('#disp_llm_intel').text(llm.intel || 90);
+
+    // 3. Update Voice Card
+    $('#disp_voice_title').text(voice.name);
+    $('#disp_voice_sub').html('<i class="fa fa-volume-up text-purple"></i> ' + voice.sub);
+    $('#disp_voice_lat').text(voice.latency + 'ms');
+    $('#disp_voice_cost').text('$' + voice.cost.toFixed(3) + '/min');
+    $('#disp_voice_hum').text(voice.humanness || 95);
+
+    // 4. Update Telemetry Totals
+    var totalLat = stt.latency + llm.latency + voice.latency;
+    var totalCost = stt.cost + llm.cost + voice.cost;
+
+    $('#disp_total_latency').html('~' + totalLat + '<span style="font-size:14px; color:#94a3b8;">ms</span>');
+    $('#disp_total_cost').html('~$' + totalCost.toFixed(3) + '<span style="font-size:14px; color:#94a3b8;">/min</span>');
+
+    // Latency Progress Bar
+    var latSttPct = Math.round((stt.latency / totalLat) * 100);
+    var latLlmPct = Math.round((llm.latency / totalLat) * 100);
+    var latTtsPct = 100 - latSttPct - latLlmPct;
+    $('#lat_bar_stt').css('width', latSttPct + '%');
+    $('#lat_bar_llm').css('width', latLlmPct + '%');
+    $('#lat_bar_tts').css('width', latTtsPct + '%');
+
+    // Cost Progress Bar
+    var costSttPct = Math.round((stt.cost / totalCost) * 100);
+    var costLlmPct = Math.round((llm.cost / totalCost) * 100);
+    var costTtsPct = 100 - costSttPct - costLlmPct;
+    $('#cost_bar_stt').css('width', costSttPct + '%');
+    $('#cost_bar_llm').css('width', costLlmPct + '%');
+    $('#cost_bar_tts').css('width', costTtsPct + '%');
+
+    // Drawer Selects Sync
+    $('#modal_stt_provider_select').val(sttKey);
+    $('#modal_llm_model_select').val(llmKey);
+    $('#modal_voice_id_select').val(voiceKey);
+    $('#modal_voice_provider_select').val($('#input_voice_provider').val());
+}
+
+$(document).ready(function() {
+    // Initial Render
+    renderToolsTable();
+    updatePipelineUI();
+
+    // Tab Navigation
     $('.vapi-tab').click(function(e) {
         e.preventDefault();
         $('.vapi-tab').removeClass('active');
@@ -1712,6 +1603,7 @@ $(document).ready(function() {
         $('#view_' + target).show();
     });
 
+    // Drawers Open
     $('#card_transcriber').click(function() { $('#modal_transcriber').fadeIn(200).css('display', 'flex'); });
     $('#card_model').click(function() { $('#modal_model').fadeIn(200).css('display', 'flex'); });
     $('#card_voice').click(function() { $('#modal_voice').fadeIn(200).css('display', 'flex'); });
@@ -1722,9 +1614,30 @@ $(document).ready(function() {
         }
     });
 
+    // Accordions
     $('#adv_stt_toggle').click(function() { $('#adv_stt_body').slideToggle(200); });
     $('#adv_llm_toggle').click(function() { $('#adv_llm_body').slideToggle(200); });
     $('#adv_voice_toggle').click(function() { $('#adv_voice_body').slideToggle(200); });
+
+    // Transcriber Drawer Events
+    $('#modal_stt_provider_select').change(function() {
+        var parts = $(this).val().split('|');
+        $('#input_stt_provider').val(parts[0]);
+        $('#input_stt_model').val(parts[1]);
+        updatePipelineUI();
+    });
+
+    $('#modal_stt_language_select').change(function() {
+        $('#input_stt_language').val($(this).val());
+    });
+
+    $('#modal_turn_taking').change(function() {
+        $('#input_intelligent_turn_taking').val($(this).is(':checked') ? 'Y' : 'N');
+    });
+
+    $('#modal_denoising').change(function() {
+        $('#input_background_denoising').val($(this).is(':checked') ? 'Y' : 'N');
+    });
 
     $('#modal_silence_slider').on('input', function() {
         var val = $(this).val();
@@ -1732,10 +1645,69 @@ $(document).ready(function() {
         $('#input_silence_timeout_ms').val(val);
     });
 
+    $('#modal_stt_fallback_select').change(function() {
+        $('#input_stt_fallback_provider').val($(this).val());
+    });
+
+    // Model Drawer Events
+    $('#modal_llm_model_select').change(function() {
+        var parts = $(this).val().split('|');
+        $('#input_llm_provider').val(parts[0]);
+        $('#input_llm_model').val(parts[1]);
+        updatePipelineUI();
+    });
+
     $('#modal_temp_slider').on('input', function() {
         var val = $(this).val();
         $('#disp_temp_badge').text(val);
         $('#input_temperature').val(val);
+    });
+
+    $('#modal_max_tokens_input').on('input', function() {
+        $('#input_max_tokens').val($(this).val());
+    });
+
+    $('#modal_cache_select').change(function() {
+        $('#input_prompt_cache_retention').val($(this).val());
+    });
+
+    $('#modal_tool_strict_select').change(function() {
+        $('#input_tool_strict_compatibility').val($(this).val());
+    });
+
+    // Voice Drawer Events
+    $('#modal_voice_provider_select').change(function() {
+        var prov = $(this).val();
+        $('#input_voice_provider').val(prov);
+        var firstMatch = Object.keys(VAPI_CONFIG.voice).find(function(k) { return k.startsWith(prov + '|'); });
+        if (firstMatch) {
+            var v = VAPI_CONFIG.voice[firstMatch];
+            $('#input_voice_id').val(v.id);
+            $('#input_voice_name').val(v.name);
+            $('#modal_voice_id_select').val(firstMatch);
+        }
+        updatePipelineUI();
+    });
+
+    $('#modal_voice_id_select').change(function() {
+        var key = $(this).val();
+        var v = VAPI_CONFIG.voice[key];
+        if (v) {
+            $('#input_voice_provider').val(v.provider);
+            $('#input_voice_id').val(v.id);
+            $('#input_voice_name').val(v.name);
+            $('#modal_voice_provider_select').val(v.provider);
+            updatePipelineUI();
+        }
+    });
+
+    $('#modal_custom_voice_id_input').on('input', function() {
+        var val = $(this).val().trim();
+        if (val) {
+            $('#input_voice_id').val(val);
+            $('#input_voice_name').val('Custom (' + val.substring(0, 10) + '...)');
+            updatePipelineUI();
+        }
     });
 
     $('#modal_speed_slider').on('input', function() {
@@ -1754,6 +1726,17 @@ $(document).ready(function() {
         $('#input_voice_clarity').val($(this).val());
     });
 
+    $('#modal_style_slider').on('input', function() {
+        $('#disp_style_badge').text($(this).val());
+        $('#input_voice_style_exaggeration').val($(this).val());
+    });
+
+    $('#modal_opt_lat_slider').on('input', function() {
+        $('#disp_opt_lat_badge').text($(this).val());
+        $('#input_voice_optimize_latency').val($(this).val());
+    });
+
+    // Background Sound Pills
     $('#bg_sound_pills .vapi-pill-opt').click(function() {
         $('#bg_sound_pills .vapi-pill-opt').removeClass('active');
         $(this).addClass('active');
@@ -1791,84 +1774,93 @@ $(document).ready(function() {
         $('#input_first_message_mode').val($(this).val());
     });
 
+    $('#select_agent_status').change(function() {
+        var val = $(this).val();
+        $('#input_status').val(val);
+        $('#badge_status_indicator').text(val === 'Y' ? 'Ativo' : 'Inativo');
+    });
+
+    // Presets Click Handler
     $('.vapi-preset-pill').click(function() {
         $('.vapi-preset-pill').removeClass('active');
         $(this).addClass('active');
         var preset = $(this).data('preset');
         $('#input_model_preset').val(preset);
 
-        if (preset === 'ultra_fast') {
+        if (preset === 'balanced') {
             $('#input_stt_provider').val('deepgram');
             $('#input_stt_model').val('nova-2');
-            $('#disp_stt_title').text('Deepgram Nova-2');
-            $('#disp_stt_lat').text('100ms');
-
             $('#input_llm_provider').val('groq');
-            $('#input_llm_model').val('llama-3.1-8b-instant');
-            $('#disp_llm_title').text('Llama 3.1 8B Instant');
-            $('#disp_llm_lat').text('80ms');
-
+            $('#input_llm_model').val('llama-3.3-70b-versatile');
             $('#input_voice_provider').val('cartesia');
             $('#input_voice_id').val('cartesia-pt-br-sofia');
-            $('#disp_voice_title').text('Sofia (Cartesia Sonic)');
-            $('#disp_voice_lat').text('90ms');
-
-            $('#disp_total_latency').html('~270<span style="font-size:14px; color:#94a3b8;">ms</span>');
-            $('#disp_total_cost').html('~$0.027<span style="font-size:14px; color:#94a3b8;">/min</span>');
+            $('#input_voice_name').val('Sofia (Cartesia Sonic)');
+        } else if (preset === 'ultra_fast') {
+            $('#input_stt_provider').val('groq');
+            $('#input_stt_model').val('whisper-large-v3-turbo');
+            $('#input_llm_provider').val('groq');
+            $('#input_llm_model').val('llama-3.1-8b-instant');
+            $('#input_voice_provider').val('cartesia');
+            $('#input_voice_id').val('cartesia-pt-br-sofia');
+            $('#input_voice_name').val('Sofia (Cartesia Sonic)');
         } else if (preset === 'high_intelligence') {
+            $('#input_stt_provider').val('deepgram');
+            $('#input_stt_model').val('nova-2');
             $('#input_llm_provider').val('openai');
             $('#input_llm_model').val('gpt-4o');
-            $('#disp_llm_title').text('GPT-4o');
-            $('#disp_llm_lat').text('690ms');
-
-            $('#disp_total_latency').html('~900<span style="font-size:14px; color:#94a3b8;">ms</span>');
-            $('#disp_total_cost').html('~$0.065<span style="font-size:14px; color:#94a3b8;">/min</span>');
+            $('#input_voice_provider').val('cartesia');
+            $('#input_voice_id').val('cartesia-pt-br-sofia');
+            $('#input_voice_name').val('Sofia (Cartesia Sonic)');
         } else if (preset === 'cost_saver') {
+            $('#input_stt_provider').val('groq');
+            $('#input_stt_model').val('whisper-large-v3-turbo');
             $('#input_llm_provider').val('deepseek');
             $('#input_llm_model').val('deepseek-chat');
-            $('#disp_llm_title').text('DeepSeek V3');
-            $('#disp_llm_lat').text('300ms');
-
-            $('#disp_total_latency').html('~490<span style="font-size:14px; color:#94a3b8;">ms</span>');
-            $('#disp_total_cost').html('~$0.021<span style="font-size:14px; color:#94a3b8;">/min</span>');
+            $('#input_voice_provider').val('openai');
+            $('#input_voice_id').val('nova');
+            $('#input_voice_name').val('Nova (OpenAI)');
         }
+        updatePipelineUI();
     });
 
+    // Prompt Templates
     $('#btn_template_sales').click(function() {
         $('#textarea_prompt').val(
             "# PERSONA E OBJETIVO\n" +
-            "Você é a Sofia, consultora de vendas da {{empresa}}. Seu objetivo é apresentar com energia e cordialidade nossa solução para o cliente {{customer_name}} e agendar uma demonstração.\n\n" +
-            "# DIRETRIZES\n" +
+            "Você é a Sofia, consultora comercial especializada da {{empresa}}.\n" +
+            "Seu objetivo é apresentar nossa solução de forma clara, cordial e dinâmica para o cliente {{customer_name}}, entender o momento dele e agendar uma demonstração.\n\n" +
+            "# DIRETRIZES DA CONVERSA\n" +
             "1. Fale sempre em no máximo 2 frases curtas e naturais por turno.\n" +
-            "2. Ouça com atenção e valide o interesse do cliente.\n" +
-            "3. Se houver interesse, use a ferramenta transfer_call para transferir ao especialista."
+            "2. Ouça com atenção e faça perguntas abertas para qualificar o interesse.\n" +
+            "3. Se houver interesse em prosseguir, use a ferramenta transfer_call para transferir ao especialista."
         );
     });
 
     $('#btn_template_support').click(function() {
         $('#textarea_prompt').val(
-            "# 3. AGENTE DE ATENDIMENTO, SUPORTE E SAC\n\n" +
-            "## FIRST MESSAGE\n" +
-            "Olá! Eu sou a Júlia, assistente virtual de atendimento. Me conta como posso te ajudar hoje?\n\n" +
-            "# PERSONA\n" +
-            "Você é Júlia, assistente virtual especializada em atendimento ao cliente, suporte e SAC.\n" +
-            "Seu objetivo é entender a solicitação do cliente e resolver da forma mais rápida possível.\n\n" +
-            "# REGRAS\n" +
+            "# PERSONA E OBJETIVO\n" +
+            "Você é Júlia, assistente virtual de atendimento ao cliente, suporte e SAC da {{empresa}}.\n" +
+            "Seu objetivo é acolher o cliente {{customer_name}}, identificar a necessidade dele e resolver com agilidade e cordialidade.\n\n" +
+            "# DIRETRIZES DA CONVERSA\n" +
             "1. Seja ágil, empática e prestativa.\n" +
-            "2. Se o cliente solicitar encerramento, use end_call."
+            "2. Mantenha as respostas objetivas e focadas na solução.\n" +
+            "3. Quando o atendimento estiver concluído ou o cliente se despedir, encerre cordialmente usando a ferramenta end_call."
         );
     });
 
     $('#btn_template_qualify').click(function() {
         $('#textarea_prompt').val(
-            "# AGENTE DE QUALIFICAÇÃO (SDR)\n\n" +
-            "Você é o Lucas, especialista em pré-atendimento e qualificação de crédito e serviços.\n" +
-            "Seu objetivo é confirmar os 3 primeiros dígitos do CPF do cliente {{customer_name}} para validar elegibilidade.\n\n" +
-            "# REGRAS\n" +
-            "1. Confirme os dados e acione a ferramenta capturar_cpf quando o cliente informar."
+            "# PERSONA E OBJETIVO\n" +
+            "Você é o Lucas, especialista em pré-atendimento e qualificação cadastral (SDR) da {{empresa}}.\n" +
+            "Seu objetivo é confirmar os 3 primeiros dígitos do CPF do cliente {{customer_name}} para validar a elegibilidade.\n\n" +
+            "# DIRETRIZES DA CONVERSA\n" +
+            "1. Seja profissional e direto.\n" +
+            "2. Quando o cliente informar os números, acione a ferramenta capturar_cpf.\n" +
+            "3. Se qualificado, direcione para transferência com transfer_call."
         );
     });
 
+    // Test Call Button
     $('#btn_test_talk').click(function() {
         var phone = prompt("Digite o número de telefone com DDD para testar a chamada agora:", "11999999999");
         if (phone && phone.trim().length >= 8) {
@@ -1880,7 +1872,7 @@ $(document).ready(function() {
             }, function(res) {
                 $(self).prop('disabled', false).html('<i class="fa fa-phone"></i> Talk / Testar Chamada');
                 if (res.status === 'ringing' || res.status === 1 || res.status === 'ok') {
-                    alert("📞 Ligação disparada com sucesso para " + phone + "! Seu telefone tocará em instantes.");
+                    alert("📞 Ligação disparada com sucesso para " + phone + "! O telefone tocará em instantes.");
                 } else {
                     alert("Resposta da discagem: " + (res.message || JSON.stringify(res)));
                 }
@@ -1891,6 +1883,7 @@ $(document).ready(function() {
         }
     });
 
+    // Custom Tools Handling
     $('#btn_add_custom_tool').click(function() { openToolDrawer('add'); });
 
     $(document).on('click', '.btn-edit-tool', function(e) {
@@ -1964,11 +1957,6 @@ $(document).ready(function() {
             $('#tool_input_type').val('Custom tool');
             $('#tool_input_desc').val('Armazena e valida o número de CPF informado pelo cliente para prosseguir com a consulta.');
             $('#tool_input_params').val(JSON.stringify({ type: "object", properties: { cpf: { type: "string", description: "CPF com 11 dígitos numéricos" } }, required: ["cpf"] }, null, 2));
-        } else if (val === 'response_control') {
-            $('#tool_input_name').val('response_control');
-            $('#tool_input_type').val('Function');
-            $('#tool_input_desc').val('Permite ao modelo ajustar pausas, tempo de resposta e dinâmica de fala.');
-            $('#tool_input_params').val(JSON.stringify({ type: "object", properties: {} }, null, 2));
         }
     });
 
@@ -2017,7 +2005,7 @@ $(document).ready(function() {
         $('#modal_tool_drawer').fadeOut(200);
     });
 
-    // Form submission
+    // Form Submission with Save & Feedback
     $('#form_vapi_agent').submit(function(e) {
         e.preventDefault();
         var $btn = $('#btn_save_agent');
