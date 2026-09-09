@@ -55,12 +55,8 @@
         <!-- Datetime picker -->
 		<link rel="stylesheet" href="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
 
-        <!-- Date Picker -->	
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
-		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
-
 		<!-- CHOSEN-->
-   		<link rel="stylesheet" src="js/dashboard/chosen_v1.2.0/chosen.min.css">
+   		<link rel="stylesheet" href="js/dashboard/chosen_v1.2.0/chosen.min.css">
 		<style>
 		/*
 		* CUSTOM CSS for disable function
@@ -147,9 +143,10 @@
 								   </thead>
 								   <tbody>
 									<?php
-										for($i=0;$i<=count($leads->list_id);$i++){
-											if($leads->phone_number[$i] != ""){
-											$action_lead = $ui->ActionMenuForContacts($leads->lead_id[$i]);
+										if (!empty($leads) && !empty($leads->list_id) && is_array($leads->list_id)) {
+											for($i=0; $i < count($leads->list_id); $i++){
+												if(!empty($leads->phone_number[$i])){
+												$action_lead = $ui->ActionMenuForContacts($leads->lead_id[$i]);
 									?>
 										<tr>
 											<td><a class="edit-contact" data-id="<?php echo $leads->lead_id[$i];?>"><?php echo $leads->lead_id[$i];?></a></td>
@@ -159,6 +156,7 @@
 											<td><?php echo $action_lead;?></td>
 										</tr>
 									<?php
+												}
 											}
 										}
 									?>
@@ -172,8 +170,7 @@
 				$lists = $api->API_getAllLists();
 				$disposition = $api->API_getAllDispositions();
 				$dialStatus = $api->API_getAllDialStatuses("ALL", 1);
-				//echo "<pre>";
-				//var_dump($dialStatus);
+				$dial_statuses = isset($dial_statuses) ? $dial_statuses : array();
 			?>
 			<div class="col-lg-3">
 				<h3 class="m0 pb-lg"><?php $lh->translateText("filters"); ?></h3>
@@ -203,26 +200,28 @@
 										<option value="" selected>- - - <?php $lh->translateText("-none-"); ?> - - -</option>
 										<optgroup label="System Statuses">
 										<?php 
-											for($i=0;$i<=count($dialStatus->status->system);$i++) { 
-												if (!empty($dialStatus->status->system[$i]) && !in_array($dialStatus->status->system[$i], $dial_statuses)) { 
+											if (!empty($dialStatus->status->system) && is_array($dialStatus->status->system)) {
+												for($i=0; $i < count($dialStatus->status->system); $i++) { 
+													if (!empty($dialStatus->status->system[$i]) && !in_array($dialStatus->status->system[$i], $dial_statuses)) { 
 										?>
 												<option value="<?php echo $dialStatus->status->system[$i]?>">
-													<?php echo $dialStatus->status->system[$i]." - ".$dialStatus->status_name->system[$i]?>
+													<?php echo $dialStatus->status->system[$i]." - ".(isset($dialStatus->status_name->system[$i]) ? $dialStatus->status_name->system[$i] : '')?>
 												</option>
 											<?php 
-												}
-											} 
+													}
+												} 
+											}
 										?>
 										</optgroup>										
 										<?php 
-											if (count($disposition) > 0) { 
+											if (!empty($disposition->status) && is_array($disposition->status) && count($disposition->status) > 0) { 
 										?>
 											<optgroup label="Campaign Statuses">
 											<?php 
-												for($i=0;$i<count($disposition->status);$i++) { 
+												for($i=0; $i < count($disposition->status); $i++) { 
 											?>
 												<option value="<?php echo $disposition->status[$i];?>">
-													<?php echo $disposition->status[$i]." - ".$disposition->status_name[$i]?>
+													<?php echo $disposition->status[$i]." - ".(isset($disposition->status_name[$i]) ? $disposition->status_name[$i] : '')?>
 												</option>
 											<?php 
 												} 
@@ -242,8 +241,10 @@
 							<select name="list_filter" id="list_filter" class="form-control">
 									<option value="">- - - <?php $lh->translateText("-none-"); ?> - - -</option>
 								<?php
-									for($i=0; $i < count($lists->list_id);$i++){
-										echo "<option value='".$lists->list_id[$i]."'> ".$lists->list_name[$i]." </option>";
+									if (!empty($lists->list_id) && is_array($lists->list_id)) {
+										for($i=0; $i < count($lists->list_id); $i++){
+											echo "<option value='".$lists->list_id[$i]."'> ".(isset($lists->list_name[$i]) ? $lists->list_name[$i] : '')." </option>";
+										}
 									}
 								?>
 							</select>
@@ -313,6 +314,10 @@
 
 		<?php print $ui->standardizedThemeJS();?>
 
+        <!-- Date Picker Scripts -->	
+        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+
 	<!-- CHOSEN-->
 	<script src="js/dashboard/chosen_v1.2.0/chosen.jquery.min.js"></script>
 	<script type="text/javascript">
@@ -325,29 +330,33 @@
 			});
 			
 			// Datatables initialization
-			$('#table_contacts').DataTable({
-				destroy:true,    
-				responsive:true,
-				stateSave:true,
-				lengthMenu: [[10, 25, 50, 500], [10, 25, 50, 500]],
-				iDisplayLength: 10,
-				drawCallback:function(settings) {
-					var pagination = $(this).closest('.dataTables_wrapper').find('.dataTables_paginate');
-					pagination.toggle(this.api().page.info().pages > 1);
-				},
-				columnDefs:[
-					{ width: "20%", targets: 4 },
-					{ width: "8%", targets: 0 },
-					{ searchable: false, targets: 4 },
-					{ sortable: false, targets: 4 },
-					{ responsivePriority: 1, targets: 4 },
-					{ responsivePriority: 2, targets: 1 },
-					{ targets: -1, className: "dt-body-right" }
-				]
-			});
+			try {
+				$('#table_contacts').DataTable({
+					destroy:true,    
+					responsive:true,
+					stateSave:true,
+					lengthMenu: [[10, 25, 50, 500], [10, 25, 50, 500]],
+					iDisplayLength: 10,
+					drawCallback:function(settings) {
+						var pagination = $(this).closest('.dataTables_wrapper').find('.dataTables_paginate');
+						pagination.toggle(this.api().page.info().pages > 1);
+					},
+					columnDefs:[
+						{ width: "20%", targets: 4 },
+						{ width: "8%", targets: 0 },
+						{ searchable: false, targets: 4 },
+						{ sortable: false, targets: 4 },
+						{ responsivePriority: 1, targets: 4 },
+						{ responsivePriority: 2, targets: 1 },
+						{ targets: -1, className: "dt-body-right" }
+					]
+				});
+			} catch(e) { console.warn('DataTable init error:', e); }
 
-			$('.select2-3').select2({ theme: 'bootstrap' });
-			$.fn.select2.defaults.set( "theme", "bootstrap" );
+			try {
+				$('.select2-3').select2({ theme: 'bootstrap' });
+				$.fn.select2.defaults.set( "theme", "bootstrap" );
+			} catch(e) {}
 			
 			// limits checkboxes to single selecting
 			$("input:checkbox").on('click', function() {

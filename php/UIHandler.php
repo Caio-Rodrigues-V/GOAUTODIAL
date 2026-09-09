@@ -5997,6 +5997,25 @@ error_reporting(E_ERROR | E_PARSE);
 					new Vue(goOptions);
 				}
 			} catch(e) { console.warn('Avatar Vue init:', e); }
+
+			// Universal Sidebar Treeview Click Handler
+			$(document).ready(function() {
+				$(document).off('click.goSidebarTree').on('click.goSidebarTree', '.sidebar .treeview > a', function(e) {
+					var \$li = $(this).parent();
+					var \$menu = \$li.find('> .treeview-menu');
+					if (\$menu.length) {
+						e.preventDefault();
+						if (\$li.hasClass('active')) {
+							\$li.removeClass('active');
+							\$menu.slideUp(200);
+						} else {
+							\$li.siblings('.treeview.active').removeClass('active').find('> .treeview-menu').slideUp(200);
+							\$li.addClass('active');
+							\$menu.slideDown(200);
+						}
+					}
+				});
+			});
 		</script>\n";
 
 		return $js;
