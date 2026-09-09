@@ -172,8 +172,15 @@ def calculate_rms(pcm_bytes: bytes) -> float:
         count = len(pcm_bytes) // 2
         for i in range(0, len(pcm_bytes) - 1, 2):
             sample = int.from_bytes(pcm_bytes[i:i+2], byteorder='little', signed=True)
-            total += sample * sample
-        return math.sqrt(total / count) if count > 0 else 0.0
+def create_wav_from_pcm(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
+    """Empacota bytes PCM 16-bit Mono em um container WAV válido em memória"""
+    buf = io.BytesIO()
+    with wave.open(buf, 'wb') as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        wav.writeframes(pcm_bytes)
+    return buf.getvalue()
 
 class RTPAudioSession:
     def __init__(self, local_port: int, remote_ip: str, remote_port: int, codec: str = "PCMA", silence_timeout: float = 0.50):
@@ -191,8 +198,11 @@ class RTPAudioSession:
         self.cancel_playback = False
         
         # Callbacks de conversa
-        self.on_speech_ready: Optional[Callable] = None
-        self.on_barge_in: Optional[Callable] = None
+        self.on_speech_ready = None
+        self.on_barge_in = None
+        
+        # Buffer de Gravação Geral da Chamada (IA + Cliente)
+        self.full_recorded_pcm = bytearray()
         
         # VAD & Supressão de Eco
         self.speech_buffer = bytearray()
@@ -250,10 +260,12 @@ class RTPAudioSession:
                         logger.info("🎙️ [Cliente Falando...] Capturando áudio...")
 
                     self.speech_buffer.extend(pcm_chunk)
+                    self.full_recorded_pcm.extend(pcm_chunk)
                     self.last_speech_time = now
 
                 elif self.is_collecting_speech:
                     self.speech_buffer.extend(pcm_chunk)
+                    self.full_recorded_pcm.extend(pcm_chunk)
                     
                     # Checa término de fala (silêncio)
                     if now - self.last_speech_time > self.silence_timeout:
@@ -280,6 +292,10 @@ class RTPAudioSession:
 
         self.is_transmitting = True
         self.cancel_playback = False
+
+        # Grava áudio falado pela IA no master recording
+        if pcm_bytes:
+            self.full_recorded_pcm.extend(pcm_bytes)
 
         # Envia pacotes de warm-up (silêncio)
         silence_byte = b'\xd5' if self.payload_type == 8 else b'\xff'
@@ -335,6 +351,12 @@ class RTPAudioSession:
         self.is_transmitting = False
         self.last_transmit_end_time = time.time()
         logger.info("Transmissão do bloco de áudio da IA concluída perfeitamente!")
+
+    def get_recorded_wav(self) -> bytes:
+        """Retorna o áudio completo gravado da conversa em formato WAV 8000Hz 16-bit Mono"""
+        if not self.full_recorded_pcm or len(self.full_recorded_pcm) < 1600:
+            return b''
+        return create_wav_from_pcm(bytes(self.full_recorded_pcm), 8000)
 
     def stop(self):
         self.is_running = False

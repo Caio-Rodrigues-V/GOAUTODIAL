@@ -34,9 +34,22 @@ if (!empty($call['transcript_json'])) {
     }
 }
 
+$audioUrl = '';
+if (!empty($call['recording_url'])) {
+    $audioUrl = $call['recording_url'];
+} else {
+    // Check if file exists in recordings folder by call_id
+    $cleanId = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $call['call_id']);
+    $possibleFile = 'recordings/ai_call_' . $cleanId . '.wav';
+    if (file_exists(__DIR__ . '/../' . $possibleFile)) {
+        $audioUrl = $possibleFile;
+    }
+}
+
 echo json_encode(array(
     'status' => 1,
     'call' => $call,
-    'transcripts' => $transcripts
+    'transcripts' => $transcripts,
+    'audio_url' => $audioUrl
 ));
 ?>

@@ -138,6 +138,7 @@ class AIAgentHandler {
                 `voice_id` varchar(100) DEFAULT '',
                 `stt_provider` varchar(50) DEFAULT '',
                 `transcript_json` longtext,
+                `recording_url` varchar(255) DEFAULT '',
                 `qualification` varchar(100) DEFAULT 'Atendida',
                 `cost_estimate` decimal(8,4) DEFAULT '0.0000',
                 `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -148,6 +149,24 @@ class AIAgentHandler {
                 KEY `idx_phone_number` (`phone_number`),
                 KEY `idx_created_at` (`created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+
+            // Auto-migrate missing columns for existing tables
+            $checkCols = array(
+                'recording_url' => 'varchar(255) DEFAULT ""',
+                'qualification' => 'varchar(100) DEFAULT "Atendida"',
+                'cost_estimate' => 'decimal(8,4) DEFAULT "0.0000"',
+                'llm_provider' => 'varchar(50) DEFAULT ""',
+                'llm_model' => 'varchar(100) DEFAULT ""',
+                'voice_provider' => 'varchar(50) DEFAULT ""',
+                'voice_id' => 'varchar(100) DEFAULT ""',
+                'stt_provider' => 'varchar(50) DEFAULT ""',
+                'ended_at' => 'datetime DEFAULT NULL'
+            );
+            foreach ($checkCols as $col => $definition) {
+                try {
+                    $this->db->rawQuery("ALTER TABLE `go_ai_call_logs` ADD COLUMN `{$col}` {$definition};");
+                } catch (\Throwable $t) {}
+            }
 
             // Insert default sample agent if none exists
             $existing = $this->db->get('go_ai_agents');
@@ -456,6 +475,14 @@ Diretrizes da conversa:
         try {
             if (isset($data['transcript_json']) && is_array($data['transcript_json'])) {
                 $data['transcript_json'] = json_encode($data['transcript_json']);
+            }
+            if (!empty($data['call_id'])) {
+                $this->db->where('call_id', $data['call_id']);
+                if ($this->db->has('go_ai_call_logs')) {
+                    $this->db->where('call_id', $data['call_id']);
+                    $this->db->update('go_ai_call_logs', $data);
+                    return $data['call_id'];
+                }
             }
             return $this->db->insert('go_ai_call_logs', $data);
         } catch (\Throwable $t) {

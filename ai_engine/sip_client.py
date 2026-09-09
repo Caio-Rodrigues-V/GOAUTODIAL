@@ -286,18 +286,80 @@ class DirectSIPEngine:
 
         elif "BYE " in first_line:
             call.status = "completed"
-            logger.info(f"Chamada {call.dial_string} finalizada.")
+            logger.info(f"Chamada {call.dial_string} finalizada pelo cliente/operadora.")
             if call.rtp_session:
                 call.rtp_session.stop()
             asyncio.create_task(self.save_call_to_crm(call, "completed"))
             self.active_calls.pop(call_id, None)
 
+    async def send_bye(self, call_id: str):
+        """Envia sinalização SIP BYE para encerrar a chamada na Oktor e grava o log"""
+        call = self.active_calls.get(call_id)
+        if not call:
+            return
+        logger.info(f"Enviando SIP BYE para a Oktor Telecom - Chamada {call.dial_string}")
+        try:
+            bye_msg = call.build_bye(call.local_ip)
+            if self.transport:
+                self.transport.sendto(bye_msg.encode('utf-8'), (OKTOR_PRIMARY_IP, OKTOR_PORT))
+        except Exception as ex:
+            logger.warning(f"Erro ao enviar SIP BYE: {ex}")
+
+        call.status = "completed"
+        if call.rtp_session:
+            call.rtp_session.stop()
+        await self.save_call_to_crm(call, "completed")
+        self.active_calls.pop(call_id, None)
+
     async def save_call_to_crm(self, call: OktorSIPCall, status: str):
-        """Salva a transcrição e métricas da chamada no banco de dados via API PHP"""
+        """Salva a transcrição, áudio gravado e métricas da chamada no banco de dados via API PHP"""
         try:
             duration = int(time.time() - call.answered_time) if call.answered_time > 0 else 0
             agent = call.agent_config or {}
             
+            # Obter áudio gravado da sessão RTP se disponível
+            audio_b64 = ""
+            recording_filename = f"ai_call_{re.sub(r'[^a-zA-Z0-9_\-]', '_', call.call_id)}.wav"
+            recording_rel_path = f"recordings/{recording_filename}"
+            
+            if call.rtp_session:
+                try:
+                    wav_bytes = call.rtp_session.get_recorded_wav()
+                    if wav_bytes and len(wav_bytes) > 44:
+                        import base64
+                        audio_b64 = base64.b64encode(wav_bytes).decode('utf-8')
+                        
+                        # Salvar localmente no servidor
+                        import os
+                        candidate_dirs = [
+                            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "recordings"),
+                            os.path.join(os.path.dirname(os.path.abspath(__file__)), "recordings"),
+                            "/var/www/html/recordings"
+                        ]
+                        for r_dir in candidate_dirs:
+                            try:
+                                os.makedirs(r_dir, exist_ok=True)
+                                dest_file = os.path.join(r_dir, recording_filename)
+                                with open(dest_file, "wb") as f:
+                                    f.write(wav_bytes)
+                                logger.info(f"Gravação de áudio da chamada salva em: {dest_file}")
+                            except Exception:
+                                pass
+                except Exception as ex:
+                    logger.warning(f"Erro ao empacotar gravação de áudio: {ex}")
+
+            # Determinar qualificação da chamada
+            user_messages = [m for m in call.conversation_history if m.get("role") == "user"]
+            if len(user_messages) >= 3:
+                qualification = "Interessado"
+            elif len(user_messages) >= 1:
+                qualification = "Atendida"
+            else:
+                qualification = "Sem Resposta" if status == "completed" else "Ocupada / Rejeitada"
+
+            # Custo estimado baseado em LLM + Voz + STT (~R$ 0.03 / min)
+            cost_estimate = round(max(0.005, (duration / 60.0) * 0.03), 4)
+
             payload = {
                 "call_id": call.call_id,
                 "agent_id": call.agent_id,
@@ -311,15 +373,41 @@ class DirectSIPEngine:
                 "voice_id": agent.get("voice_id", "nova"),
                 "stt_provider": agent.get("stt_provider", "deepgram"),
                 "transcript_json": call.conversation_history,
-                "qualification": "Interessado" if len(call.conversation_history) >= 4 else "Atendida"
+                "recording_url": recording_rel_path if audio_b64 else "",
+                "audio_base64": audio_b64,
+                "qualification": qualification,
+                "cost_estimate": cost_estimate
             }
 
+            # Candidatos de endpoint PHP do CRM
+            candidate_urls = []
+            if agent.get("callback_url"):
+                candidate_urls.append(agent["callback_url"])
+            
+            candidate_urls.extend([
+                "http://127.0.0.1/php/SaveAICallLog.php",
+                "http://127.0.0.1/goautodial/php/SaveAICallLog.php",
+                "http://localhost/php/SaveAICallLog.php",
+                "http://localhost/goautodial/php/SaveAICallLog.php"
+            ])
+
             import httpx
-            async with httpx.AsyncClient(timeout=4.0) as client:
-                await client.post("http://127.0.0.1/php/SaveAICallLog.php", json=payload)
-                logger.info(f"Log e transcrição da chamada {call.dial_string} gravados com sucesso no CRM!")
+            saved = False
+            for crm_url in candidate_urls:
+                try:
+                    async with httpx.AsyncClient(timeout=6.0) as client:
+                        resp = await client.post(crm_url, json=payload)
+                        if resp.status_code == 200:
+                            logger.info(f"Log, gravação e transcrição salvos com sucesso no CRM via {crm_url}!")
+                            saved = True
+                            break
+                except Exception:
+                    continue
+
+            if not saved:
+                logger.warning("Aviso: Não foi possível salvar log no endpoint HTTP local do CRM.")
         except Exception as e:
-            logger.warning(f"Não foi possível gravar log da chamada no CRM: {e}")
+            logger.error(f"Exceção ao gravar log da chamada no CRM: {e}")
 
     async def start_ai_conversation(self, call: OktorSIPCall, remote_ip: str, remote_port: int, codec: str = "PCMA"):
         """

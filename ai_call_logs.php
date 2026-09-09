@@ -204,8 +204,8 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
 
             <!-- Filtros e Tabela de Registros -->
             <div class="box box-primary">
-                <div class="box-header with-border" style="padding: 15px;">
-                    <form method="GET" class="form-inline" style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div class="box-header with-border" style="padding: 15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <form method="GET" class="form-inline" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0;">
                         <div class="form-group">
                             <label style="margin-right:5px;">Agente:</label>
                             <select name="agent_id" class="form-control input-sm">
@@ -227,7 +227,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                             <label style="margin-right:5px;">Status:</label>
                             <select name="status" class="form-control input-sm">
                                 <option value="">Todos os Status</option>
-                                <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>Completada</option>
+                                <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>Completada / Atendida</option>
                                 <option value="busy" <?php echo ($statusFilter == 'busy') ? 'selected' : ''; ?>>Ocupada / Rejeitada</option>
                                 <option value="ringing" <?php echo ($statusFilter == 'ringing') ? 'selected' : ''; ?>>Chamando</option>
                             </select>
@@ -236,6 +236,10 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                         <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Filtrar</button>
                         <a href="ai_call_logs.php" class="btn btn-default btn-sm"><i class="fa fa-eraser"></i> Limpar</a>
                     </form>
+
+                    <button type="button" class="btn btn-default btn-sm" onclick="location.reload();">
+                        <i class="fa fa-refresh"></i> Atualizar
+                    </button>
                 </div>
 
                 <div class="box-body table-responsive">
@@ -250,15 +254,17 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                 <th>Tecnologias</th>
                                 <th>Qualificação</th>
                                 <th>Status</th>
+                                <th style="text-align:center;">Gravação</th>
                                 <th style="text-align:center;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($callLogs)): ?>
                                 <tr>
-                                    <td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;">
-                                        <i class="fa fa-phone" style="font-size:32px; display:block; margin-bottom:10px;"></i>
-                                        Nenhuma chamada registrada até o momento. Faça uma chamada de teste no menu <a href="ai_agents.php">Meus Agentes</a>.
+                                    <td colspan="10" style="text-align:center; padding:35px; color:#94a3b8;">
+                                        <i class="fa fa-phone-square" style="font-size:36px; display:block; margin-bottom:12px; color:#cbd5e1;"></i>
+                                        Nenhuma chamada registrada até o momento.<br>
+                                        Faça uma chamada de teste no menu <a href="ai_agents.php" style="font-weight:600;">Meus Agentes</a> ou via Discador Automático.
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -283,9 +289,13 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             <span class="tech-tag"><i class="fa fa-volume-up"></i> <?php echo htmlspecialchars($c['voice_provider'] ?: 'OpenAI'); ?></span>
                                         </td>
                                         <td>
-                                            <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:600;">
-                                                <?php echo htmlspecialchars($c['qualification'] ?: 'Atendida'); ?>
-                                            </span>
+                                            <?php if ($c['qualification'] == 'Interessado'): ?>
+                                                <span class="badge" style="background:#10b981; color:#fff; font-weight:600;"><i class="fa fa-star"></i> Interessado</span>
+                                            <?php elseif ($c['qualification'] == 'Atendida'): ?>
+                                                <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:600;">Atendida</span>
+                                            <?php else: ?>
+                                                <span class="badge" style="background:#f1f5f9; color:#475569; font-weight:600;"><?php echo htmlspecialchars($c['qualification'] ?: 'Finalizada'); ?></span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($c['status'] == 'completed'): ?>
@@ -297,8 +307,17 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align:center;">
+                                            <?php if (!empty($c['recording_url'])): ?>
+                                                <button type="button" class="btn btn-default btn-xs btn-quick-play" data-audio="<?php echo htmlspecialchars($c['recording_url']); ?>" title="Ouvir Gravação">
+                                                    <i class="fa fa-play text-primary"></i> Áudio
+                                                </button>
+                                            <?php else: ?>
+                                                <span style="color:#94a3b8; font-size:11px;">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align:center;">
                                             <button type="button" class="btn btn-info btn-xs btn-view-transcript" data-id="<?php echo $c['id']; ?>">
-                                                <i class="fa fa-comments"></i> Ver Diálogo
+                                                <i class="fa fa-comments"></i> Diálogo & Áudio
                                             </button>
                                         </td>
                                     </tr>
@@ -332,21 +351,39 @@ Payload: {"agent_id": 1, "phone_number": "21984354821"}</pre>
     </aside>
 </div>
 
-<!-- Modal de Transcrição Completa da Conversa -->
+<!-- Modal de Transcrição Completa da Conversa e Player de Áudio -->
 <div class="modal fade" id="transcriptModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content" style="border-radius:10px;">
-            <div class="modal-header" style="background:#0f172a; color:#fff; border-top-left-radius:10px; border-top-right-radius:10px;">
+        <div class="modal-content" style="border-radius:10px; overflow:hidden;">
+            <div class="modal-header" style="background:#0f172a; color:#fff;">
                 <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:0.8;">&times;</button>
-                <h4 class="modal-title" id="transcriptModalTitle"><i class="fa fa-comments"></i> Transcrição da Chamada</h4>
+                <h4 class="modal-title" id="transcriptModalTitle"><i class="fa fa-comments"></i> Detalhes & Transcrição da Chamada</h4>
             </div>
-            <div class="modal-body">
-                <div id="callDetailsHeader" style="display:flex; justify-content:space-between; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#475569;">
+            <div class="modal-body" style="padding:20px;">
+                <div id="callDetailsHeader" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px; padding-bottom:12px; border-bottom:1px solid #e2e8f0; font-size:13px; color:#475569;">
                     <!-- Preenchido via JS -->
                 </div>
 
+                <!-- Player de Áudio da Gravação -->
+                <div id="modalAudioSection" style="margin-bottom:15px; padding:12px 15px; background:#f1f5f9; border-radius:8px; border:1px solid #cbd5e1; display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-weight:600; font-size:12.5px; color:#1e293b;"><i class="fa fa-volume-up text-primary"></i> Gravação Completa da Chamada</span>
+                        <a id="btnDownloadAudio" href="#" download="gravacao_ia.wav" class="btn btn-default btn-xs" style="font-size:11px;">
+                            <i class="fa fa-download"></i> Baixar Áudio (.wav)
+                        </a>
+                    </div>
+                    <audio id="modalAudioPlayer" controls style="width:100%; height:36px; outline:none;"></audio>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span style="font-weight:600; font-size:12px; color:#64748b; text-transform:uppercase;">Diálogo da Conversa</span>
+                    <button type="button" class="btn btn-default btn-xs" id="btnCopyTranscript">
+                        <i class="fa fa-copy"></i> Copiar Texto
+                    </button>
+                </div>
+
                 <div class="chat-container" id="chatDialogueContainer">
-                    <div style="text-align:center; padding:20px; color:#94a3b8;">
+                    <div style="text-align:center; padding:25px; color:#94a3b8;">
                         <i class="fa fa-spinner fa-spin fa-2x"></i><br>Carregando diálogo...
                     </div>
                 </div>
@@ -361,11 +398,30 @@ Payload: {"agent_id": 1, "phone_number": "21984354821"}</pre>
 <?php print $ui->standardizedThemeJS(); ?>
 <script type="text/javascript">
 $(document).ready(function() {
+    var rawTranscriptText = '';
+
+    // Quick Play Audio from table
+    $('.btn-quick-play').on('click', function() {
+        var audioUrl = $(this).data('audio');
+        if (audioUrl) {
+            var audio = new Audio(audioUrl);
+            audio.play();
+        }
+    });
+
+    // View Transcript Modal
     $('.btn-view-transcript').on('click', function() {
         var callId = $(this).data('id');
         $('#transcriptModal').modal('show');
         $('#chatDialogueContainer').html('<div style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Carregando diálogo...</div>');
         $('#callDetailsHeader').html('');
+        $('#modalAudioSection').hide();
+        var player = document.getElementById('modalAudioPlayer');
+        if (player) {
+            player.pause();
+            player.src = '';
+        }
+        rawTranscriptText = '';
 
         $.ajax({
             url: 'php/GetAICallTranscript.php',
@@ -377,23 +433,38 @@ $(document).ready(function() {
                     var c = res.call;
                     var dur = parseInt(c.duration_seconds || 0);
                     var durFmt = Math.floor(dur / 60) + 'm ' + (dur % 60) + 's';
+                    var cost = parseFloat(c.cost_estimate || 0).toFixed(4);
 
                     $('#callDetailsHeader').html(
-                        '<div><strong>Telefone:</strong> ' + c.phone_number + ' | <strong>Agente:</strong> ' + (c.agent_name || ('#' + c.agent_id)) + '</div>' +
-                        '<div><strong>Duração:</strong> ' + durFmt + ' | <strong>Data:</strong> ' + c.created_at + '</div>'
+                        '<div><strong>Telefone:</strong> ' + c.phone_number + ' &nbsp;|&nbsp; <strong>Agente:</strong> ' + (c.agent_name || ('#' + c.agent_id)) + '</div>' +
+                        '<div><strong>Duração:</strong> ' + durFmt + ' &nbsp;|&nbsp; <strong>Custo Est.:</strong> R$ ' + cost + ' &nbsp;|&nbsp; <strong>Data:</strong> ' + c.created_at + '</div>'
                     );
+
+                    // Setup Audio Player if audio recording exists
+                    var audioUrl = res.audio_url || c.recording_url;
+                    if (audioUrl) {
+                        $('#modalAudioPlayer').attr('src', audioUrl);
+                        $('#btnDownloadAudio').attr('href', audioUrl);
+                        $('#modalAudioSection').slideDown();
+                    } else {
+                        $('#modalAudioSection').hide();
+                    }
 
                     var html = '';
                     var list = res.transcripts || [];
+                    var textLines = [];
 
                     if (list.length === 0) {
-                        html = '<div style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa fa-info-circle fa-2x"></i><br>Nenhum diálogo gravado para esta chamada.</div>';
+                        html = '<div style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa fa-info-circle fa-2x"></i><br>Nenhum diálogo textual gravado para esta chamada.</div>';
                     } else {
                         list.forEach(function(msg) {
                             if (msg.role === 'system') return; // Oculta system prompt no chat
 
-                            var roleClass = (msg.role === 'user') ? 'user' : 'assistant';
-                            var authorName = (msg.role === 'user') ? '👤 Cliente' : '🤖 ' + (c.agent_name || 'Agente IA');
+                            var isUser = (msg.role === 'user');
+                            var roleClass = isUser ? 'user' : 'assistant';
+                            var authorName = isUser ? '👤 Cliente' : '🤖 ' + (c.agent_name || 'Agente IA');
+
+                            textLines.push(authorName + ': ' + msg.content);
 
                             html += '<div class="chat-bubble ' + roleClass + '">';
                             html += '  <div class="bubble-author">' + authorName + '</div>';
@@ -402,6 +473,7 @@ $(document).ready(function() {
                         });
                     }
 
+                    rawTranscriptText = textLines.join('\n\n');
                     $('#chatDialogueContainer').html(html);
                     $('#chatDialogueContainer').scrollTop($('#chatDialogueContainer')[0].scrollHeight);
                 } else {
@@ -412,6 +484,26 @@ $(document).ready(function() {
                 $('#chatDialogueContainer').html('<div class="alert alert-danger">Erro ao carregar transcrição da chamada.</div>');
             }
         });
+    });
+
+    // Copy Transcript Button
+    $('#btnCopyTranscript').on('click', function() {
+        if (!rawTranscriptText) return;
+        navigator.clipboard.writeText(rawTranscriptText).then(function() {
+            var btn = $('#btnCopyTranscript');
+            btn.html('<i class="fa fa-check text-success"></i> Copiado!');
+            setTimeout(function() {
+                btn.html('<i class="fa fa-copy"></i> Copiar Texto');
+            }, 2000);
+        });
+    });
+
+    // Stop audio when modal closes
+    $('#transcriptModal').on('hidden.bs.modal', function () {
+        var player = document.getElementById('modalAudioPlayer');
+        if (player) {
+            player.pause();
+        }
     });
 });
 </script>
