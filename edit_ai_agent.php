@@ -1122,24 +1122,37 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         <div class="vapi-form-group">
             <label class="vapi-form-label">Model <i class="fa fa-info-circle text-muted"></i></label>
             <select id="modal_llm_model_select" class="vapi-input-dark">
+                <optgroup label="OpenAI (Vapi Frontier & Next-Gen Clusters)">
+                    <option value="openai|gpt-4.1">GPT-4.1 (690ms • $0.023/min • 20 Intel)</option>
+                    <option value="openai|gpt-5.6-sol">GPT-5.6 Sol (1060ms • $0.041/min • 42 Intel)</option>
+                    <option value="openai|gpt-5.6-terra">GPT-5.6 Terra (870ms • $0.021/min • 35 Intel)</option>
+                    <option value="openai|gpt-5.6-luna">GPT-5.6 Luna (770ms • $0.010/min • 27 Intel)</option>
+                    <option value="openai|gpt-5.5">GPT-5.5 (1250ms • $0.052/min • 36 Intel)</option>
+                    <option value="openai|chatgpt-4o-latest">GPT Instant (latest) (700ms • $0.052/min • 99 Intel)</option>
+                    <option value="openai|gpt-5.4">GPT-5.4 (800ms • $0.026/min • 28 Intel)</option>
+                    <option value="openai|gpt-5.4-mini">GPT-5.4 Mini (720ms • $0.010/min • 17 Intel)</option>
+                    <option value="openai|gpt-5.4-nano">GPT-5.4 Nano (1160ms • $0.010/min • 18 Intel)</option>
+                    <option value="openai|gpt-5.2">GPT-5.2 (830ms • $0.019/min • 27 Intel)</option>
+                    <option value="openai|gpt-5.1">GPT-5.1 (810ms • $0.013/min • 21 Intel)</option>
+                    <option value="openai|gpt-5">GPT-5 (840ms • $0.013/min • 17 Intel)</option>
+                    <option value="openai|gpt-5-mini">GPT-5 Mini (820ms • $0.010/min • 14 Intel)</option>
+                    <option value="openai|gpt-5-nano">GPT-5 Nano (710ms • $0.010/min • 8 Intel)</option>
+                    <option value="openai|gpt-4.1-mini">GPT-4.1 Mini (600ms • $0.010/min • 15 Intel)</option>
+                    <option value="openai|gpt-4.1-nano">GPT-4.1 Nano (450ms • $0.010/min • 10 Intel)</option>
+                    <option value="openai|gpt-4o-mini-cluster">GPT-4o Mini Cluster (560ms • $0.010/min • 7 Intel)</option>
+                    <option value="openai|gpt-4o-cluster">GPT-4o Cluster (670ms • $0.045/min • 11 Intel)</option>
+                    <option value="openai|gpt-realtime-cluster">GPT Realtime Cluster (450ms • $0.290/min • 95 Intel)</option>
+                    <option value="openai|gpt-realtime-mini">GPT Realtime Mini (400ms • $0.060/min • 90 Intel)</option>
+                    <option value="openai|gpt-o3-cluster">GPT o3 Cluster (1000ms • $0.036/min • 31 Intel)</option>
+                    <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (320ms • $0.004/min • 88 Intel)</option>
+                    <option value="openai|gpt-4o">OpenAI GPT-4o (620ms • $0.022/min • 99 Intel)</option>
+                    <option value="openai|o3-mini">OpenAI o3-mini (550ms • $0.012/min • 97 Intel - Reasoning)</option>
+                    <option value="openai|o1-mini">OpenAI o1-mini (750ms • $0.015/min • 95 Intel - Reasoning)</option>
+                    <option value="openai|o1">OpenAI o1 (1200ms • $0.080/min • 100 Intel - Deep Reasoning)</option>
+                </optgroup>
                 <optgroup label="Groq (Ultra-Rápido)">
                     <option value="groq|llama-3.3-70b-versatile">Groq Llama 3.3 70B (180ms • $0.008/min • 92 Intel)</option>
                     <option value="groq|llama-3.1-8b-instant">Groq Llama 3.1 8B Instant (80ms • $0.002/min • 75 Intel)</option>
-                </optgroup>
-                <optgroup label="OpenAI (Modelos Oficiais 2025/2026)">
-                    <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (320ms • $0.004/min • 88 Intel)</option>
-                    <option value="openai|gpt-4o">OpenAI GPT-4o (620ms • $0.022/min • 99 Intel)</option>
-                    <option value="openai|chatgpt-4o-latest">OpenAI ChatGPT-4o Latest (590ms • $0.022/min • 99 Intel)</option>
-                    <option value="openai|gpt-5.6">OpenAI GPT-5.6 Preview (650ms • $0.035/min • 100 Intel)</option>
-                    <option value="openai|gpt-5.5">OpenAI GPT-5.5 Preview (580ms • $0.030/min • 100 Intel)</option>
-                    <option value="openai|gpt-5-preview">OpenAI GPT-5 Preview (520ms • $0.028/min • 100 Intel)</option>
-                    <option value="openai|gpt-4.5-preview">OpenAI GPT-4.5 Preview (850ms • $0.050/min • 100 Intel)</option>
-                    <option value="openai|o3-mini">OpenAI o3-mini (550ms • $0.012/min • 97 Intel - Reasoning)</option>
-                    <option value="openai|o3">OpenAI o3 (950ms • $0.045/min • 100 Intel - Full Reasoning)</option>
-                    <option value="openai|o1-mini">OpenAI o1-mini (750ms • $0.015/min • 95 Intel - Reasoning)</option>
-                    <option value="openai|o1">OpenAI o1 (1200ms • $0.080/min • 100 Intel - Deep Reasoning)</option>
-                    <option value="openai|gpt-4-turbo">OpenAI GPT-4 Turbo (720ms • $0.040/min • 96 Intel)</option>
-                    <option value="openai|gpt-3.5-turbo">OpenAI GPT-3.5 Turbo (240ms • $0.003/min • 72 Intel)</option>
                 </optgroup>
                 <optgroup label="Anthropic & DeepSeek">
                     <option value="anthropic|claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (750ms • $0.030/min • 98 Intel)</option>
@@ -1441,19 +1454,32 @@ var VAPI_CONFIG = {
     llm: {
         'groq|llama-3.3-70b-versatile': { name: 'Llama 3.3 70B', provider: 'groq', model: 'llama-3.3-70b-versatile', sub: 'Groq • Versatile & Fast', latency: 180, cost: 0.008, intel: 92, icon: 'fa fa-bolt text-blue' },
         'groq|llama-3.1-8b-instant': { name: 'Llama 3.1 8B Instant', provider: 'groq', model: 'llama-3.1-8b-instant', sub: 'Groq • Ultra Fast (<100ms)', latency: 80, cost: 0.002, intel: 75, icon: 'fa fa-bolt text-yellow' },
+        'openai|gpt-4.1': { name: 'GPT-4.1', provider: 'openai', model: 'gpt-4.1', sub: 'OpenAI • Frontier High Precision', latency: 690, cost: 0.023, intel: 20, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.6-sol': { name: 'GPT-5.6 Sol', provider: 'openai', model: 'gpt-5.6-sol', sub: 'OpenAI • Maximum Intelligence Cluster', latency: 1060, cost: 0.041, intel: 42, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.6-terra': { name: 'GPT-5.6 Terra', provider: 'openai', model: 'gpt-5.6-terra', sub: 'OpenAI • Balanced Intelligence Cluster', latency: 870, cost: 0.021, intel: 35, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.6-luna': { name: 'GPT-5.6 Luna', provider: 'openai', model: 'gpt-5.6-luna', sub: 'OpenAI • Ultra Fast & Affordable Cluster', latency: 770, cost: 0.010, intel: 27, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.5': { name: 'GPT-5.5', provider: 'openai', model: 'gpt-5.5', sub: 'OpenAI • Deep Reasoning Flagship', latency: 1250, cost: 0.052, intel: 36, icon: 'fa fa-cube text-green' },
+        'openai|chatgpt-4o-latest': { name: 'GPT Instant (latest)', provider: 'openai', model: 'chatgpt-4o-latest', sub: 'OpenAI • Dynamic Realtime Checkpoint', latency: 700, cost: 0.052, intel: 99, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.4': { name: 'GPT-5.4', provider: 'openai', model: 'gpt-5.4', sub: 'OpenAI • Advanced Conversational Model', latency: 800, cost: 0.026, intel: 28, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.4-mini': { name: 'GPT-5.4 Mini', provider: 'openai', model: 'gpt-5.4-mini', sub: 'OpenAI • Fast & Compact Model', latency: 720, cost: 0.010, intel: 17, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.4-nano': { name: 'GPT-5.4 Nano', provider: 'openai', model: 'gpt-5.4-nano', sub: 'OpenAI • Ultralight Conversational', latency: 1160, cost: 0.010, intel: 18, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.2': { name: 'GPT-5.2', provider: 'openai', model: 'gpt-5.2', sub: 'OpenAI • Frontier High Quality', latency: 830, cost: 0.019, intel: 27, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.1': { name: 'GPT-5.1', provider: 'openai', model: 'gpt-5.1', sub: 'OpenAI • Fast Conversational Standard', latency: 810, cost: 0.013, intel: 21, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5': { name: 'GPT-5', provider: 'openai', model: 'gpt-5', sub: 'OpenAI • Next-Gen Baseline', latency: 840, cost: 0.013, intel: 17, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5-mini': { name: 'GPT-5 Mini', provider: 'openai', model: 'gpt-5-mini', sub: 'OpenAI • Compact Next-Gen', latency: 820, cost: 0.010, intel: 14, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5-nano': { name: 'GPT-5 Nano', provider: 'openai', model: 'gpt-5-nano', sub: 'OpenAI • Nano Streamlined', latency: 710, cost: 0.010, intel: 8, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4.1-mini': { name: 'GPT-4.1 Mini', provider: 'openai', model: 'gpt-4.1-mini', sub: 'OpenAI • Fast Efficient 4.1', latency: 600, cost: 0.010, intel: 15, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4.1-nano': { name: 'GPT-4.1 Nano', provider: 'openai', model: 'gpt-4.1-nano', sub: 'OpenAI • Lowest Latency 4.1', latency: 450, cost: 0.010, intel: 10, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4o-mini-cluster': { name: 'GPT-4o Mini Cluster', provider: 'openai', model: 'gpt-4o-mini-cluster', sub: 'OpenAI • Ultra-Low Latency Cluster', latency: 560, cost: 0.010, intel: 7, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4o-cluster': { name: 'GPT-4o Cluster', provider: 'openai', model: 'gpt-4o-cluster', sub: 'OpenAI • Dedicated 4o Cluster', latency: 670, cost: 0.045, intel: 11, icon: 'fa fa-cube text-green' },
+        'openai|gpt-realtime-cluster': { name: 'GPT Realtime Cluster', provider: 'openai', model: 'gpt-realtime-cluster', sub: 'OpenAI • High-Speed Realtime', latency: 450, cost: 0.290, intel: 95, icon: 'fa fa-cube text-green' },
+        'openai|gpt-realtime-mini': { name: 'GPT Realtime Mini', provider: 'openai', model: 'gpt-realtime-mini', sub: 'OpenAI • Realtime Mini Low Cost', latency: 400, cost: 0.060, intel: 90, icon: 'fa fa-cube text-green' },
+        'openai|gpt-o3-cluster': { name: 'GPT o3 Cluster', provider: 'openai', model: 'gpt-o3-cluster', sub: 'OpenAI • Reasoning Cluster', latency: 1000, cost: 0.036, intel: 31, icon: 'fa fa-cube text-green' },
         'openai|gpt-4o-mini': { name: 'GPT-4o Mini', provider: 'openai', model: 'gpt-4o-mini', sub: 'OpenAI • Ultra-Fast & Cost Effective', latency: 320, cost: 0.004, intel: 88, icon: 'fa fa-cube text-green' },
         'openai|gpt-4o': { name: 'GPT-4o', provider: 'openai', model: 'gpt-4o', sub: 'OpenAI • Flagship Multimodal', latency: 620, cost: 0.022, intel: 99, icon: 'fa fa-cube text-green' },
-        'openai|chatgpt-4o-latest': { name: 'ChatGPT-4o Latest', provider: 'openai', model: 'chatgpt-4o-latest', sub: 'OpenAI • Dynamic Latest GPT-4o Checkpoint', latency: 590, cost: 0.022, intel: 99, icon: 'fa fa-cube text-green' },
-        'openai|gpt-5.6': { name: 'GPT-5.6 Preview', provider: 'openai', model: 'gpt-5.6', sub: 'OpenAI • Next-Gen 5.6 Frontier Model', latency: 650, cost: 0.035, intel: 100, icon: 'fa fa-cube text-green' },
-        'openai|gpt-5.5': { name: 'GPT-5.5 Preview', provider: 'openai', model: 'gpt-5.5', sub: 'OpenAI • Next-Gen 5.5 Frontier Model', latency: 580, cost: 0.030, intel: 100, icon: 'fa fa-cube text-green' },
-        'openai|gpt-5-preview': { name: 'GPT-5 Preview', provider: 'openai', model: 'gpt-5-preview', sub: 'OpenAI • Next-Gen Flagship Model', latency: 520, cost: 0.028, intel: 100, icon: 'fa fa-cube text-green' },
-        'openai|gpt-4.5-preview': { name: 'GPT-4.5 Preview', provider: 'openai', model: 'gpt-4.5-preview', sub: 'OpenAI • Ultra-Deep Knowledge & Frontier', latency: 850, cost: 0.050, intel: 100, icon: 'fa fa-cube text-green' },
         'openai|o3-mini': { name: 'o3-mini', provider: 'openai', model: 'o3-mini', sub: 'OpenAI • Next-Gen Fast Reasoning', latency: 550, cost: 0.012, intel: 97, icon: 'fa fa-cube text-green' },
-        'openai|o3': { name: 'o3 (Full Reasoning)', provider: 'openai', model: 'o3', sub: 'OpenAI • Full-Scale Frontier Reasoning', latency: 950, cost: 0.045, intel: 100, icon: 'fa fa-cube text-green' },
         'openai|o1-mini': { name: 'o1-mini', provider: 'openai', model: 'o1-mini', sub: 'OpenAI • STEM & Coding Reasoning', latency: 750, cost: 0.015, intel: 95, icon: 'fa fa-cube text-green' },
         'openai|o1': { name: 'o1 (Deep Reasoning)', provider: 'openai', model: 'o1', sub: 'OpenAI • Deep Complex Reasoning', latency: 1200, cost: 0.080, intel: 100, icon: 'fa fa-cube text-green' },
-        'openai|gpt-4-turbo': { name: 'GPT-4 Turbo', provider: 'openai', model: 'gpt-4-turbo', sub: 'OpenAI • High Precision 128k Context', latency: 720, cost: 0.040, intel: 96, icon: 'fa fa-cube text-green' },
-        'openai|gpt-3.5-turbo': { name: 'GPT-3.5 Turbo', provider: 'openai', model: 'gpt-3.5-turbo', sub: 'OpenAI • Legacy Fast Standard', latency: 240, cost: 0.003, intel: 72, icon: 'fa fa-cube text-green' },
         'anthropic|claude-3-5-sonnet-20241022': { name: 'Claude 3.5 Sonnet', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', sub: 'Anthropic • Deep Reasoning', latency: 750, cost: 0.030, intel: 98, icon: 'fa fa-diamond text-orange' },
         'deepseek|deepseek-chat': { name: 'DeepSeek V3', provider: 'deepseek', model: 'deepseek-chat', sub: 'DeepSeek • Low Cost & High Intel', latency: 280, cost: 0.003, intel: 90, icon: 'fa fa-star text-blue' }
     },

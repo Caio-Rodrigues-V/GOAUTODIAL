@@ -433,9 +433,15 @@ class AIVoiceBrain:
                     api_key = api_keys.get("openai_api_key")
                     raw_model = llm_model if llm_model and llm_model != "custom" else "gpt-4o-mini"
                     
-                    # Se o modelo for gpt-5.* (ainda não disponível na API direta da OpenAI) ou preview, mapear para gpt-4o
-                    if raw_model in ["gpt-5.6", "gpt-5.5", "gpt-5-preview", "gpt-5"]:
+                    # Mapeamento dinâmico de modelos e clusters Vapi para os endpoints oficiais da OpenAI
+                    if raw_model in ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5", "gpt-5.4", "gpt-5.2", "gpt-5.1", "gpt-5", "gpt-4.1", "gpt-4o-cluster", "gpt-realtime-cluster", "gpt-5.6", "gpt-5-preview"]:
                         target_model = "gpt-4o"
+                    elif raw_model in ["gpt-5.6-luna", "gpt-5.4-mini", "gpt-5.4-nano", "gpt-5-mini", "gpt-5-nano", "gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o-mini-cluster", "gpt-realtime-mini"]:
+                        target_model = "gpt-4o-mini"
+                    elif raw_model in ["gpt-o3-cluster", "o3-mini"]:
+                        target_model = "o3-mini"
+                    elif raw_model in ["chatgpt-4o-latest"]:
+                        target_model = "chatgpt-4o-latest"
                     else:
                         target_model = raw_model
                         
