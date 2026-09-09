@@ -250,7 +250,10 @@ class AIVoiceBrain:
 
                     # Suporte a optimize_streaming_latency (0 a 4) igual na Vapi
                     opt_lat = int(voice_settings.get("voice_optimize_latency", 0)) if voice_settings and voice_settings.get("voice_optimize_latency") is not None else 0
-                    url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000&optimize_streaming_latency={opt_lat}"
+                    if opt_lat > 0:
+                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000&optimize_streaming_latency={opt_lat}"
+                    else:
+                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000"
                     
                     # Parâmetros padrão idênticos ao player do site ElevenLabs para 100% de fidelidade
                     stability = float(voice_settings.get("voice_stability", 0.48)) if voice_settings else 0.48
@@ -260,7 +263,7 @@ class AIVoiceBrain:
 
                     payload = {
                         "text": text,
-                        "model_id": "eleven_multilingual_v2",  # Modelo oficial de alta fidelidade (100% idêntico ao site)
+                        "model_id": "eleven_multilingual_v2",  # Modelo oficial de alta fidelidade
                         "voice_settings": {
                             "stability": stability,
                             "similarity_boost": similarity,
@@ -278,13 +281,19 @@ class AIVoiceBrain:
                         return resample_16k_to_8k_pcm(r.content)
                     else:
                         logger.error(f"Erro ElevenLabs TTS [{r.status_code}] na voz '{eleven_voice}': {r.text}")
-                        # Fallback suave caso precise usar o turbo
-                        if r.status_code in [400, 422]:
-                            logger.info("Tentando ElevenLabs com modelo 'eleven_turbo_v2_5'...")
-                            payload["model_id"] = "eleven_turbo_v2_5"
-                            r_fb = await client.post(url, json=payload, headers=headers)
-                            if r_fb.status_code == 200:
-                                return resample_16k_to_8k_pcm(r_fb.content)
+                        # Fallback 1: Tenta modelo turbo v2.5
+                        payload["model_id"] = "eleven_turbo_v2_5"
+                        r_fb = await client.post(url, json=payload, headers=headers)
+                        if r_fb.status_code == 200:
+                            return resample_16k_to_8k_pcm(r_fb.content)
+
+                        # Fallback 2: OpenAI TTS de segurança (nunca deixa a chamada muda)
+                        if api_keys.get("openai_api_key"):
+                            logger.info("Acionando Fallback OpenAI TTS para não deixar a chamada muda...")
+                            fb_payload = {"model": "tts-1", "voice": "nova", "input": text, "response_format": "wav"}
+                            r_oai = await client.post("https://api.openai.com/v1/audio/speech", json=fb_payload, headers={"Authorization": f"Bearer {api_keys['openai_api_key']}"})
+                            if r_oai.status_code == 200:
+                                return resample_wav_to_8k_pcm(r_oai.content)
 
                 # 3. Cartesia Sonic
                 elif voice_provider == "cartesia":
