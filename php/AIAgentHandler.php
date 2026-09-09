@@ -163,6 +163,10 @@ class AIAgentHandler {
                 `transcript_json` longtext,
                 `recording_url` varchar(255) DEFAULT '',
                 `qualification` varchar(100) DEFAULT 'Atendida',
+                `tabulation` varchar(100) DEFAULT 'Atendida',
+                `call_summary` text,
+                `sentiment` varchar(50) DEFAULT 'Neutro',
+                `action_needed` varchar(255) DEFAULT '',
                 `cost_estimate` decimal(8,4) DEFAULT '0.0000',
                 `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
                 `ended_at` datetime DEFAULT NULL,
@@ -170,6 +174,7 @@ class AIAgentHandler {
                 KEY `idx_call_id` (`call_id`),
                 KEY `idx_agent_id` (`agent_id`),
                 KEY `idx_phone_number` (`phone_number`),
+                KEY `idx_tabulation` (`tabulation`),
                 KEY `idx_created_at` (`created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 
@@ -177,6 +182,10 @@ class AIAgentHandler {
             $checkCols = array(
                 'recording_url' => 'varchar(255) DEFAULT ""',
                 'qualification' => 'varchar(100) DEFAULT "Atendida"',
+                'tabulation' => 'varchar(100) DEFAULT "Atendida"',
+                'call_summary' => 'text',
+                'sentiment' => 'varchar(50) DEFAULT "Neutro"',
+                'action_needed' => 'varchar(255) DEFAULT ""',
                 'cost_estimate' => 'decimal(8,4) DEFAULT "0.0000"',
                 'llm_provider' => 'varchar(50) DEFAULT ""',
                 'llm_model' => 'varchar(100) DEFAULT ""',
@@ -548,7 +557,7 @@ Diretrizes da conversa:
         }
     }
 
-    public function getCallLogs($limit = 100, $offset = 0, $agentId = null, $phone = null, $status = null) {
+    public function getCallLogs($limit = 100, $offset = 0, $agentId = null, $phone = null, $status = null, $tabulation = null) {
         if (!$this->db) return array();
         try {
             if ($agentId) {
@@ -559,6 +568,9 @@ Diretrizes da conversa:
             }
             if ($status) {
                 $this->db->where('status', $status);
+            }
+            if ($tabulation) {
+                $this->db->where('(tabulation = ? OR qualification = ?)', array($tabulation, $tabulation));
             }
             $this->db->orderBy('id', 'DESC');
             return $this->db->get('go_ai_call_logs', array($offset, $limit));

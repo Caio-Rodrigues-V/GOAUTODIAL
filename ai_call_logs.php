@@ -26,10 +26,11 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
 $agentFilter = isset($_GET['agent_id']) ? (int)$_GET['agent_id'] : null;
 $phoneFilter = isset($_GET['phone']) ? trim($_GET['phone']) : null;
 $statusFilter = isset($_GET['status']) ? trim($_GET['status']) : null;
+$tabulationFilter = isset($_GET['tabulation']) ? trim($_GET['tabulation']) : null;
 
 $agents = $aiHandler->getAllAgents();
 $stats = $aiHandler->getCallStats();
-$callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusFilter);
+$callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusFilter, $tabulationFilter);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -231,7 +232,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
             <div class="ddm-section-box" style="padding: 20px 24px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom: 20px;">
                     <form method="GET" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0;">
-                        <div style="min-width: 180px;">
+                        <div style="min-width: 170px;">
                             <select name="agent_id" class="ddm-select">
                                 <option value="">Todos os Agentes</option>
                                 <?php foreach ($agents as $a): ?>
@@ -242,11 +243,25 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                             </select>
                         </div>
 
-                        <div style="min-width: 160px;">
+                        <div style="min-width: 150px;">
                             <input type="text" name="phone" class="ddm-input" placeholder="Buscar Telefone..." value="<?php echo htmlspecialchars($phoneFilter ?: ''); ?>">
                         </div>
 
-                        <div style="min-width: 160px;">
+                        <div style="min-width: 170px;">
+                            <select name="tabulation" class="ddm-select">
+                                <option value="">Todas as Tabulações</option>
+                                <option value="Venda Concluída" <?php echo ($tabulationFilter == 'Venda Concluída') ? 'selected' : ''; ?>>✅ Venda Concluída</option>
+                                <option value="Interessado" <?php echo ($tabulationFilter == 'Interessado') ? 'selected' : ''; ?>>⭐ Interessado</option>
+                                <option value="Dúvida Esclarecida" <?php echo ($tabulationFilter == 'Dúvida Esclarecida') ? 'selected' : ''; ?>>ℹ️ Dúvida Esclarecida</option>
+                                <option value="Retornar Mais Tarde" <?php echo ($tabulationFilter == 'Retornar Mais Tarde') ? 'selected' : ''; ?>>⏰ Retornar Mais Tarde</option>
+                                <option value="Sem Interesse" <?php echo ($tabulationFilter == 'Sem Interesse') ? 'selected' : ''; ?>>❌ Sem Interesse</option>
+                                <option value="Caixa Postal" <?php echo ($tabulationFilter == 'Caixa Postal') ? 'selected' : ''; ?>>📵 Caixa Postal</option>
+                                <option value="Número Inválido" <?php echo ($tabulationFilter == 'Número Inválido') ? 'selected' : ''; ?>>🚫 Número Inválido</option>
+                                <option value="Atendida" <?php echo ($tabulationFilter == 'Atendida') ? 'selected' : ''; ?>>📞 Atendida (Geral)</option>
+                            </select>
+                        </div>
+
+                        <div style="min-width: 150px;">
                             <select name="status" class="ddm-select">
                                 <option value="">Todos os Status</option>
                                 <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>Completada / Atendida</option>
@@ -271,7 +286,8 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                 <th>Duração</th>
                                 <th>Custo</th>
                                 <th>Pipeline</th>
-                                <th>Qualificação</th>
+                                <th>Tabulação IA</th>
+                                <th>Sentimento</th>
                                 <th>Status</th>
                                 <th style="text-align:center; width: 140px;">Gravação</th>
                                 <th style="text-align:right; width: 150px;">Ações</th>
@@ -280,7 +296,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                         <tbody>
                             <?php if (empty($callLogs)): ?>
                                 <tr>
-                                    <td colspan="11" style="text-align:center; padding:40px; color:var(--ddm-text-muted);">
+                                    <td colspan="12" style="text-align:center; padding:40px; color:var(--ddm-text-muted);">
                                         <i class="fa fa-phone-square" style="font-size:36px; display:block; margin-bottom:12px;"></i>
                                         Nenhuma chamada registrada no período selecionado.
                                     </td>
@@ -296,6 +312,8 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                         }
                                     }
                                     $costVal = isset($c['cost_estimate']) ? (float)$c['cost_estimate'] : 0.00;
+                                    $tabulation = !empty($c['tabulation']) ? $c['tabulation'] : (!empty($c['qualification']) ? $c['qualification'] : 'Atendida');
+                                    $sentiment = !empty($c['sentiment']) ? $c['sentiment'] : 'Neutro';
                                 ?>
                                     <tr>
                                         <td><span class="ddm-badge ddm-badge-id">#<?php echo $c['id']; ?></span></td>
@@ -324,12 +342,29 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             <span class="ddm-badge ddm-badge-orange"><i class="fa fa-volume-up"></i> <?php echo htmlspecialchars($c['voice_provider'] ?: 'cartesia'); ?></span>
                                         </td>
                                         <td>
-                                            <?php if ($c['qualification'] == 'Interessado'): ?>
-                                                <span class="ddm-badge ddm-badge-active"><i class="fa fa-star text-green"></i> Interessado</span>
-                                            <?php elseif ($c['qualification'] == 'Atendida'): ?>
-                                                <span class="ddm-badge ddm-badge-orange">Atendida</span>
+                                            <?php if (stripos($tabulation, 'Venda') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-active"><i class="fa fa-check-circle text-green"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif (stripos($tabulation, 'Interessado') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-active"><i class="fa fa-star text-green"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif (stripos($tabulation, 'Dúvida') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-id"><i class="fa fa-info-circle"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif (stripos($tabulation, 'Retornar') !== false || stripos($tabulation, 'Agendamento') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-orange"><i class="fa fa-clock-o"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif (stripos($tabulation, 'Sem Interesse') !== false || stripos($tabulation, 'Recusa') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-inactive"><i class="fa fa-times-circle"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif (stripos($tabulation, 'Caixa') !== false || stripos($tabulation, 'Ocupado') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-inactive"><i class="fa fa-microphone-slash"></i> <?php echo htmlspecialchars($tabulation); ?></span>
                                             <?php else: ?>
-                                                <span class="ddm-badge"><?php echo htmlspecialchars($c['qualification'] ?: 'Finalizada'); ?></span>
+                                                <span class="ddm-badge"><?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($sentiment == 'Positivo'): ?>
+                                                <span class="ddm-badge ddm-badge-active" title="Sentimento do Cliente: Positivo">😊 Positivo</span>
+                                            <?php elseif ($sentiment == 'Negativo'): ?>
+                                                <span class="ddm-badge ddm-badge-inactive" title="Sentimento do Cliente: Negativo">😠 Negativo</span>
+                                            <?php else: ?>
+                                                <span class="ddm-badge" title="Sentimento do Cliente: Neutro">😐 Neutro</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
@@ -355,7 +390,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                         </td>
                                         <td style="text-align:right;">
                                             <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-view-transcript" data-id="<?php echo $c['id']; ?>">
-                                                <i class="fa fa-comments text-orange"></i> Diálogo & Áudio
+                                                <i class="fa fa-comments text-orange"></i> Diálogo & IA
                                             </button>
                                         </td>
                                     </tr>
@@ -370,19 +405,37 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
     </aside>
 </div>
 
-<!-- Modal de Transcrição Completa da Conversa e Player de Áudio -->
+<!-- Modal de Transcrição Completa da Conversa, Análise de IA e Player de Áudio -->
 <div class="modal fade" id="transcriptModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content" style="border-radius: var(--ddm-radius-lg); border: 1px solid var(--ddm-border); overflow:hidden; box-shadow: var(--ddm-shadow-xl);">
             <div class="modal-header" style="background: var(--ddm-surface); border-bottom: 1px solid var(--ddm-border); padding: 18px 24px;">
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                 <h4 class="modal-title" id="transcriptModalTitle" style="font-weight:800; font-size:16px; color:var(--ddm-text-primary);">
-                    <i class="fa fa-comments text-orange"></i> Detalhes & Transcrição da Chamada
+                    <i class="fa fa-comments text-orange"></i> Detalhes, Análise de IA & Transcrição da Chamada
                 </h4>
             </div>
             <div class="modal-body" style="padding: 24px; background: var(--ddm-surface);">
                 <div id="callDetailsHeader" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--ddm-border); font-size:13px; color:var(--ddm-text-secondary);">
                     <!-- Preenchido via JS -->
+                </div>
+
+                <!-- Análise Inteligente da Chamada (OpenAI / Groq) -->
+                <div id="modalAnalysisSection" style="margin-bottom:18px; padding:16px 20px; background:var(--ddm-surface-subtle); border-radius:var(--ddm-radius-md); border:1px solid var(--ddm-border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                        <span style="font-weight:700; font-size:13px; color:var(--ddm-text-primary); display:flex; align-items:center; gap:6px;">
+                            <i class="fa fa-magic text-orange"></i> Diagnóstico Inteligente & Tabulação (IA)
+                        </span>
+                        <div id="modalBadgesContainer" style="display:flex; gap:6px;">
+                            <!-- Badges preenchidos via JS -->
+                        </div>
+                    </div>
+                    <div style="font-size:13px; color:var(--ddm-text-primary); margin-bottom:8px; line-height:1.5;" id="modalCallSummary">
+                        <!-- Resumo Executivo preenchido via JS -->
+                    </div>
+                    <div id="modalActionContainer" style="font-size:12px; color:var(--ddm-text-secondary); background:var(--ddm-surface); border:1px dashed var(--ddm-border); border-radius:6px; padding:8px 12px; display:none;">
+                        <strong style="color:var(--ddm-primary);"><i class="fa fa-arrow-circle-right"></i> Próxima Ação Sugerida:</strong> <span id="modalActionText"></span>
+                    </div>
                 </div>
 
                 <!-- Player e Download de Áudio da Gravação -->
@@ -438,6 +491,9 @@ $(document).ready(function() {
         $('#transcriptModal').modal('show');
         $('#chatDialogueContainer').html('<div style="text-align:center; padding:30px; color:var(--ddm-text-muted);"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Carregando diálogo...</div>');
         $('#callDetailsHeader').html('');
+        $('#modalBadgesContainer').html('');
+        $('#modalCallSummary').html('<em>Carregando análise...</em>');
+        $('#modalActionContainer').hide();
         $('#modalAudioSection').hide();
         var player = document.getElementById('modalAudioPlayer');
         if (player) {
@@ -462,6 +518,44 @@ $(document).ready(function() {
                         '<div><strong>Telefone:</strong> ' + c.phone_number + ' &nbsp;|&nbsp; <strong>Agente:</strong> ' + (c.agent_name || ('#' + c.agent_id)) + '</div>' +
                         '<div><strong>Duração:</strong> ' + durFmt + ' &nbsp;|&nbsp; <strong>Custo Est.:</strong> R$ ' + cost + ' &nbsp;|&nbsp; <strong>Data:</strong> ' + c.created_at + '</div>'
                     );
+
+                    // Análise de IA: Tabulação, Sentimento, Resumo e Ação
+                    var tab = c.tabulation || c.qualification || 'Atendida';
+                    var sent = c.sentiment || 'Neutro';
+                    var summary = c.call_summary || 'Conversa concluída pelo agente de voz IA.';
+                    var action = c.action_needed || '';
+
+                    var tabBadgeClass = 'ddm-badge';
+                    if (tab.toLowerCase().indexOf('venda') !== -1 || tab.toLowerCase().indexOf('interessado') !== -1) {
+                        tabBadgeClass = 'ddm-badge ddm-badge-active';
+                    } else if (tab.toLowerCase().indexOf('retornar') !== -1 || tab.toLowerCase().indexOf('agendamento') !== -1) {
+                        tabBadgeClass = 'ddm-badge ddm-badge-orange';
+                    } else if (tab.toLowerCase().indexOf('sem interesse') !== -1 || tab.toLowerCase().indexOf('recusa') !== -1 || tab.toLowerCase().indexOf('caixa') !== -1) {
+                        tabBadgeClass = 'ddm-badge ddm-badge-inactive';
+                    }
+
+                    var sentEmoji = '😐';
+                    var sentBadgeClass = 'ddm-badge';
+                    if (sent === 'Positivo') {
+                        sentEmoji = '😊';
+                        sentBadgeClass = 'ddm-badge ddm-badge-active';
+                    } else if (sent === 'Negativo') {
+                        sentEmoji = '😠';
+                        sentBadgeClass = 'ddm-badge ddm-badge-inactive';
+                    }
+
+                    var badgesHtml = '<span class="' + tabBadgeClass + '">📌 ' + tab + '</span> ' +
+                                     '<span class="' + sentBadgeClass + '">' + sentEmoji + ' ' + sent + '</span>';
+                    $('#modalBadgesContainer').html(badgesHtml);
+
+                    $('#modalCallSummary').html('<strong>Resumo da Ligação:</strong> ' + $('<div>').text(summary).html());
+
+                    if (action && action.trim() !== '') {
+                        $('#modalActionText').text(action);
+                        $('#modalActionContainer').show();
+                    } else {
+                        $('#modalActionContainer').hide();
+                    }
 
                     // Setup Audio Player and Download button
                     var audioUrl = res.audio_url || c.recording_url;

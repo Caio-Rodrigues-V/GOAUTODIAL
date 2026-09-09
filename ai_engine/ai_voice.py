@@ -550,3 +550,95 @@ class AIVoiceBrain:
 
         logger.warning(f"⚠️ Nenhuma LLM respondeu com sucesso. Verifique as chaves de API e provedor '{llm_provider}'.")
         return "Entendi perfeitamente. Como posso te ajudar?"
+
+    @staticmethod
+    async def analyze_call(conversation_history: List[Dict[str, str]], api_keys: Dict[str, str]) -> Dict[str, Any]:
+        """
+        Analisa a transcrição completa da chamada usando OpenAI (GPT-4o Mini) ou Groq para gerar:
+        - tabulation: (Venda Concluída, Interessado, Dúvida Esclarecida, Sem Interesse, Caixa Postal, Retornar Mais Tarde, Engano/Número Incorreto, Atendida)
+        - summary: Resumo executivo em 1 a 2 frases
+        - sentiment: Positivo, Neutro ou Negativo
+        - action: Próximo passo recomendado para o CRM
+        """
+        default_res = {
+            "tabulation": "Atendida",
+            "summary": "Chamada atendida e finalizada.",
+            "sentiment": "Neutro",
+            "action": "Nenhuma ação necessária"
+        }
+
+        # Filtra apenas o diálogo real entre cliente e IA
+        dialogue = [m for m in conversation_history if m.get("role") in ("user", "assistant")]
+        user_msgs = [m for m in dialogue if m.get("role") == "user"]
+
+        if len(user_msgs) == 0:
+            return {
+                "tabulation": "Sem Resposta",
+                "summary": "Chamada conectada, mas o cliente não respondeu.",
+                "sentiment": "Neutro",
+                "action": "Tentar novamente mais tarde"
+            }
+
+        prompt = (
+            "Você é um supervisor de qualidade de Contact Center e IA. "
+            "Analise a transcrição da chamada telefônica abaixo e gere uma tabulação/classificação e resumo executivo em JSON estrito.\n\n"
+            "Escolha exatamente UMA das opções abaixo para o campo 'tabulation':\n"
+            "- 'Venda Concluída' (Cliente comprou, aceitou proposta ou fechou negócio)\n"
+            "- 'Interessado' (Cliente demonstrou interesse, pediu informações, cotação ou valores)\n"
+            "- 'Dúvida Esclarecida' (Cliente ligou para tirar dúvida sobre conta, fatura, serviço ou produto e foi atendido)\n"
+            "- 'Retornar Mais Tarde' (Cliente pediu para ligar em outro horário/dia)\n"
+            "- 'Sem Interesse' (Cliente recusou a oferta ou não quer ser contatado)\n"
+            "- 'Caixa Postal / Secretária' (Caiu em secretária eletrônica ou mensagem de operadora)\n"
+            "- 'Engano / Número Incorreto' (Não é a pessoa procurada ou número errado)\n"
+            "- 'Atendida' (Conversa geral sem outra classificação específica)\n\n"
+            "Retorne APENAS um objeto JSON válido no formato:\n"
+            "{\n"
+            "  \"tabulation\": \"<uma das opções acima>\",\n"
+            "  \"summary\": \"<resumo objetivo em português de 1 a 2 frases do que o cliente queria e do desfecho>\",\n"
+            "  \"sentiment\": \"<Positivo|Neutro|Negativo>\",\n"
+            "  \"action\": \"<ação prática recomendada, ex: Enviar segunda via / Agendar retorno / Arquivar>\"\n"
+            "}\n\n"
+            "Transcrição da Chamada:\n"
+        )
+        for msg in dialogue:
+            author = "Cliente" if msg.get("role") == "user" else "Assistente IA"
+            prompt += f"{author}: {msg.get('content', '')}\n"
+
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            # 1. OpenAI GPT-4o-mini (Modo JSON Oficial)
+            if api_keys.get("openai_api_key"):
+                try:
+                    api_key = api_keys.get("openai_api_key")
+                    payload = {
+                        "model": "gpt-4o-mini",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": {"type": "json_object"},
+                        "temperature": 0.2
+                    }
+                    r = await client.post("https://api.openai.com/v1/chat/completions", json=payload, headers={"Authorization": f"Bearer {api_key}"})
+                    if r.status_code == 200:
+                        parsed = json.loads(r.json()["choices"][0]["message"]["content"])
+                        logger.info(f"📋 [OpenAI Tabulação]: '{parsed.get('tabulation')}' | Sentimento: {parsed.get('sentiment')} | Resumo: '{parsed.get('summary')}'")
+                        return parsed
+                except Exception as ex:
+                    logger.warning(f"Erro na tabulação OpenAI: {ex}")
+
+            # 2. Fallback Groq (Llama 3.3 70B com JSON Mode)
+            if api_keys.get("groq_api_key"):
+                try:
+                    api_key = api_keys.get("groq_api_key")
+                    payload = {
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": {"type": "json_object"},
+                        "temperature": 0.2
+                    }
+                    r = await client.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers={"Authorization": f"Bearer {api_key}"})
+                    if r.status_code == 200:
+                        parsed = json.loads(r.json()["choices"][0]["message"]["content"])
+                        logger.info(f"📋 [Groq Tabulação]: '{parsed.get('tabulation')}' | Sentimento: {parsed.get('sentiment')} | Resumo: '{parsed.get('summary')}'")
+                        return parsed
+                except Exception as ex:
+                    logger.warning(f"Erro na tabulação Groq: {ex}")
+
+        return default_res
