@@ -24,6 +24,23 @@ def create_wav_from_pcm(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
         wav.writeframes(pcm_bytes)
     return buf.getvalue()
 
+# Lista de alucinações comuns do Whisper em silêncio ou estalos de linha telefônica
+WHISPER_HALLUCINATIONS = {
+    "você", "obrigado por assistir", "legendas pela comunidade amara.org", "subtitles by the amara.org community",
+    "inscreva-se no canal", "deixe seu like", "curta e compartilhe", "transcrição por", "assista ao vídeo",
+    ".", "..", "...", "bye", "thank you", "thanks for watching", "tchau", "até a próxima", "todos os direitos reservados"
+}
+
+def is_hallucination(text: str) -> bool:
+    if not text:
+        return True
+    cleaned = text.strip().lower().rstrip(".,!?;:")
+    if cleaned in WHISPER_HALLUCINATIONS:
+        return True
+    if len(cleaned) <= 1:
+        return True
+    return False
+
 def clean_text_for_tts(text: str) -> str:
     """Higieniza o texto para remover emojis, asteriscos de ação e markdown antes do sintetizador de voz"""
     if not text:
@@ -63,7 +80,7 @@ class AIVoiceBrain:
                     if r.status_code == 200:
                         data = r.json()
                         transcript = data["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
-                        if transcript:
+                        if transcript and not is_hallucination(transcript):
                             logger.info(f"[Deepgram STT]: '{transcript}'")
                             return transcript
 
@@ -87,7 +104,7 @@ class AIVoiceBrain:
                     if r.status_code == 200:
                         res = r.json()
                         transcript = res.get("text", "").strip()
-                        if transcript:
+                        if transcript and not is_hallucination(transcript):
                             logger.info(f"[Groq Whisper STT]: '{transcript}'")
                             return transcript
 
@@ -110,7 +127,7 @@ class AIVoiceBrain:
                     if r.status_code == 200:
                         res = r.json()
                         transcript = res.get("text", "").strip()
-                        if transcript:
+                        if transcript and not is_hallucination(transcript):
                             logger.info(f"[OpenAI Whisper STT]: '{transcript}'")
                             return transcript
 
@@ -231,8 +248,9 @@ class AIVoiceBrain:
                         logger.error("Chave da ElevenLabs não configurada")
                         return b''
 
-                    eleven_voice = voice_id if voice_id and voice_id != "custom" else "tMzxR2W7o3RLIY7zWBbG"
-                    url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000"
+                    # Suporte a optimize_streaming_latency (0 a 4) igual na Vapi
+                    opt_lat = int(voice_settings.get("voice_optimize_latency", 0)) if voice_settings and voice_settings.get("voice_optimize_latency") is not None else 0
+                    url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000&optimize_streaming_latency={opt_lat}"
                     
                     # Parâmetros padrão idênticos ao player do site ElevenLabs para 100% de fidelidade
                     stability = float(voice_settings.get("voice_stability", 0.48)) if voice_settings else 0.48

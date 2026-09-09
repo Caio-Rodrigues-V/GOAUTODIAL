@@ -51,6 +51,29 @@ $voice_optimize_latency = isset($agent['voice_optimize_latency']) ? (int)$agent[
 $max_tokens = !empty($agent['max_tokens']) ? (int)$agent['max_tokens'] : 250;
 $prompt_cache_retention = !empty($agent['prompt_cache_retention']) ? $agent['prompt_cache_retention'] : 'in_memory';
 $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent['tool_strict_compatibility'] : 'N';
+
+// Vapi Advanced Defaults
+$voice_fallback_provider = !empty($agent['voice_fallback_provider']) ? $agent['voice_fallback_provider'] : 'openai';
+$voice_fallback_id = !empty($agent['voice_fallback_id']) ? $agent['voice_fallback_id'] : 'nova';
+$webhook_url = !empty($agent['webhook_url']) ? $agent['webhook_url'] : '';
+$webhook_timeout_seconds = !empty($agent['webhook_timeout_seconds']) ? (int)$agent['webhook_timeout_seconds'] : 10;
+$webhook_headers = !empty($agent['webhook_headers']) ? $agent['webhook_headers'] : '';
+$start_speaking_wait_seconds = isset($agent['start_speaking_wait_seconds']) ? (float)$agent['start_speaking_wait_seconds'] : 0.40;
+$smart_endpointing = isset($agent['smart_endpointing']) ? $agent['smart_endpointing'] : 'Y';
+$stop_speaking_num_words = isset($agent['stop_speaking_num_words']) ? (int)$agent['stop_speaking_num_words'] : 2;
+$stop_speaking_voice_seconds = isset($agent['stop_speaking_voice_seconds']) ? (float)$agent['stop_speaking_voice_seconds'] : 0.20;
+$stop_speaking_backoff_seconds = isset($agent['stop_speaking_backoff_seconds']) ? (float)$agent['stop_speaking_backoff_seconds'] : 1.00;
+$voicemail_detection_provider = !empty($agent['voicemail_detection_provider']) ? $agent['voicemail_detection_provider'] : 'vapi';
+$voicemail_message = !empty($agent['voicemail_message']) ? $agent['voicemail_message'] : '';
+$end_call_message = !empty($agent['end_call_message']) ? $agent['end_call_message'] : '';
+$end_call_phrases = !empty($agent['end_call_phrases']) ? $agent['end_call_phrases'] : '';
+$idle_messages = !empty($agent['idle_messages']) ? $agent['idle_messages'] : '';
+$max_idle_messages = isset($agent['max_idle_messages']) ? (int)$agent['max_idle_messages'] : 3;
+$idle_timeout_seconds = isset($agent['idle_timeout_seconds']) ? (int)$agent['idle_timeout_seconds'] : 7;
+$enable_keypad_input = isset($agent['enable_keypad_input']) ? $agent['enable_keypad_input'] : 'N';
+$keypad_timeout_seconds = isset($agent['keypad_timeout_seconds']) ? (int)$agent['keypad_timeout_seconds'] : 5;
+$keypad_delimiter = !empty($agent['keypad_delimiter']) ? $agent['keypad_delimiter'] : '#';
+$recording_audio_format = !empty($agent['recording_audio_format']) ? $agent['recording_audio_format'] : 'wav';
 ?>
 <!DOCTYPE html>
 <html>
@@ -976,42 +999,336 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
 
                 <!-- TAB 5: ADVANCED -->
                 <div id="view_advanced" class="vapi-tab-view" style="display:none;">
-                    <div class="vapi-section-box">
-                        <div class="vapi-section-header">
-                            <span class="vapi-section-title"><i class="fa fa-cogs text-purple"></i> Configurações Avançadas de Telefonia & SIP</span>
+                    
+                    <!-- ACCORDION 1: FALLBACKS -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_fallbacks">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-shield text-green" style="margin-right:8px;"></i> Fallbacks</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Backups if the primary voice or transcriber fails</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="vapi-form-group">
-                                    <label class="vapi-form-label">Ramal / Fila de Transferência Humana</label>
-                                    <input type="text" name="transfer_phone_or_queue" class="vapi-input-dark" value="<?=htmlspecialchars($agent['transfer_phone_or_queue'])?>" placeholder="Ex: 8300 ou ramal SIP" />
+                        <div id="adv_sec_fallbacks" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label"><i class="fa fa-volume-up"></i> Fallback Voice Provider</label>
+                                        <select name="voice_fallback_provider" class="vapi-input-dark">
+                                            <option value="openai" <?=$voice_fallback_provider=='openai'?'selected':''?>>OpenAI (Nova / Alloy)</option>
+                                            <option value="cartesia" <?=$voice_fallback_provider=='cartesia'?'selected':''?>>Cartesia Sonic</option>
+                                            <option value="azure" <?=$voice_fallback_provider=='azure'?'selected':''?>>Azure Speech (Francisca)</option>
+                                            <option value="elevenlabs" <?=$voice_fallback_provider=='elevenlabs'?'selected':''?>>ElevenLabs (Sarah)</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="vapi-form-group">
-                                    <label class="vapi-form-label">Tempo Máximo da Chamada (Segundos)</label>
-                                    <input type="number" name="max_duration_seconds" class="vapi-input-dark" value="<?=htmlspecialchars($agent['max_duration_seconds'] ? $agent['max_duration_seconds'] : 600)?>" />
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="vapi-form-group">
-                                    <label class="vapi-form-label">Sensibilidade de Interrupção (Barge-in)</label>
-                                    <input type="range" name="interruption_sensitivity" class="vapi-range-slider" min="0.1" max="1.0" step="0.05" value="<?=$agent['interruption_sensitivity'] ? $agent['interruption_sensitivity'] : 0.8?>" />
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="vapi-form-group">
-                                    <label class="vapi-form-label">Status do Agente</label>
-                                    <select name="status" id="select_agent_status" class="vapi-select-dark" style="width:100%;">
-                                        <option value="Y" <?=$agent['status']=='Y'?'selected':''?>>Ativo (Pronto para discar)</option>
-                                        <option value="N" <?=$agent['status']=='N'?'selected':''?>>Inativo</option>
-                                    </select>
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label"><i class="fa fa-tag"></i> Fallback Voice ID</label>
+                                        <input type="text" name="voice_fallback_id" class="vapi-input-dark" value="<?=htmlspecialchars($voice_fallback_id)?>" placeholder="ex: nova, alloy, EXAVITQu4vr4xnSDxMaL" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- ACCORDION 2: WEBHOOK SERVER -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_webhook">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-globe text-blue" style="margin-right:8px;"></i> Webhook Server</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure a webhook server to connect tools and events to your assistant</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_webhook" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="vapi-form-group">
+                                <label class="vapi-form-label">Server URL (Webhook & Tool Request Endpoint)</label>
+                                <input type="text" name="webhook_url" class="vapi-input-dark" value="<?=htmlspecialchars($webhook_url)?>" placeholder="https://api.seusistema.com.br/v1/webhook" />
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Timeout (1 sec a 300 sec)</label>
+                                        <input type="number" name="webhook_timeout_seconds" class="vapi-input-dark" min="1" max="300" value="<?=$webhook_timeout_seconds?>" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">HTTP Custom Headers (JSON)</label>
+                                        <input type="text" name="webhook_headers" class="vapi-input-dark" value="<?=htmlspecialchars($webhook_headers)?>" placeholder='{"Authorization": "Bearer token", "X-Custom": "Val"}' />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 3: START SPEAKING PLAN -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_start_speaking">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-play-circle text-info" style="margin-right:8px;"></i> Start Speaking Plan</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Plan for when the assistant should start talking</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_start_speaking" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                            <label class="vapi-form-label" style="margin-bottom:0;">Wait Seconds (0s a 5s)</label>
+                                            <span class="vapi-badge"><?=$start_speaking_wait_seconds?>s</span>
+                                        </div>
+                                        <input type="range" name="start_speaking_wait_seconds" class="vapi-range-slider" min="0.0" max="5.0" step="0.1" value="<?=$start_speaking_wait_seconds?>" />
+                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">How long the assistant waits before speaking.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="vapi-switch-row" style="border-top:none; padding-top:0;">
+                                        <div class="vapi-switch-info">
+                                            <div class="vapi-switch-title">Smart Endpointing</div>
+                                            <div class="vapi-switch-desc">Enable for more accurate speech endpoint detection.</div>
+                                        </div>
+                                        <label class="vapi-switch">
+                                            <input type="checkbox" name="smart_endpointing" value="Y" <?=$smart_endpointing=='Y'?'checked':''?> />
+                                            <span class="vapi-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 4: STOP SPEAKING PLAN -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_stop_speaking">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-stop-circle text-orange" style="margin-right:8px;"></i> Stop Speaking Plan</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Plan for when the assistant should stop talking (Interruption / Barge-in)</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_stop_speaking" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Number of Words (0 a 10)</label>
+                                        <input type="number" name="stop_speaking_num_words" class="vapi-input-dark" min="0" max="10" value="<?=$stop_speaking_num_words?>" />
+                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">Number of words customer has to say before assistant stops.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Voice Seconds (0s a 0.5s)</label>
+                                        <input type="number" name="stop_speaking_voice_seconds" class="vapi-input-dark" step="0.05" min="0.0" max="0.5" value="<?=$stop_speaking_voice_seconds?>" />
+                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">Seconds customer has to speak before assistant stops.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Back Off Seconds (0s a 10s)</label>
+                                        <input type="number" name="stop_speaking_backoff_seconds" class="vapi-input-dark" step="0.1" min="0.0" max="10.0" value="<?=$stop_speaking_backoff_seconds?>" />
+                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">Wait time before assistant speaks again after interruption.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 5: VOICEMAIL DETECTION -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_voicemail">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-envelope-o text-yellow" style="margin-right:8px;"></i> Voicemail Detection</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure how the assistant detects and handles voicemail / answering machines</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_voicemail" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Voicemail Detection Provider</label>
+                                        <select name="voicemail_detection_provider" class="vapi-input-dark">
+                                            <option value="vapi" <?=$voicemail_detection_provider=='vapi'?'selected':''?>>Vapi AI Engine (Recommended)</option>
+                                            <option value="openai" <?=$voicemail_detection_provider=='openai'?'selected':''?>>OpenAI Fast Classifier</option>
+                                            <option value="twilio_amd" <?=$voicemail_detection_provider=='twilio_amd'?'selected':''?>>SIP / Asterisk AMD</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Ação ao Detectar Caixa Postal</label>
+                                        <select name="hangup_on_voicemail" class="vapi-input-dark">
+                                            <option value="Y" <?=$agent['hangup_on_voicemail']=='Y'?'selected':''?>>Desligar Imediatamente (Hangup)</option>
+                                            <option value="N" <?=$agent['hangup_on_voicemail']=='N'?'selected':''?>>Deixar Recado de Caixa Postal</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="vapi-form-group">
+                                <label class="vapi-form-label">Voicemail Message (Recado se for para caixa postal)</label>
+                                <textarea name="voicemail_message" class="vapi-textarea-dark" rows="2" placeholder="Olá, tentei entrar em contato sobre a sua solicitação. Retornarei em breve..."><?=htmlspecialchars($voicemail_message)?></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 6: CALL TIMEOUT SETTINGS -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_timeout">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-clock-o text-cyan" style="margin-right:8px;"></i> Call Timeout Settings</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure when the assistant should end a call based on silence or duration</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_timeout" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Silence Timeout (5s a 3600s)</label>
+                                        <input type="number" name="silence_timeout_ms" class="vapi-input-dark" value="<?=$silence_timeout_ms?>" />
+                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">How long to wait before a call is automatically ended due to inactivity.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Maximum Duration (10s a 43200s)</label>
+                                        <input type="number" name="max_duration_seconds" class="vapi-input-dark" value="<?=htmlspecialchars($agent['max_duration_seconds'] ? $agent['max_duration_seconds'] : 600)?>" />
+                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">The maximum number of seconds a call will last.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Ramal / Fila de Transferência Humana</label>
+                                        <input type="text" name="transfer_phone_or_queue" class="vapi-input-dark" value="<?=htmlspecialchars($agent['transfer_phone_or_queue'])?>" placeholder="Ex: 8300 ou ramal SIP" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Sensibilidade de Interrupção (Barge-in)</label>
+                                        <input type="range" name="interruption_sensitivity" class="vapi-range-slider" min="0.1" max="1.0" step="0.05" value="<?=$agent['interruption_sensitivity'] ? $agent['interruption_sensitivity'] : 0.8?>" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 7: KEYPAD INPUT (DTMF) -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_keypad">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-th text-purple" style="margin-right:8px;"></i> Keypad Input Settings (DTMF)</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure whether a user can input digits via the keypad, and when to process</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_keypad" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="vapi-switch-row" style="border-top:none; padding-top:0;">
+                                <div class="vapi-switch-info">
+                                    <div class="vapi-switch-title">Enable Keypad Input</div>
+                                    <div class="vapi-switch-desc">Accept user input via the keypad during call.</div>
+                                </div>
+                                <label class="vapi-switch">
+                                    <input type="checkbox" name="enable_keypad_input" value="Y" <?=$enable_keypad_input=='Y'?'checked':''?> />
+                                    <span class="vapi-slider"></span>
+                                </label>
+                            </div>
+                            <div class="row" style="margin-top:12px;">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Timeout (Seconds)</label>
+                                        <input type="number" name="keypad_timeout_seconds" class="vapi-input-dark" min="0" max="10" value="<?=$keypad_timeout_seconds?>" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Delimiter (# ou *)</label>
+                                        <input type="text" name="keypad_delimiter" class="vapi-input-dark" value="<?=htmlspecialchars($keypad_delimiter)?>" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 8: RECORDING & ARTIFACTS -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_recording">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-file-audio-o text-pink" style="margin-right:8px;"></i> Recording & Artifacts</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Call recording, transcript, and artifact storing</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_recording" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Audio Recording Format</label>
+                                        <select name="recording_audio_format" class="vapi-input-dark">
+                                            <option value="wav" <?=$recording_audio_format=='wav'?'selected':''?>>WAV (Uncompressed PCM - High Quality)</option>
+                                            <option value="mp3" <?=$recording_audio_format=='mp3'?'selected':''?>>MP3 (Compressed)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Status do Agente</label>
+                                        <select name="status" id="select_agent_status" class="vapi-select-dark" style="width:100%;">
+                                            <option value="Y" <?=$agent['status']=='Y'?'selected':''?>>Ativo (Pronto para discar)</option>
+                                            <option value="N" <?=$agent['status']=='N'?'selected':''?>>Inativo</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 9: MESSAGING & IDLE -->
+                    <div class="vapi-section-box" style="margin-bottom: 16px;">
+                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_messaging">
+                            <div>
+                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-comments-o text-teal" style="margin-right:8px;"></i> Messaging & Idle Handling</span>
+                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Message configuration for end-call phrases and customer inactivity</div>
+                            </div>
+                            <i class="fa fa-chevron-down text-muted"></i>
+                        </div>
+                        <div id="adv_sec_messaging" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                            <div class="vapi-form-group">
+                                <label class="vapi-form-label">End Call Message</label>
+                                <input type="text" name="end_call_message" class="vapi-input-dark" value="<?=htmlspecialchars($end_call_message)?>" placeholder="Message the assistant will say if the call is ended." />
+                            </div>
+                            <div class="vapi-form-group">
+                                <label class="vapi-form-label">End Call Phrases (Separadas por vírgula)</label>
+                                <input type="text" name="end_call_phrases" class="vapi-input-dark" value="<?=htmlspecialchars($end_call_phrases)?>" placeholder="tenha um bom dia, tchau tchau, até logo, agradeço o contato" />
+                                <div style="font-size:11px; color:#64748b; margin-top:4px;">Phrases that hang up the call when spoken by the assistant.</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Idle Messages (Quando o cliente não responde)</label>
+                                        <input type="text" name="idle_messages" class="vapi-input-dark" value="<?=htmlspecialchars($idle_messages)?>" placeholder="Você ainda está aí?, Olá, pode me ouvir?" />
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Max Idle Messages</label>
+                                        <input type="number" name="max_idle_messages" class="vapi-input-dark" min="1" max="10" value="<?=$max_idle_messages?>" />
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="vapi-form-group">
+                                        <label class="vapi-form-label">Idle Timeout (s)</label>
+                                        <input type="number" name="idle_timeout_seconds" class="vapi-input-dark" min="5" max="60" value="<?=$idle_timeout_seconds?>" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </form>
@@ -1239,6 +1556,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             
             <div id="voice_library_view">
                 <select id="modal_voice_id_select" class="vapi-input-dark">
+                    <option value="elevenlabs|PznTnBc8X6pvixs9UkQm">PznTnBc8X6pvixs9UkQm • ElevenLabs (Multilingual v2 - Vapi Clone)</option>
                     <option value="elevenlabs|tMzxR2W7o3RLIY7zWBbG">Júlia (Voz Oficial) • ElevenLabs (Natural Conversational PT-BR)</option>
                     <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM">Rachel • ElevenLabs (Conversational Female)</option>
                     <option value="elevenlabs|EXAVITQu4vr4xnSDxMaL">Sarah • ElevenLabs (Warm & Reassuring Female)</option>
@@ -1485,6 +1803,7 @@ var VAPI_CONFIG = {
         'deepseek|deepseek-chat': { name: 'DeepSeek V3', provider: 'deepseek', model: 'deepseek-chat', sub: 'DeepSeek • Low Cost & High Intel', latency: 280, cost: 0.003, intel: 90, icon: 'fa fa-star text-blue' }
     },
     voice: {
+        'elevenlabs|PznTnBc8X6pvixs9UkQm': { name: 'PznTnBc8X6pvixs9UkQm (ElevenLabs)', provider: 'elevenlabs', id: 'PznTnBc8X6pvixs9UkQm', sub: 'ElevenLabs • Eleven Multilingual v2', latency: 810, cost: 0.036, humanness: 96, icon: 'fa fa-volume-up text-pink' },
         'elevenlabs|tMzxR2W7o3RLIY7zWBbG': { name: 'Júlia (ElevenLabs)', provider: 'elevenlabs', id: 'tMzxR2W7o3RLIY7zWBbG', sub: 'ElevenLabs • Natural Conversational PT-BR', latency: 350, cost: 0.036, humanness: 96, icon: 'fa fa-volume-up text-pink' },
         'cartesia|cartesia-pt-br-sofia': { name: 'Sofia (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-sofia', sub: 'Cartesia Sonic • Natural PT-BR Female', latency: 90, cost: 0.020, humanness: 96, icon: 'fa fa-volume-up text-purple' },
         'cartesia|cartesia-pt-br-lucas': { name: 'Lucas (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-lucas', sub: 'Cartesia Sonic • Professional PT-BR Male', latency: 90, cost: 0.020, humanness: 95, icon: 'fa fa-volume-up text-purple' },
@@ -1728,6 +2047,18 @@ $(document).ready(function() {
     $('#adv_stt_toggle').click(function() { $('#adv_stt_body').slideToggle(200); });
     $('#adv_llm_toggle').click(function() { $('#adv_llm_body').slideToggle(200); });
     $('#adv_voice_toggle').click(function() { $('#adv_voice_body').slideToggle(200); });
+
+    // Vapi Advanced Accordions
+    $('.vapi-accordion-header[data-target]').click(function() {
+        var target = $(this).data('target');
+        $(target).slideToggle(200);
+        var $icon = $('i.fa-chevron-down, i.fa-chevron-up', this);
+        if ($icon.hasClass('fa-chevron-down')) {
+            $icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        } else {
+            $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        }
+    });
 
     // Transcriber Drawer Events
     $('#modal_stt_provider_select').change(function() {
