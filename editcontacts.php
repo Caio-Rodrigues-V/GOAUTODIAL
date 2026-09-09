@@ -106,9 +106,6 @@
 
 		<!-- Datetime picker CSS --> 
 		<link rel="stylesheet" href="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
-		<!-- DateTime Picker JS -->
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
-		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
 
 		<style>
 			.nav-tabs > li > a{
@@ -880,7 +877,9 @@
 
         <!-- call for standardized JS -->
         <?php print $ui->standardizedThemeJS();?>
-
+		<!-- DateTime Picker JS -->
+        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
 		<!-- Modal Dialogs -->
 		<?php include_once "./php/ModalPasswordDialogs.php" ?>
 

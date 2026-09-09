@@ -60,11 +60,7 @@
         <link href="css/style.css" rel="stylesheet" type="text/css" />
 
         <!-- datetime picker --> 
-		<link rel="stylesheet" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
-
-		<!-- Date Picker -->
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
-		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+		<link rel="stylesheet" href="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
     </head>
     <?php print $ui->creamyBody(); ?>
         <div class="wrapper">

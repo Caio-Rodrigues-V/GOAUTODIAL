@@ -66,11 +66,6 @@
         <!-- Datetime picker CSS -->
 		<link rel="stylesheet" href="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
 
-        <!-- Date Picker JS -->
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
-		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
-
 		<style type="text/css">
 			#progress-wrp {
 				border: 1px solid #0099CC;
@@ -608,6 +603,10 @@ print $ui->calloutErrorMessage($lh->translationFor("you_dont_have_permission"));
 	</div>
 	
 	<?php print $ui->standardizedThemeJS();?>
+	<!-- Date Picker JS -->
+	<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
+	<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
 	<!-- JQUERY STEPS-->
 	<script src="js/dashboard/js/jquery.steps/build/jquery.steps.js"></script>
 		

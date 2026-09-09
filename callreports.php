@@ -60,23 +60,11 @@
 			print $ui->DataTablesTheme();
 		?>
 		
-		<!-- FOR EXPORT -->
-		<!--<script src="js/plugins/datatables/bpampuch/pdfmake/vfs_fonts.js" type="text/javascript"></script>
-		<script src="js/plugins/datatables/bpampuch/pdfmake/pdfmake.min.js" type="text/javascript"></script>-->
-		<script src="js/plugins/datatables/buttons/buttons.html5.min.js" type="text/javascript"></script>
-		<script src="js/plugins/datatables/buttons/buttons.print.min.js" type="text/javascript"></script>
-		<script src="js/plugins/datatables/buttons/buttons.flash.min.js" type="text/javascript"></script>
-		<script src="js/plugins/datatables/buttons/dataTables.buttons.min.js" type="text/javascript"></script>
-		<script src="js/plugins/datatables/jszip.min.js" type="text/javascript"></script>
-
         <!-- Datetime picker --> 
         <link rel="stylesheet" href="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
-        <!-- Date Picker -->
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
 		
 		<!-- CHOSEN-->
-   		<link rel="stylesheet" src="js/dashboard/chosen_v1.2.0/chosen.min.css">
+   		<link rel="stylesheet" href="js/dashboard/chosen_v1.2.0/chosen.min.css">
 
     </head>
     <?php print $ui->creamyBody(); ?>
@@ -298,6 +286,17 @@
         </div><!-- ./wrapper -->
         
         <?php print $ui->standardizedThemeJS();?>
+		<!-- Datatables Export -->
+		<script src="js/plugins/datatables/jszip.min.js" type="text/javascript"></script>
+		<script src="js/plugins/datatables/buttons/dataTables.buttons.min.js" type="text/javascript"></script>
+		<script src="js/plugins/datatables/buttons/buttons.html5.min.js" type="text/javascript"></script>
+		<script src="js/plugins/datatables/buttons/buttons.print.min.js" type="text/javascript"></script>
+		<script src="js/plugins/datatables/buttons/buttons.flash.min.js" type="text/javascript"></script>
+		<!-- Date Picker -->
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
+		<!-- CHOSEN -->
+		<script src="js/dashboard/chosen_v1.2.0/chosen.jquery.min.js"></script>
 
 	<!-- FLOT CHART-->
 	<script src="js/dashboard/js/Flot/jquery.flot.js"></script>

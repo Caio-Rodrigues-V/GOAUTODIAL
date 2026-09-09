@@ -5984,6 +5984,8 @@ error_reporting(E_ERROR | E_PARSE);
 		$js .= '<script src="adminlte/colorpicker/bootstrap-colorpicker.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/vue-avatar/vue.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/vue-avatar/vue-avatar.min.js" type="text/javascript"></script>'."\n";
+		$js .= '<script src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js" type="text/javascript"></script>'."\n";
+		$js .= '<script src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/select2/select2.full.min.js" type="text/javascript" ></script>'."\n";
 		$js .= "<script type='text/javascript'>
 			try {

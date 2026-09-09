@@ -63,8 +63,6 @@
 
 		<!-- Bootstrap Color Picker -->
   		<link rel="stylesheet" href="adminlte/colorpicker/bootstrap-colorpicker.min.css">
-		<!-- bootstrap color picker -->
-		<script src="adminlte/colorpicker/bootstrap-colorpicker.min.js"></script>
 
 		<style type="text/css">
 			.select2-container{

@@ -59,12 +59,8 @@
         <!-- Datetime picker -->
 	<link rel="stylesheet" href="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
 
-        <!-- Date Picker -->	
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
-		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
-
 		<!-- CHOSEN-->
-   		<link rel="stylesheet" src="js/dashboard/chosen_v1.2.0/chosen.min.css">
+   		<link rel="stylesheet" href="js/dashboard/chosen_v1.2.0/chosen.min.css">
 
 		<style>
 		/*
@@ -311,7 +307,9 @@
 	<!-- End of modal -->
 
 		<?php print $ui->standardizedThemeJS();?>
-
+		<!-- Date Picker -->
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
 		<!-- CHOSEN-->
    		<script src="js/dashboard/chosen_v1.2.0/chosen.jquery.min.js"></script>
 		<script type="text/javascript">

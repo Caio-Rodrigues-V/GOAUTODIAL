@@ -52,10 +52,6 @@ if (isset($_POST["cid"])) {
         <!-- datetime picker --> 
 		<link rel="stylesheet" href="js/dashboard/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css">
 
-		<!-- Date Picker -->
-        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
-		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
-
         <script type="text/javascript">
 			$(window).ready(function() {
 				$(".preloader").fadeOut("slow");
@@ -477,6 +473,9 @@ if (isset($_POST["cid"])) {
 
 		<!-- Modal Dialogs -->
 		<?php print $ui->standardizedThemeJS(); ?>
+		<!-- Date Picker -->
+        <script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js"></script>
+		<script type="text/javascript" src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"></script>
 		<?php include_once "./php/ModalPasswordDialogs.php" ?>
 
 		<script type="text/javascript">
