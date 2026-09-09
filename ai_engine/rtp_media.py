@@ -66,46 +66,77 @@ def linear_to_ulaw(pcm_bytes: bytes) -> bytes:
     except Exception:
         return linear_to_alaw(pcm_bytes)
 
+def apply_telephony_filter(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
+    """
+    Filtro de Áudio Telefônico Profissional (ITU-T G.712):
+    1. DC Blocker / High-Pass (~260Hz): Elimina ruído elétrico, estalos e rumble DC da linha.
+    2. Low-Pass Anti-Aliasing (~3400Hz): Remove frequências agudas que causam chiado e estalos no G.711.
+    3. Headroom Gain (-1.7dB / 0.82): Garante margem de pico para prevenir saturação/clipagem no codec A-law/Mu-law.
+    """
+    if not pcm_bytes or len(pcm_bytes) < 2:
+        return pcm_bytes
+
+    num_samples = len(pcm_bytes) // 2
+    out = bytearray(len(pcm_bytes))
+
+    prev_x = 0
+    prev_y = 0.0
+    alpha_hp = 0.80  # High-pass ~260Hz
+    alpha_lp = 0.62  # Low-pass ~3400Hz
+    lp_val = 0.0
+
+    for i in range(num_samples):
+        x = int.from_bytes(pcm_bytes[i*2:(i+1)*2], byteorder='little', signed=True)
+        # DC Blocker / High-pass
+        y_hp = x - prev_x + alpha_hp * prev_y
+        prev_x = x
+        prev_y = y_hp
+
+        # Low-pass
+        lp_val = alpha_lp * lp_val + (1.0 - alpha_lp) * y_hp
+
+        # Headroom gain 82%
+        s_out = int(lp_val * 0.82)
+        s_out = max(-32767, min(32767, s_out))
+        struct.pack_into('<h', out, i * 2, s_out)
+
+    return bytes(out)
+
 def resample_24k_to_8k_pcm(pcm_24k: bytes) -> bytes:
-    """Decimação exata 3:1 de PCM 16-bit 24000Hz para 8000Hz"""
+    """Decimação 3:1 de PCM 16-bit 24000Hz para 8000Hz com filtro telefônico"""
+    if not pcm_24k:
+        return b''
     out = bytearray()
     for i in range(0, len(pcm_24k) - 5, 6):
         out.extend(pcm_24k[i:i+2])
-    return bytes(out)
+    return apply_telephony_filter(bytes(out), 8000)
 
 def resample_16k_to_8k_pcm(pcm_16k: bytes) -> bytes:
     """
-    Decimação 2:1 profissional (16kHz -> 8kHz) com filtro anti-aliasing FIR passa-baixa (Cutoff 3.4kHz).
-    Aplica headroom gain de 0.88 (-1.1dB) para prevenir estalos e distorção por clipping no codec G.711 da operadora.
+    Decimação 2:1 profissional (16kHz -> 8kHz) com filtro anti-aliasing e headroom gain de alta fidelidade.
     """
     if not pcm_16k:
         return b''
 
-    # Coeficientes simétricos de filtro FIR passa-baixa (filtro de Nyquist telefônico 3.4kHz)
-    # Garante áudio cristalino, sem nenhum artefato metálico ou robotização
     try:
         import audioop
-        # 1. Decimação de alta qualidade com audioop
         resampled = audioop.ratecv(pcm_16k, 2, 1, 16000, 8000, None)[0]
-        # 2. Headroom gain (-1.2dB) para evitar saturação no G.711 A-law
-        return audioop.mul(resampled, 2, 0.88)
+        return apply_telephony_filter(resampled, 8000)
     except Exception:
         pass
 
     out = bytearray()
     length = len(pcm_16k)
-    # Fallback com filtro FIR de 5 taps com atenuação de headroom
     for i in range(0, length - 3, 4):
         s1 = int.from_bytes(pcm_16k[i:i+2], byteorder='little', signed=True)
         s2 = int.from_bytes(pcm_16k[i+2:i+4], byteorder='little', signed=True)
-        # Filtro ponderado anti-aliasing + Headroom de 88%
-        s_filtered = int(((s1 + s2) * 0.5) * 0.88)
+        s_filtered = int((s1 + s2) * 0.5)
         s_filtered = max(-32767, min(32767, s_filtered))
         out.extend(s_filtered.to_bytes(2, byteorder='little', signed=True))
-    return bytes(out)
+    return apply_telephony_filter(bytes(out), 8000)
 
 def resample_wav_to_8k_pcm(wav_bytes: bytes) -> bytes:
-    """Decodifica WAV de qualquer taxa de amostragem para PCM 16-bit 8000Hz Mono"""
+    """Decodifica WAV de qualquer taxa de amostragem para PCM 16-bit 8000Hz Mono com filtro ITU-T G.712"""
     try:
         with wave.open(io.BytesIO(wav_bytes), 'rb') as wav:
             nchannels = wav.getnchannels()
@@ -129,7 +160,7 @@ def resample_wav_to_8k_pcm(wav_bytes: bytes) -> bytes:
                     frames, _ = audioop.ratecv(frames, sampwidth, 1, framerate, 8000, None)
                 if sampwidth != 2:
                     frames = audioop.lin2lin(frames, sampwidth, 2)
-                return frames
+                return apply_telephony_filter(frames, 8000)
             except Exception:
                 return resample_24k_to_8k_pcm(frames)
     except Exception as e:
@@ -220,19 +251,19 @@ def create_wav_from_pcm(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
 
 class AmbientSoundEngine:
     """
-    Gerador e cache de ruídos de fundo realistas (Escritório, Call Center, Teclado, Ruído de Sala)
-    para humanização avançada de chamadas telefônicas de IA.
+    Gerenciador de ruídos de fundo opcionais (Escritório, Call Center, Teclado).
+    Somente ativo quando configurado explicitamente com arquivo de áudio WAV de alta fidelidade.
     """
     _cache = {}
 
     @classmethod
-    def get_ambient_pcm(cls, sound_type: str = "office", duration_sec: float = 15.0, sample_rate: int = 8000) -> bytes:
+    def get_ambient_pcm(cls, sound_type: str = "off", duration_sec: float = 15.0, sample_rate: int = 8000) -> bytes:
         sound_type = (sound_type or "off").lower().strip()
-        if sound_type in ("off", "none", "false", "0", ""):
+        if sound_type in ("off", "none", "desativado", "disabled", "false", "0", ""):
             return b""
 
         # Mapeamento de sinônimos
-        if sound_type in ("default", "office", "callcenter", "call_center"):
+        if sound_type in ("office", "callcenter", "call_center"):
             sound_type = "office"
         elif sound_type in ("typing", "keyboard"):
             sound_type = "typing"
@@ -242,7 +273,7 @@ class AmbientSoundEngine:
         if sound_type in cls._cache:
             return cls._cache[sound_type]
 
-        # 1. Tenta carregar de arquivo de áudio se existir em sounds/
+        # Tenta carregar de arquivo de áudio pré-gravado limpo em sounds/
         candidate_paths = [
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "sounds", f"{sound_type}.wav"),
             os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sounds", f"{sound_type}.wav"),
@@ -261,105 +292,12 @@ class AmbientSoundEngine:
                 except Exception as ex:
                     logger.warning(f"Erro ao carregar arquivo de som {p}: {ex}")
 
-        # 2. Síntese procedural realista de alta fidelidade
-        logger.info(f"Sintetizando som de fundo procedural '{sound_type}' ({duration_sec}s a {sample_rate}Hz)...")
-        total_samples = int(duration_sec * sample_rate)
-        samples = [0.0] * total_samples
-
-        # Filtro de Ruído Rosa acústico (Simula ar condicionado e presença de microfone de headset)
-        b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0
-        for i in range(total_samples):
-            white = random.uniform(-1.0, 1.0)
-            b0 = 0.99886 * b0 + white * 0.0555179
-            b1 = 0.99332 * b1 + white * 0.0750759
-            b2 = 0.96900 * b2 + white * 0.1538520
-            b3 = 0.86650 * b3 + white * 0.3104856
-            b4 = 0.55000 * b4 + white * 0.5329522
-            b5 = -0.7616 * b5 - white * 0.0168980
-            pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362
-            b6 = white * 0.115926
-
-            # Base suave de ruído ambiente de sala
-            samples[i] += (pink * 0.12)
-            # Frequência base sutil de eletricidade/sala
-            samples[i] += 0.02 * math.sin(2 * math.pi * 60 * i / sample_rate)
-
-        if sound_type == "office":
-            # 1. Simulação acústica de call center: murmúrio distante e difuso (distant babble/chatter)
-            num_voices = 4
-            for _ in range(num_voices):
-                f_formant = random.uniform(350, 950)
-                speed_mod = random.uniform(2.5, 4.5)
-                phase_off = random.uniform(0, math.pi * 2)
-                for i in range(total_samples):
-                    t = i / sample_rate
-                    # Modulação de amplitude para simular fala humana distante
-                    speech_env = max(0.0, math.sin(2 * math.pi * speed_mod * t + phase_off)) * (0.5 + 0.5 * math.sin(2 * math.pi * 0.3 * t))
-                    if speech_env > 0.15:
-                        carrier = math.sin(2 * math.pi * f_formant * t) + 0.5 * math.sin(2 * math.pi * (f_formant * 1.8) * t)
-                        samples[i] += carrier * speech_env * 0.035
-
-            # 2. Sons de digitação em teclado de escritório
-            t = 0.4
-            while t < duration_sec - 0.4:
-                burst_len = random.randint(3, 8)
-                for _ in range(burst_len):
-                    idx = int(t * sample_rate)
-                    if idx >= total_samples - 400:
-                        break
-                    freq = random.uniform(1200, 2400)
-                    click_amp = random.uniform(0.40, 0.70)
-                    for k in range(int(0.025 * sample_rate)):
-                        if idx + k < total_samples:
-                            env = math.exp(-k / (0.005 * sample_rate))
-                            samples[idx + k] += math.sin(2 * math.pi * freq * k / sample_rate) * env * click_amp
-                    t += random.uniform(0.08, 0.18)
-                t += random.uniform(0.7, 2.5)
-
-            # 3. Sons de cliques sutis de mouse
-            t = 0.9
-            while t < duration_sec - 0.9:
-                idx = int(t * sample_rate)
-                if idx < total_samples - 200:
-                    freq = random.uniform(2800, 3500)
-                    amp = random.uniform(0.20, 0.35)
-                    for k in range(int(0.015 * sample_rate)):
-                        if idx + k < total_samples:
-                            env = math.exp(-k / (0.003 * sample_rate))
-                            samples[idx + k] += math.sin(2 * math.pi * freq * k / sample_rate) * env * amp
-                t += random.uniform(2.2, 5.5)
-
-        elif sound_type == "typing":
-            # Sons contínuos de digitação realista
-            t = 0.2
-            while t < duration_sec - 0.2:
-                burst_len = random.randint(4, 12)
-                for _ in range(burst_len):
-                    idx = int(t * sample_rate)
-                    if idx >= total_samples - 400:
-                        break
-                    freq = random.uniform(1100, 2600)
-                    click_amp = random.uniform(0.45, 0.80)
-                    for k in range(int(0.025 * sample_rate)):
-                        if idx + k < total_samples:
-                            env = math.exp(-k / (0.006 * sample_rate))
-                            samples[idx + k] += math.sin(2 * math.pi * freq * k / sample_rate) * env * click_amp
-                    t += random.uniform(0.07, 0.16)
-                t += random.uniform(0.4, 1.8)
-
-        # Converter para PCM 16-bit Little Endian
-        out = bytearray(total_samples * 2)
-        for i, s in enumerate(samples):
-            val = int(max(-1.0, min(1.0, s * 0.8)) * 32767)
-            struct.pack_into('<h', out, i * 2, val)
-
-        pcm_bytes = bytes(out)
-        cls._cache[sound_type] = pcm_bytes
-        return pcm_bytes
+        # Se não houver arquivo real, não gera ruído procedural para manter a linha 100% limpa e silenciosa
+        return b""
 
 
 class RTPAudioSession:
-    def __init__(self, local_port: int, remote_ip: str, remote_port: int, codec: str = "PCMA", silence_timeout: float = 0.50, background_sound: str = "off", background_volume: float = 0.10):
+    def __init__(self, local_port: int, remote_ip: str, remote_port: int, codec: str = "PCMA", silence_timeout: float = 0.55, background_sound: str = "off", background_volume: float = 0.0):
         self.local_port = local_port
         self.remote_ip = remote_ip
         self.remote_port = remote_port
@@ -373,10 +311,17 @@ class RTPAudioSession:
         self.is_transmitting = False
         self.cancel_playback = False
         
-        # Ruído de Fundo (Ambiente de Escritório / Call Center)
-        self.background_sound = background_sound
-        self.background_volume = max(0.0, min(1.0, float(background_volume or 0.10)))
-        self.ambient_pcm = AmbientSoundEngine.get_ambient_pcm(self.background_sound)
+        # Ruído de Fundo (Apenas se configurado com arquivo real)
+        sound_key = (background_sound or "off").lower().strip()
+        if sound_key in ("off", "none", "desativado", "disabled", "false", "0", ""):
+            self.background_sound = "off"
+            self.background_volume = 0.0
+            self.ambient_pcm = b""
+        else:
+            self.background_sound = sound_key
+            self.background_volume = max(0.0, min(1.0, float(background_volume or 0.0)))
+            self.ambient_pcm = AmbientSoundEngine.get_ambient_pcm(self.background_sound) if self.background_volume > 0.0 else b""
+            
         self.ambient_pos = 0
         self._ambient_task: Optional[asyncio.Task] = None
         
@@ -387,15 +332,17 @@ class RTPAudioSession:
         # Buffer de Gravação Geral da Chamada (IA + Cliente)
         self.full_recorded_pcm = bytearray()
         
-        # VAD & Supressão de Eco
+        # VAD & Supressão de Eco Avançada
         self.created_at = time.time()
         self.speech_buffer = bytearray()
-        self.pre_speech_ring_buffer = bytearray()  # Pre-buffer de 160ms para não cortar o início da fala ("A" em "Alô", "S" em "Sim")
+        self.pre_speech_ring_buffer = bytearray()  # Pre-buffer circular de 200ms para nunca cortar o início da fala ("Alô", "Sim")
         self.is_collecting_speech = False
         self.last_speech_time = 0.0
         self.last_transmit_end_time = 0.0
-        self.vad_threshold = 750.0  # Threshold calibrado anti-estalos/ruído de linha (ignora ruídos de fundo < 750 RMS)
-        self.silence_timeout = silence_timeout  # Pausa natural antes de fechar o turno de fala
+        self.vad_threshold = 850.0  # Threshold calibrado anti-chiado (850 RMS)
+        self.vad_consecutive_hits = 0  # Confirmação de 2 frames para evitar falsos positivos por estalos
+        self.min_speech_bytes = 2400   # ~150ms de áudio real (permite palavras rápidas como "Alô", "Oi", "Sim")
+        self.silence_timeout = max(0.35, min(3.0, float(silence_timeout or 0.55)))  # Tempo de silêncio para encerramento de turno
         self._rx_task: Optional[asyncio.Task] = None
 
     def start_socket(self):
@@ -409,28 +356,24 @@ class RTPAudioSession:
             # Iniciar loop de recepção de áudio do cliente em background
             self._rx_task = asyncio.create_task(self._receive_loop())
             
-            # Iniciar streaming contínuo de ruído ambiente
-            if self.ambient_pcm and self.background_volume > 0.0:
+            # Iniciar streaming contínuo de ruído ambiente somente se houver áudio real
+            if self.ambient_pcm and len(self.ambient_pcm) > 0 and self.background_volume > 0.0:
                 self._ambient_task = asyncio.create_task(self._ambient_loop())
         except Exception as e:
             logger.error(f"Erro ao abrir socket RTP na porta {self.local_port}: {e}")
 
     async def _ambient_loop(self):
-        """
-        Transmite ruído de fundo de escritório nos momentos em que a IA está ouvindo ou em silêncio.
-        Garante uma atmosfera de call center 100% natural, contínua e sem cortes.
-        """
+        """Transmite ruído ambiente suave caso tenha sido configurado um arquivo WAV válido"""
         if not self.ambient_pcm or self.background_volume <= 0.0:
             return
 
-        frame_samples = 160  # 160 samples = 20ms a 8kHz
-        frame_bytes = frame_samples * 2  # 320 bytes PCM16
+        frame_samples = 160
+        frame_bytes = frame_samples * 2
         amb_len = len(self.ambient_pcm)
 
         while self.is_running and self.sock:
             try:
                 if not self.is_transmitting:
-                    # Monta bloco de 320 bytes com volume calibrado
                     chunk_pcm = bytearray(frame_bytes)
                     for i in range(0, frame_bytes, 2):
                         pos = (self.ambient_pos + i) % amb_len
@@ -440,7 +383,6 @@ class RTPAudioSession:
                         chunk_pcm[i:i+2] = s_vol.to_bytes(2, byteorder='little', signed=True)
 
                     self.ambient_pos = (self.ambient_pos + frame_bytes) % amb_len
-
                     g711_chunk = linear_to_alaw(bytes(chunk_pcm)) if self.payload_type == 8 else linear_to_ulaw(bytes(chunk_pcm))
                     packet = RTPPacket.build(g711_chunk, self.seq, self.timestamp, self.ssrc, self.payload_type, marker=0)
                     try:
@@ -460,10 +402,11 @@ class RTPAudioSession:
     async def _receive_loop(self):
         """
         Escuta pacotes RTP do cliente com cancelamento de eco acústico (AEC),
-        pre-buffering de início de fala e detecção precisa de término de fala.
+        pre-buffering contínuo e detecção rápida e precisa da voz do usuário.
         """
-        logger.info("Escutador RTP com supressão de eco e pre-buffering iniciado...")
+        logger.info("Escutador RTP com supressão de eco e pre-buffering ativado.")
         loop = asyncio.get_running_loop()
+        barge_in_hits = 0
 
         while self.is_running and self.sock:
             try:
@@ -473,62 +416,80 @@ class RTPAudioSession:
 
                 now = time.time()
 
-                # 1. Supressão de Eco & Estalo Inicial de Conexão:
-                if self.is_transmitting:
-                    continue
-                if now - self.last_transmit_end_time < 0.40:
-                    continue
-                if now - self.created_at < 0.60:
-                    # Ignora estalos de atendimento SIP/RTP nos primeiros 600ms
+                # Ignora estalos de sinalização nos primeiros 400ms da chamada
+                if now - self.created_at < 0.40:
                     continue
 
-                # Extrai payload G.711
+                # Extrai payload G.711 e converte para Linear PCM 16-bit
                 g711_payload = data[12:]
                 pcm_chunk = alaw_to_linear(g711_payload) if self.payload_type == 8 else ulaw_to_linear(g711_payload)
                 rms = calculate_rms(pcm_chunk)
 
-                if rms > self.vad_threshold:
-                    if not self.is_collecting_speech:
-                        self.is_collecting_speech = True
-                        # Inclui os últimos 160ms anteriores para nunca perder o início de palavras curtas ("Alô", "Sim")
-                        self.speech_buffer = bytearray(self.pre_speech_ring_buffer)
-                        logger.info("🎙️ [Cliente Falando...] Capturando áudio com pre-buffer...")
+                # Mantém sempre o buffer circular dos últimos 200ms atualizado (3200 bytes)
+                self.pre_speech_ring_buffer.extend(pcm_chunk)
+                if len(self.pre_speech_ring_buffer) > 3200:
+                    self.pre_speech_ring_buffer = self.pre_speech_ring_buffer[-3200:]
 
-                    self.speech_buffer.extend(pcm_chunk)
-                    self.full_recorded_pcm.extend(pcm_chunk)
-                    self.last_speech_time = now
-
-                elif self.is_collecting_speech:
-                    self.speech_buffer.extend(pcm_chunk)
-                    self.full_recorded_pcm.extend(pcm_chunk)
-                    
-                    # Checa término de fala (silêncio)
-                    if now - self.last_speech_time > self.silence_timeout:
-                        self.is_collecting_speech = False
-                        audio_len = len(self.speech_buffer)
-                        logger.info(f"🤫 [Silêncio detectado]: Final de fala ({audio_len} bytes PCM). Processando com IA...")
-                        # Exige pelo menos 350ms de voz real para não disparar em estalos curtos de linha
-                        if self.on_speech_ready and audio_len >= 5600:
-                            collected_audio = bytes(self.speech_buffer)
-                            asyncio.create_task(self.on_speech_ready(collected_audio))
-                        self.speech_buffer.clear()
-                        self.pre_speech_ring_buffer.clear()
-
+                # 1. Detecção de Interrupção / Barge-in enquanto a IA fala
+                if self.is_transmitting:
+                    if rms > 1500.0:  # Usuário falou por cima da IA com voz firme
+                        barge_in_hits += 1
+                        if barge_in_hits >= 3:  # ~60ms sustentados
+                            logger.info("🎙️ [Barge-in detectado]: Usuário começou a falar. Interrompendo fala da IA...")
+                            self.cancel_playback = True
+                            if self.on_barge_in:
+                                self.on_barge_in()
+                    else:
+                        barge_in_hits = 0
+                    continue
                 else:
-                    # Mantém buffer circular contínuo de 160ms enquanto o cliente está em silêncio
-                    self.pre_speech_ring_buffer.extend(pcm_chunk)
-                    if len(self.pre_speech_ring_buffer) > 2560:  # ~160ms a 8kHz 16-bit
-                        self.pre_speech_ring_buffer = self.pre_speech_ring_buffer[-2560:]
+                    barge_in_hits = 0
+
+                # 2. Supressão de Eco Residual pós-transmissão (Janela de 150ms)
+                if now - self.last_transmit_end_time < 0.15:
+                    continue
+
+                # 3. Classificação VAD de Fala
+                if rms > self.vad_threshold:
+                    self.vad_consecutive_hits += 1
+                    if self.vad_consecutive_hits >= 2:  # Confirmação de 2 frames (>40ms)
+                        if not self.is_collecting_speech:
+                            self.is_collecting_speech = True
+                            # Recupera o início da palavra ("Alô", "Sim") do pre-buffer
+                            self.speech_buffer = bytearray(self.pre_speech_ring_buffer)
+                            logger.info("🎙️ [Cliente Falando...] Capturando áudio com pre-buffer...")
+
+                        self.speech_buffer.extend(pcm_chunk)
+                        self.full_recorded_pcm.extend(pcm_chunk)
+                        self.last_speech_time = now
+                else:
+                    self.vad_consecutive_hits = 0
+                    if self.is_collecting_speech:
+                        self.speech_buffer.extend(pcm_chunk)
+                        self.full_recorded_pcm.extend(pcm_chunk)
+
+                        # Detecção de fim de fala (silêncio atingiu timeout)
+                        if now - self.last_speech_time > self.silence_timeout:
+                            self.is_collecting_speech = False
+                            audio_len = len(self.speech_buffer)
+                            logger.info(f"🤫 [Silêncio detectado]: Fim de fala ({audio_len} bytes PCM).")
+                            
+                            # Dispara callback se o áudio capturado tiver pelo menos 150ms
+                            if self.on_speech_ready and audio_len >= self.min_speech_bytes:
+                                collected = bytes(self.speech_buffer)
+                                asyncio.create_task(self.on_speech_ready(collected))
+                            
+                            self.speech_buffer.clear()
 
             except asyncio.CancelledError:
                 break
-            except Exception as e:
+            except Exception:
                 if self.is_running:
                     await asyncio.sleep(0.01)
 
     async def stream_pcm_audio(self, pcm_bytes: bytes):
         """
-        Envia áudio PCM para a Oktor com timer de alta precisão monotonic e mixagem de ruído de fundo.
+        Envia áudio PCM para a Oktor com timer de alta precisão monotonic e filtro telefônico ITU-T G.712.
         """
         if not self.sock or not self.is_running:
             self.start_socket()
@@ -536,50 +497,41 @@ class RTPAudioSession:
         self.is_transmitting = True
         self.cancel_playback = False
 
+        if not pcm_bytes:
+            self.is_transmitting = False
+            return
+
+        # Aplica filtro telefônico passa-faixa anti-chiado e headroom gain
+        filtered_audio = apply_telephony_filter(pcm_bytes, 8000)
+
         # Grava áudio falado pela IA no master recording
-        if pcm_bytes:
-            self.full_recorded_pcm.extend(pcm_bytes)
+        self.full_recorded_pcm.extend(filtered_audio)
 
-        # Se ruído ambiente estiver ativo, mixa diretamente no sinal da fala
-        if self.ambient_pcm and self.background_volume > 0.0:
-            mixed_buf = bytearray(len(pcm_bytes))
-            amb_len = len(self.ambient_pcm)
-            for i in range(0, len(pcm_bytes) - 1, 2):
-                s_speech = int.from_bytes(pcm_bytes[i:i+2], byteorder='little', signed=True)
-                pos = (self.ambient_pos + i) % amb_len
-                s_amb = int.from_bytes(self.ambient_pcm[pos:pos+2], byteorder='little', signed=True)
-                mixed = s_speech + int(s_amb * self.background_volume)
-                mixed = max(-32768, min(32767, mixed))
-                mixed_buf[i:i+2] = mixed.to_bytes(2, byteorder='little', signed=True)
-            self.ambient_pos = (self.ambient_pos + len(pcm_bytes)) % amb_len
-            audio_to_encode = bytes(mixed_buf)
-        else:
-            audio_to_encode = pcm_bytes
-
-        # Converte PCM para G.711
+        # Converte PCM filtrado para G.711 A-law ou Mu-law
         if self.payload_type == 8:
-            g711_audio = linear_to_alaw(audio_to_encode)
+            g711_audio = linear_to_alaw(filtered_audio)
         else:
-            g711_audio = linear_to_ulaw(audio_to_encode)
+            g711_audio = linear_to_ulaw(filtered_audio)
 
         frame_size = 160  # 160 bytes = 20ms de áudio a 8kHz
         total_frames = len(g711_audio) // frame_size
         silence_byte = b'\xd5' if self.payload_type == 8 else b'\xff'
-        logger.info(f"Transmitindo áudio suave da IA via RTP ({len(g711_audio)} bytes, ~{total_frames * 20}ms)...")
+        logger.info(f"Transmitindo áudio cristalino da IA via RTP ({len(g711_audio)} bytes, ~{total_frames * 20}ms)...")
 
         start_time = time.perf_counter()
 
         for idx, i in enumerate(range(0, len(g711_audio), frame_size)):
             if not self.is_running or self.cancel_playback:
+                logger.info("Transmissão de áudio interrompida.")
                 break
-            
+
             chunk = g711_audio[i:i + frame_size]
             if len(chunk) < frame_size:
                 chunk = chunk + (silence_byte * (frame_size - len(chunk)))
 
             marker = 1 if idx == 0 else 0
             packet = RTPPacket.build(chunk, self.seq, self.timestamp, self.ssrc, self.payload_type, marker=marker)
-            
+
             try:
                 self.sock.sendto(packet, (self.remote_ip, self.remote_port))
             except Exception as e:
@@ -589,7 +541,7 @@ class RTPAudioSession:
             self.seq = (self.seq + 1) & 0xFFFF
             self.timestamp = (self.timestamp + 160) & 0xFFFFFFFF
 
-            # Timer de alta precisão (Monotonic clock - Jitter ZERO)
+            # Timer de alta precisão (Monotonic clock)
             target_next = start_time + ((idx + 1) * 0.020)
             delay = target_next - time.perf_counter()
             if delay > 0.001:
@@ -597,7 +549,7 @@ class RTPAudioSession:
 
         self.is_transmitting = False
         self.last_transmit_end_time = time.time()
-        logger.info("Transmissão do bloco de áudio da IA concluída perfeitamente!")
+        logger.info("Transmissão do bloco de áudio da IA concluída.")
 
     def get_recorded_wav(self) -> bytes:
         """Retorna o áudio completo gravado da conversa em formato WAV 8000Hz 16-bit Mono"""
@@ -622,3 +574,4 @@ class RTPAudioSession:
                 pass
             self.sock = None
         logger.info("Sessão RTP encerrada.")
+
