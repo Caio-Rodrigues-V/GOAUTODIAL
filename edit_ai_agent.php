@@ -767,7 +767,6 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                         </div>
                     </div>
                     <div class="vapi-actions">
-                        <button type="button" class="vapi-btn" id="btn_composer"><i class="fa fa-magic text-yellow"></i> Composer</button>
                         <button type="button" class="vapi-btn vapi-btn-talk" id="btn_test_talk"><i class="fa fa-phone"></i> Talk / Testar Chamada</button>
                         <button type="submit" class="vapi-btn vapi-btn-primary" id="btn_save_agent"><i class="fa fa-floppy-o"></i> Salvar Agente</button>
                     </div>
@@ -1686,10 +1685,8 @@ function openToolDrawer(mode, toolData) {
 }
 
 $(document).ready(function() {
-    // Initial Render of tools table
     renderToolsTable();
 
-    // Tab switching
     $('.vapi-tab').click(function(e) {
         e.preventDefault();
         $('.vapi-tab').removeClass('active');
@@ -1699,7 +1696,6 @@ $(document).ready(function() {
         $('#view_' + target).show();
     });
 
-    // Modals / Drawers Open & Close
     $('#card_transcriber').click(function() { $('#modal_transcriber').fadeIn(200).css('display', 'flex'); });
     $('#card_model').click(function() { $('#modal_model').fadeIn(200).css('display', 'flex'); });
     $('#card_voice').click(function() { $('#modal_voice').fadeIn(200).css('display', 'flex'); });
@@ -1710,12 +1706,10 @@ $(document).ready(function() {
         }
     });
 
-    // Accordions
     $('#adv_stt_toggle').click(function() { $('#adv_stt_body').slideToggle(200); });
     $('#adv_llm_toggle').click(function() { $('#adv_llm_body').slideToggle(200); });
     $('#adv_voice_toggle').click(function() { $('#adv_voice_body').slideToggle(200); });
 
-    // Slider live updates
     $('#modal_silence_slider').on('input', function() {
         var val = $(this).val();
         $('#disp_silence_timeout_badge').text(val + ' ms');
@@ -1744,19 +1738,30 @@ $(document).ready(function() {
         $('#input_voice_clarity').val($(this).val());
     });
 
-    // Pill selectors
     $('#bg_sound_pills .vapi-pill-opt').click(function() {
         $('#bg_sound_pills .vapi-pill-opt').removeClass('active');
         $(this).addClass('active');
         $('#input_background_sound').val($(this).data('bgsound'));
     });
 
-    // First message mode
+    $('#tab_voice_library').click(function() {
+        $('.vapi-pill-opt', $(this).parent()).removeClass('active');
+        $(this).addClass('active');
+        $('#voice_library_view').show();
+        $('#custom_voice_id_view').hide();
+    });
+
+    $('#tab_custom_voice_id').click(function() {
+        $('.vapi-pill-opt', $(this).parent()).removeClass('active');
+        $(this).addClass('active');
+        $('#voice_library_view').hide();
+        $('#custom_voice_id_view').show();
+    });
+
     $('#select_first_message_mode').change(function() {
         $('#input_first_message_mode').val($(this).val());
     });
 
-    // Presets Click Handler
     $('.vapi-preset-pill').click(function() {
         $('.vapi-preset-pill').removeClass('active');
         $(this).addClass('active');
@@ -1800,7 +1805,6 @@ $(document).ready(function() {
         }
     });
 
-    // Template buttons
     $('#btn_template_sales').click(function() {
         $('#textarea_prompt').val(
             "# PERSONA E OBJETIVO\n" +
@@ -1836,7 +1840,6 @@ $(document).ready(function() {
         );
     });
 
-    // Talk / Test call button
     $('#btn_test_talk').click(function() {
         var phone = prompt("Digite o número de telefone com DDD para testar a chamada agora:", "11999999999");
         if (phone && phone.trim().length >= 8) {
@@ -1859,25 +1862,16 @@ $(document).ready(function() {
         }
     });
 
-    // ==================== TOOLS EVENT HANDLERS ====================
+    $('#btn_add_custom_tool').click(function() { openToolDrawer('add'); });
 
-    // Open Add Tool Modal
-    $('#btn_add_custom_tool').click(function() {
-        openToolDrawer('add');
-    });
-
-    // Open Edit Tool Modal
     $(document).on('click', '.btn-edit-tool', function(e) {
         e.preventDefault();
         e.stopPropagation();
         var toolId = String($(this).data('tool-id'));
         var tool = currentTools.find(function(t) { return String(t.id) === toolId; });
-        if (tool) {
-            openToolDrawer('edit', tool);
-        }
+        if (tool) { openToolDrawer('edit', tool); }
     });
 
-    // Delete Tool
     $(document).on('click', '.btn-delete-tool', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -1889,7 +1883,6 @@ $(document).ready(function() {
         }
     });
 
-    // Toggle Tool Active/Inactive Switch
     $(document).on('change', '.tool-toggle', function() {
         var toolId = String($(this).data('tool-id'));
         var isChecked = $(this).is(':checked');
@@ -1902,7 +1895,6 @@ $(document).ready(function() {
         syncToolsHiddenInput();
     });
 
-    // Format JSON Schema button
     $('#btn_tool_format_json').click(function() {
         var raw = $('#tool_input_params').val().trim();
         if (!raw) return;
@@ -1914,7 +1906,6 @@ $(document).ready(function() {
         }
     });
 
-    // Quick Template selector in Tool Drawer
     $('#tool_quick_template_select').change(function() {
         var val = $(this).val();
         if (val === 'custom_webhook') {
@@ -1923,70 +1914,35 @@ $(document).ready(function() {
             $('#tool_input_desc').val('Envia os parâmetros coletados durante a chamada para um endpoint webhook externo e injeta a resposta na conversa.');
             $('#tool_input_url').val('https://api.empresa.com.br/v1/webhook');
             $('#tool_input_method').val('POST');
-            $('#tool_input_params').val(JSON.stringify({
-                type: "object",
-                properties: {
-                    parametro: { type: "string", description: "Descrição do parâmetro" }
-                },
-                required: ["parametro"]
-            }, null, 2));
+            $('#tool_input_params').val(JSON.stringify({ type: "object", properties: { parametro: { type: "string", description: "Descrição do parâmetro" } }, required: ["parametro"] }, null, 2));
         } else if (val === 'end_call') {
             $('#tool_input_name').val('end_call');
             $('#tool_input_type').val('End call');
             $('#tool_input_desc').val('Encerra a chamada telefônica imediatamente após o cliente se despedir ou concluir o atendimento.');
-            $('#tool_input_url').val('');
-            $('#tool_input_params').val(JSON.stringify({
-                type: "object",
-                properties: {
-                    reason: { type: "string", description: "Motivo da finalização da chamada" }
-                }
-            }, null, 2));
+            $('#tool_input_params').val(JSON.stringify({ type: "object", properties: { reason: { type: "string", description: "Motivo da finalização da chamada" } } }, null, 2));
         } else if (val === 'transfer_call') {
             $('#tool_input_name').val('transfer_call');
             $('#tool_input_type').val('Transfer call');
             $('#tool_input_desc').val('Transfere a ligação em andamento para um ramal ou atendente humano especializado.');
-            $('#tool_input_url').val('');
-            $('#tool_input_params').val(JSON.stringify({
-                type: "object",
-                properties: {
-                    destination: { type: "string", description: "Ramal ou fila de destino (Ex: 8300)" },
-                    summary: { type: "string", description: "Resumo do que o cliente precisa para o atendente humano" }
-                }
-            }, null, 2));
+            $('#tool_input_params').val(JSON.stringify({ type: "object", properties: { destination: { type: "string", description: "Ramal ou fila de destino (Ex: 8300)" }, summary: { type: "string", description: "Resumo do que o cliente precisa para o atendente humano" } } }, null, 2));
         } else if (val === 'voicemail_tool') {
             $('#tool_input_name').val('voicemail_tool');
             $('#tool_input_type').val('Voicemail tool');
             $('#tool_input_desc').val('Acionado automaticamente ao detectar caixa postal, secretária eletrônica ou mensagem gravada.');
-            $('#tool_input_url').val('');
-            $('#tool_input_params').val(JSON.stringify({
-                type: "object",
-                properties: {}
-            }, null, 2));
+            $('#tool_input_params').val(JSON.stringify({ type: "object", properties: {} }, null, 2));
         } else if (val === 'capturar_cpf') {
             $('#tool_input_name').val('capturar_cpf');
             $('#tool_input_type').val('Custom tool');
             $('#tool_input_desc').val('Armazena e valida o número de CPF informado pelo cliente para prosseguir com a consulta.');
-            $('#tool_input_url').val('');
-            $('#tool_input_params').val(JSON.stringify({
-                type: "object",
-                properties: {
-                    cpf: { type: "string", description: "CPF com 11 dígitos numéricos" }
-                },
-                required: ["cpf"]
-            }, null, 2));
+            $('#tool_input_params').val(JSON.stringify({ type: "object", properties: { cpf: { type: "string", description: "CPF com 11 dígitos numéricos" } }, required: ["cpf"] }, null, 2));
         } else if (val === 'response_control') {
             $('#tool_input_name').val('response_control');
             $('#tool_input_type').val('Function');
             $('#tool_input_desc').val('Permite ao modelo ajustar pausas, tempo de resposta e dinâmica de fala.');
-            $('#tool_input_url').val('');
-            $('#tool_input_params').val(JSON.stringify({
-                type: "object",
-                properties: {}
-            }, null, 2));
+            $('#tool_input_params').val(JSON.stringify({ type: "object", properties: {} }, null, 2));
         }
     });
 
-    // Save Tool in Drawer
     $('#btn_save_tool_drawer').click(function() {
         var mode = $('#tool_drawer_mode').val();
         var origId = $('#tool_edit_orig_id').val();
@@ -1999,61 +1955,23 @@ $(document).ready(function() {
         var rawParams = $('#tool_input_params').val().trim();
         var enabled = $('#tool_input_enabled').is(':checked');
 
-        if (!name) {
-            alert('Por favor, informe o Nome da Função (Identifier).');
-            $('#tool_input_name').focus();
-            return;
-        }
-
-        if (!desc) {
-            alert('Por favor, forneça uma descrição clara para o modelo saber quando invocar a ferramenta.');
-            $('#tool_input_desc').focus();
-            return;
-        }
-
+        if (!name || !desc) { alert('Nome e Descrição são obrigatórios.'); return; }
         var parsedParams = {};
         if (rawParams) {
-            try {
-                parsedParams = JSON.parse(rawParams);
-            } catch(e) {
-                alert('O Esquema de Parâmetros não é um JSON válido: ' + e.message);
-                $('#tool_input_params').focus();
-                return;
-            }
+            try { parsedParams = JSON.parse(rawParams); } catch(e) { alert('JSON inválido.'); return; }
         }
-
-        var toolObj = {
-            id: name,
-            name: name,
-            type: type,
-            version: version,
-            description: desc,
-            url: url,
-            method: method,
-            parameters: parsedParams,
-            enabled: enabled
-        };
+        var toolObj = { id: name, name: name, type: type, version: version, description: desc, url: url, method: method, parameters: parsedParams, enabled: enabled };
 
         if (mode === 'edit' && origId) {
             var found = false;
             for (var i = 0; i < currentTools.length; i++) {
-                if (String(currentTools[i].id) === String(origId)) {
-                    currentTools[i] = toolObj;
-                    found = true;
-                    break;
-                }
+                if (String(currentTools[i].id) === String(origId)) { currentTools[i] = toolObj; found = true; break; }
             }
-            if (!found) {
-                currentTools.push(toolObj);
-            }
+            if (!found) currentTools.push(toolObj);
         } else {
-            // Check if tool with same id already exists
             var existingIdx = -1;
             for (var j = 0; j < currentTools.length; j++) {
-                if (String(currentTools[j].id) === name) {
-                    existingIdx = j;
-                    break;
-                }
+                if (String(currentTools[j].id) === name) { existingIdx = j; break; }
             }
             if (existingIdx !== -1) {
                 if (!confirm('Uma ferramenta com o identificador "' + name + '" já existe. Deseja sobrescrevê-la?')) {
