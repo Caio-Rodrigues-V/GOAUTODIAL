@@ -1183,7 +1183,7 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     <option value="cartesia|cartesia-pt-br-sofia" selected>Sofia • Cartesia Sonic (Natural PT-BR Female)</option>
                     <option value="cartesia|cartesia-pt-br-lucas">Lucas • Cartesia Sonic (Professional PT-BR Male)</option>
                     <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM">Rachel • ElevenLabs (Conversational Female)</option>
-                    <option value="elevenlabs|PznTnBc8X6pvixs9UkQm">Sarah • ElevenLabs (Warm & Reassuring Female)</option>
+                    <option value="elevenlabs|EXAVITQu4vr4xnSDxMaL">Sarah • ElevenLabs (Warm & Reassuring Female)</option>
                     <option value="elevenlabs|AZnzlk1XvdvUeBnXmlld">Domi • ElevenLabs (Energetic Female)</option>
                     <option value="elevenlabs|pNInz6obpgDQGcFmaJgB">Adam • ElevenLabs (Deep & Professional Male)</option>
                     <option value="elevenlabs|TxGEqnHWrfWFTfGW9XjX">Josh • ElevenLabs (Conversational Young Male)</option>
@@ -1415,7 +1415,7 @@ var VAPI_CONFIG = {
         'cartesia|cartesia-pt-br-sofia': { name: 'Sofia (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-sofia', sub: 'Cartesia Sonic • Natural PT-BR Female', latency: 90, cost: 0.020, humanness: 96, icon: 'fa fa-volume-up text-purple' },
         'cartesia|cartesia-pt-br-lucas': { name: 'Lucas (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-lucas', sub: 'Cartesia Sonic • Professional PT-BR Male', latency: 90, cost: 0.020, humanness: 95, icon: 'fa fa-volume-up text-purple' },
         'elevenlabs|21m00Tcm4TlvDq8ikWAM': { name: 'Rachel (ElevenLabs)', provider: 'elevenlabs', id: '21m00Tcm4TlvDq8ikWAM', sub: 'ElevenLabs • Conversational Female', latency: 650, cost: 0.036, humanness: 92, icon: 'fa fa-volume-up text-pink' },
-        'elevenlabs|PznTnBc8X6pvixs9UkQm': { name: 'Sarah (ElevenLabs)', provider: 'elevenlabs', id: 'PznTnBc8X6pvixs9UkQm', sub: 'ElevenLabs • Warm & Reassuring Female', latency: 650, cost: 0.036, humanness: 93, icon: 'fa fa-volume-up text-pink' },
+        'elevenlabs|EXAVITQu4vr4xnSDxMaL': { name: 'Sarah (ElevenLabs)', provider: 'elevenlabs', id: 'EXAVITQu4vr4xnSDxMaL', sub: 'ElevenLabs • Warm & Reassuring Female', latency: 650, cost: 0.036, humanness: 93, icon: 'fa fa-volume-up text-pink' },
         'elevenlabs|AZnzlk1XvdvUeBnXmlld': { name: 'Domi (ElevenLabs)', provider: 'elevenlabs', id: 'AZnzlk1XvdvUeBnXmlld', sub: 'ElevenLabs • Energetic Female', latency: 650, cost: 0.036, humanness: 91, icon: 'fa fa-volume-up text-pink' },
         'elevenlabs|pNInz6obpgDQGcFmaJgB': { name: 'Adam (ElevenLabs)', provider: 'elevenlabs', id: 'pNInz6obpgDQGcFmaJgB', sub: 'ElevenLabs • Deep & Professional Male', latency: 650, cost: 0.036, humanness: 94, icon: 'fa fa-volume-up text-pink' },
         'elevenlabs|TxGEqnHWrfWFTfGW9XjX': { name: 'Josh (ElevenLabs)', provider: 'elevenlabs', id: 'TxGEqnHWrfWFTfGW9XjX', sub: 'ElevenLabs • Young Conversational Male', latency: 650, cost: 0.036, humanness: 92, icon: 'fa fa-volume-up text-pink' },
@@ -1537,6 +1537,8 @@ function updatePipelineUI() {
     
     // Voice resolution: check if known in library
     var isKnownVoice = !!VAPI_CONFIG.voice[voiceKey];
+    var isCustomTab = $('#tab_custom_voice_id').hasClass('active') || !isKnownVoice;
+    
     var voiceLatency = 150;
     var voiceCost = 0.020;
     if (curProv === 'elevenlabs') { voiceLatency = 650; voiceCost = 0.036; }
@@ -1544,21 +1546,17 @@ function updatePipelineUI() {
     else if (curProv === 'openai') { voiceLatency = 350; voiceCost = 0.015; }
     else if (curProv === 'azure') { voiceLatency = 400; voiceCost = 0.016; }
 
-    var voiceDisplayName = $('#input_voice_name').val();
-    if (!isKnownVoice) {
-        if (!voiceDisplayName || voiceDisplayName.startsWith('Sofia') || voiceDisplayName.startsWith('Lucas') || voiceDisplayName.startsWith('Rachel')) {
-            voiceDisplayName = 'Custom (' + (curVoiceId.length > 12 ? curVoiceId.substring(0, 12) + '...' : curVoiceId) + ')';
-            $('#input_voice_name').val(voiceDisplayName);
-        }
+    var voice = VAPI_CONFIG.voice[voiceKey];
+    if (isCustomTab || !voice) {
+        var shortId = curVoiceId.length > 14 ? (curVoiceId.substring(0, 14) + '...') : curVoiceId;
+        voice = { 
+            name: 'Custom Voice (' + shortId + ')', 
+            sub: '<span style="color:#38bdf8; font-weight:700;">' + curProv.toUpperCase() + '</span> • ID: <span style="color:#f43f5e; font-family:monospace; font-weight:bold;">' + curVoiceId + '</span>', 
+            latency: voiceLatency, 
+            cost: voiceCost, 
+            humanness: 95 
+        };
     }
-
-    var voice = VAPI_CONFIG.voice[voiceKey] || { 
-        name: voiceDisplayName || curVoiceId, 
-        sub: curProv.toUpperCase() + ' • Custom Voice ID', 
-        latency: voiceLatency, 
-        cost: voiceCost, 
-        humanness: 92 
-    };
 
     // 1. Update STT Card
     $('#disp_stt_title').text(stt.name);
