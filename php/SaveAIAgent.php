@@ -24,11 +24,14 @@ if ($llm_model === 'custom' && !empty($_POST['custom_llm_model'])) {
     $llm_model = trim($_POST['custom_llm_model']);
 }
 
-$voice_id = isset($_POST['voice_id']) ? $_POST['voice_id'] : 'cartesia-pt-br-sofia';
-$voice_name = isset($_POST['voice_name']) ? $_POST['voice_name'] : '';
+$voice_id = isset($_POST['voice_id']) ? trim($_POST['voice_id']) : 'cartesia-pt-br-sofia';
+$voice_name = isset($_POST['voice_name']) ? trim($_POST['voice_name']) : '';
 if ($voice_id === 'custom' && !empty($_POST['custom_voice_id'])) {
     $voice_id = trim($_POST['custom_voice_id']);
-    $voice_name = 'Voz Customizada (' . $voice_id . ')';
+    $voice_name = 'Custom (' . substr($voice_id, 0, 12) . '...)';
+}
+if (empty($voice_name)) {
+    $voice_name = 'Custom (' . substr($voice_id, 0, 12) . '...)';
 }
 
 $tools_json = isset($_POST['tools_json']) ? $_POST['tools_json'] : null;

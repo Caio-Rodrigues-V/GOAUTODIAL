@@ -1213,6 +1213,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <option value="cartesia">Cartesia Sonic (90ms • $0.020/min • 96 Humanness)</option>
                 <option value="elevenlabs">ElevenLabs Multilingual v2 (650ms • $0.036/min • 92 Humanness)</option>
                 <option value="openai">OpenAI TTS-1 (350ms • $0.015/min • 84 Humanness)</option>
+                <option value="azure">Microsoft Azure Speech (400ms • $0.016/min • 90 Humanness)</option>
             </select>
         </div>
 
@@ -1235,6 +1236,9 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                     <option value="elevenlabs|XrExE9yKIg1WjnnlVkGX">Matilda • ElevenLabs (Expressive Female)</option>
                     <option value="openai|nova">Nova • OpenAI (Energetic & Friendly)</option>
                     <option value="openai|alloy">Alloy • OpenAI (Neutral Male)</option>
+                    <option value="azure|pt-BR-FranciscaNeural">Francisca • Azure Speech (Natural PT-BR Female)</option>
+                    <option value="azure|pt-BR-AntonioNeural">Antonio • Azure Speech (Professional PT-BR Male)</option>
+                    <option value="azure|pt-BR-ThalitaNeural">Thalita • Azure Speech (Expressive PT-BR Female)</option>
                 </select>
             </div>
 
@@ -1463,7 +1467,10 @@ var VAPI_CONFIG = {
         'elevenlabs|TxGEqnHWrfWFTfGW9XjX': { name: 'Josh (ElevenLabs)', provider: 'elevenlabs', id: 'TxGEqnHWrfWFTfGW9XjX', sub: 'ElevenLabs • Young Conversational Male', latency: 650, cost: 0.036, humanness: 92, icon: 'fa fa-volume-up text-pink' },
         'elevenlabs|XrExE9yKIg1WjnnlVkGX': { name: 'Matilda (ElevenLabs)', provider: 'elevenlabs', id: 'XrExE9yKIg1WjnnlVkGX', sub: 'ElevenLabs • Expressive & Warm Female', latency: 650, cost: 0.036, humanness: 93, icon: 'fa fa-volume-up text-pink' },
         'openai|nova': { name: 'Nova (OpenAI)', provider: 'openai', id: 'nova', sub: 'OpenAI TTS • Friendly Female', latency: 350, cost: 0.015, humanness: 84, icon: 'fa fa-volume-up text-green' },
-        'openai|alloy': { name: 'Alloy (OpenAI)', provider: 'openai', id: 'alloy', sub: 'OpenAI TTS • Neutral Male', latency: 350, cost: 0.015, humanness: 82, icon: 'fa fa-volume-up text-green' }
+        'openai|alloy': { name: 'Alloy (OpenAI)', provider: 'openai', id: 'alloy', sub: 'OpenAI TTS • Neutral Male', latency: 350, cost: 0.015, humanness: 82, icon: 'fa fa-volume-up text-green' },
+        'azure|pt-BR-FranciscaNeural': { name: 'Francisca (Azure Speech)', provider: 'azure', id: 'pt-BR-FranciscaNeural', sub: 'Microsoft Azure • Natural PT-BR Female', latency: 400, cost: 0.016, humanness: 90, icon: 'fa fa-windows text-info' },
+        'azure|pt-BR-AntonioNeural': { name: 'Antonio (Azure Speech)', provider: 'azure', id: 'pt-BR-AntonioNeural', sub: 'Microsoft Azure • Professional PT-BR Male', latency: 400, cost: 0.016, humanness: 90, icon: 'fa fa-windows text-info' },
+        'azure|pt-BR-ThalitaNeural': { name: 'Thalita (Azure Speech)', provider: 'azure', id: 'pt-BR-ThalitaNeural', sub: 'Microsoft Azure • Expressive PT-BR Female', latency: 400, cost: 0.016, humanness: 91, icon: 'fa fa-windows text-info' }
     }
 };
 
@@ -1567,11 +1574,37 @@ function openToolDrawer(mode, toolObj) {
 function updatePipelineUI() {
     var sttKey = $('#input_stt_provider').val() + '|' + $('#input_stt_model').val();
     var llmKey = $('#input_llm_provider').val() + '|' + $('#input_llm_model').val();
-    var voiceKey = $('#input_voice_provider').val() + '|' + $('#input_voice_id').val();
+    var curProv = $('#input_voice_provider').val() || 'cartesia';
+    var curVoiceId = $('#input_voice_id').val() || 'cartesia-pt-br-sofia';
+    var voiceKey = curProv + '|' + curVoiceId;
 
     var stt = VAPI_CONFIG.stt[sttKey] || { name: $('#input_stt_model').val(), sub: $('#input_stt_provider').val(), latency: 120, cost: 0.005, accuracy: '98.0%' };
     var llm = VAPI_CONFIG.llm[llmKey] || { name: $('#input_llm_model').val(), sub: $('#input_llm_provider').val(), latency: 250, cost: 0.008, intel: 85 };
-    var voice = VAPI_CONFIG.voice[voiceKey] || { name: $('#input_voice_name').val() || $('#input_voice_id').val(), sub: $('#input_voice_provider').val(), latency: 150, cost: 0.020, humanness: 90 };
+    
+    // Voice resolution: check if known in library
+    var isKnownVoice = !!VAPI_CONFIG.voice[voiceKey];
+    var voiceLatency = 150;
+    var voiceCost = 0.020;
+    if (curProv === 'elevenlabs') { voiceLatency = 650; voiceCost = 0.036; }
+    else if (curProv === 'cartesia') { voiceLatency = 90; voiceCost = 0.020; }
+    else if (curProv === 'openai') { voiceLatency = 350; voiceCost = 0.015; }
+    else if (curProv === 'azure') { voiceLatency = 400; voiceCost = 0.016; }
+
+    var voiceDisplayName = $('#input_voice_name').val();
+    if (!isKnownVoice) {
+        if (!voiceDisplayName || voiceDisplayName.startsWith('Sofia') || voiceDisplayName.startsWith('Lucas') || voiceDisplayName.startsWith('Rachel')) {
+            voiceDisplayName = 'Custom (' + (curVoiceId.length > 12 ? curVoiceId.substring(0, 12) + '...' : curVoiceId) + ')';
+            $('#input_voice_name').val(voiceDisplayName);
+        }
+    }
+
+    var voice = VAPI_CONFIG.voice[voiceKey] || { 
+        name: voiceDisplayName || curVoiceId, 
+        sub: curProv.toUpperCase() + ' • Custom Voice ID', 
+        latency: voiceLatency, 
+        cost: voiceCost, 
+        humanness: 92 
+    };
 
     // 1. Update STT Card
     $('#disp_stt_title').text(stt.name);
@@ -1617,11 +1650,26 @@ function updatePipelineUI() {
     $('#cost_bar_llm').css('width', costLlmPct + '%');
     $('#cost_bar_tts').css('width', costTtsPct + '%');
 
-    // Drawer Selects Sync
+    // Drawer Selects & Tabs Sync
     $('#modal_stt_provider_select').val(sttKey);
     $('#modal_llm_model_select').val(llmKey);
-    $('#modal_voice_id_select').val(voiceKey);
-    $('#modal_voice_provider_select').val($('#input_voice_provider').val());
+    $('#modal_voice_provider_select').val(curProv);
+
+    if (isKnownVoice) {
+        if (!$('#tab_custom_voice_id').hasClass('active')) {
+            $('#tab_voice_library').addClass('active');
+            $('#tab_custom_voice_id').removeClass('active');
+            $('#voice_library_view').show();
+            $('#custom_voice_id_view').hide();
+            $('#modal_voice_id_select').val(voiceKey);
+        }
+    } else {
+        $('#tab_custom_voice_id').addClass('active');
+        $('#tab_voice_library').removeClass('active');
+        $('#voice_library_view').hide();
+        $('#custom_voice_id_view').show();
+        $('#modal_custom_voice_id_input').val(curVoiceId);
+    }
 }
 
 $(document).ready(function() {
@@ -1715,12 +1763,22 @@ $(document).ready(function() {
     $('#modal_voice_provider_select').change(function() {
         var prov = $(this).val();
         $('#input_voice_provider').val(prov);
-        var firstMatch = Object.keys(VAPI_CONFIG.voice).find(function(k) { return k.startsWith(prov + '|'); });
-        if (firstMatch) {
-            var v = VAPI_CONFIG.voice[firstMatch];
-            $('#input_voice_id').val(v.id);
-            $('#input_voice_name').val(v.name);
-            $('#modal_voice_id_select').val(firstMatch);
+        
+        var isCustom = $('#tab_custom_voice_id').hasClass('active') || $('#custom_voice_id_view').is(':visible');
+        if (isCustom) {
+            var customVal = $('#modal_custom_voice_id_input').val().trim();
+            if (customVal) {
+                $('#input_voice_id').val(customVal);
+                $('#input_voice_name').val('Custom (' + (customVal.length > 12 ? customVal.substring(0, 12) + '...' : customVal) + ')');
+            }
+        } else {
+            var firstMatch = Object.keys(VAPI_CONFIG.voice).find(function(k) { return k.startsWith(prov + '|'); });
+            if (firstMatch) {
+                var v = VAPI_CONFIG.voice[firstMatch];
+                $('#input_voice_id').val(v.id);
+                $('#input_voice_name').val(v.name);
+                $('#modal_voice_id_select').val(firstMatch);
+            }
         }
         updatePipelineUI();
     });
@@ -1737,13 +1795,16 @@ $(document).ready(function() {
         }
     });
 
-    $('#modal_custom_voice_id_input').on('input', function() {
+    $('#modal_custom_voice_id_input').on('input change keyup paste', function() {
         var val = $(this).val().trim();
         if (val) {
             $('#input_voice_id').val(val);
-            $('#input_voice_name').val('Custom (' + val.substring(0, 10) + '...)');
-            updatePipelineUI();
+            $('#input_voice_name').val('Custom (' + (val.length > 12 ? val.substring(0, 12) + '...' : val) + ')');
+        } else {
+            $('#input_voice_id').val('');
+            $('#input_voice_name').val('');
         }
+        updatePipelineUI();
     });
 
     $('#modal_speed_slider').on('input', function() {
@@ -1797,6 +1858,21 @@ $(document).ready(function() {
         $(this).addClass('active');
         $('#voice_library_view').show();
         $('#custom_voice_id_view').hide();
+
+        var key = $('#modal_voice_id_select').val();
+        if (!key) {
+            var prov = $('#input_voice_provider').val() || 'cartesia';
+            key = Object.keys(VAPI_CONFIG.voice).find(function(k) { return k.startsWith(prov + '|'); }) || 'cartesia|cartesia-pt-br-sofia';
+            $('#modal_voice_id_select').val(key);
+        }
+        var v = VAPI_CONFIG.voice[key];
+        if (v) {
+            $('#input_voice_provider').val(v.provider);
+            $('#input_voice_id').val(v.id);
+            $('#input_voice_name').val(v.name);
+            $('#modal_voice_provider_select').val(v.provider);
+        }
+        updatePipelineUI();
     });
 
     $('#tab_custom_voice_id').click(function() {
@@ -1804,6 +1880,13 @@ $(document).ready(function() {
         $(this).addClass('active');
         $('#voice_library_view').hide();
         $('#custom_voice_id_view').show();
+
+        var customVal = $('#modal_custom_voice_id_input').val().trim();
+        if (customVal) {
+            $('#input_voice_id').val(customVal);
+            $('#input_voice_name').val('Custom (' + (customVal.length > 12 ? customVal.substring(0, 12) + '...' : customVal) + ')');
+        }
+        updatePipelineUI();
     });
 
     $('#select_first_message_mode').change(function() {
@@ -2044,6 +2127,18 @@ $(document).ready(function() {
     // Form Submission with Save & Feedback
     $('#form_vapi_agent').submit(function(e) {
         e.preventDefault();
+
+        // Ensure custom voice ID is persisted
+        if ($('#tab_custom_voice_id').hasClass('active') || $('#custom_voice_id_view').is(':visible')) {
+            var customVal = $('#modal_custom_voice_id_input').val().trim();
+            if (customVal) {
+                $('#input_voice_id').val(customVal);
+                if (!$('#input_voice_name').val() || $('#input_voice_name').val().startsWith('Sofia') || $('#input_voice_name').val().startsWith('Lucas')) {
+                    $('#input_voice_name').val('Custom (' + (customVal.length > 12 ? customVal.substring(0, 12) + '...' : customVal) + ')');
+                }
+            }
+        }
+
         var $btn = $('#btn_save_agent');
         $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Salvando...');
 
