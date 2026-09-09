@@ -1239,14 +1239,15 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             
             <div id="voice_library_view">
                 <select id="modal_voice_id_select" class="vapi-input-dark">
-                    <option value="cartesia|cartesia-pt-br-sofia">Sofia • Cartesia Sonic (Natural PT-BR Female)</option>
-                    <option value="cartesia|cartesia-pt-br-lucas">Lucas • Cartesia Sonic (Professional PT-BR Male)</option>
+                    <option value="elevenlabs|tMzxR2W7o3RLIY7zWBbG">Júlia (Voz Oficial) • ElevenLabs (Natural Conversational PT-BR)</option>
                     <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM">Rachel • ElevenLabs (Conversational Female)</option>
                     <option value="elevenlabs|EXAVITQu4vr4xnSDxMaL">Sarah • ElevenLabs (Warm & Reassuring Female)</option>
                     <option value="elevenlabs|AZnzlk1XvdvUeBnXmlld">Domi • ElevenLabs (Energetic Female)</option>
                     <option value="elevenlabs|pNInz6obpgDQGcFmaJgB">Adam • ElevenLabs (Deep & Professional Male)</option>
                     <option value="elevenlabs|TxGEqnHWrfWFTfGW9XjX">Josh • ElevenLabs (Conversational Young Male)</option>
                     <option value="elevenlabs|XrExE9yKIg1WjnnlVkGX">Matilda • ElevenLabs (Expressive Female)</option>
+                    <option value="cartesia|cartesia-pt-br-sofia">Sofia • Cartesia Sonic (Natural PT-BR Female)</option>
+                    <option value="cartesia|cartesia-pt-br-lucas">Lucas • Cartesia Sonic (Professional PT-BR Male)</option>
                     <option value="openai|nova">Nova • OpenAI (Energetic & Friendly)</option>
                     <option value="openai|alloy">Alloy • OpenAI (Neutral Male)</option>
                     <option value="azure|pt-BR-FranciscaNeural">Francisca • Azure Speech (Natural PT-BR Female)</option>
@@ -1484,6 +1485,7 @@ var VAPI_CONFIG = {
         'deepseek|deepseek-chat': { name: 'DeepSeek V3', provider: 'deepseek', model: 'deepseek-chat', sub: 'DeepSeek • Low Cost & High Intel', latency: 280, cost: 0.003, intel: 90, icon: 'fa fa-star text-blue' }
     },
     voice: {
+        'elevenlabs|tMzxR2W7o3RLIY7zWBbG': { name: 'Júlia (ElevenLabs)', provider: 'elevenlabs', id: 'tMzxR2W7o3RLIY7zWBbG', sub: 'ElevenLabs • Natural Conversational PT-BR', latency: 350, cost: 0.036, humanness: 96, icon: 'fa fa-volume-up text-pink' },
         'cartesia|cartesia-pt-br-sofia': { name: 'Sofia (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-sofia', sub: 'Cartesia Sonic • Natural PT-BR Female', latency: 90, cost: 0.020, humanness: 96, icon: 'fa fa-volume-up text-purple' },
         'cartesia|cartesia-pt-br-lucas': { name: 'Lucas (Cartesia Sonic)', provider: 'cartesia', id: 'cartesia-pt-br-lucas', sub: 'Cartesia Sonic • Professional PT-BR Male', latency: 90, cost: 0.020, humanness: 95, icon: 'fa fa-volume-up text-purple' },
         'elevenlabs|21m00Tcm4TlvDq8ikWAM': { name: 'Rachel (ElevenLabs)', provider: 'elevenlabs', id: '21m00Tcm4TlvDq8ikWAM', sub: 'ElevenLabs • Conversational Female', latency: 650, cost: 0.036, humanness: 92, icon: 'fa fa-volume-up text-pink' },
@@ -1820,6 +1822,8 @@ $(document).ready(function() {
     });
 
     $('#modal_custom_voice_id_input').on('input change keyup paste', function() {
+        var prov = $('#modal_voice_provider_select').val() || 'elevenlabs';
+        $('#input_voice_provider').val(prov);
         var val = $(this).val().trim();
         if (val) {
             $('#input_voice_id').val(val);
@@ -1904,6 +1908,9 @@ $(document).ready(function() {
         $(this).addClass('active');
         $('#voice_library_view').hide();
         $('#custom_voice_id_view').show();
+
+        var prov = $('#modal_voice_provider_select').val() || 'elevenlabs';
+        $('#input_voice_provider').val(prov);
 
         var customVal = $('#modal_custom_voice_id_input').val().trim();
         if (customVal) {
