@@ -177,17 +177,17 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
 
             <!-- Metric Cards -->
             <div class="row">
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-2 col-sm-4 col-xs-6">
                     <div class="ddm-stat-card">
                         <i class="fa fa-phone stat-icon-bg"></i>
-                        <p>Total de Ligações</p>
+                        <p>Total Ligações</p>
                         <h3><?php echo number_format($stats['total']); ?></h3>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-2 col-sm-4 col-xs-6">
                     <div class="ddm-stat-card">
                         <i class="fa fa-check-circle stat-icon-bg"></i>
-                        <p>Taxa de Atendimento</p>
+                        <p>Taxa Atendimento</p>
                         <h3 style="color:#059669;">
                             <?php 
                                 $rate = $stats['total'] > 0 ? round(($stats['answered'] / $stats['total']) * 100) : 100;
@@ -196,7 +196,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                         </h3>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-3 col-sm-4 col-xs-6">
                     <div class="ddm-stat-card">
                         <i class="fa fa-clock-o stat-icon-bg"></i>
                         <p>Duração Total de Voz</p>
@@ -209,11 +209,20 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                         </h3>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-2 col-sm-6 col-xs-6">
                     <div class="ddm-stat-card">
                         <i class="fa fa-star stat-icon-bg"></i>
                         <p>Leads Qualificados</p>
                         <h3 style="color:var(--ddm-primary);"><?php echo number_format($stats['leads']); ?></h3>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="ddm-stat-card" style="border-left: 3px solid var(--ddm-primary);">
+                        <i class="fa fa-money stat-icon-bg"></i>
+                        <p>Custo Total de IA (Est.)</p>
+                        <h3 style="color:var(--ddm-text-primary);">
+                            R$ <?php echo number_format((float)($stats['cost'] ?? 0), 2, ',', '.'); ?>
+                        </h3>
                     </div>
                 </div>
             </div>
@@ -260,6 +269,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                 <th>Telefone Destino</th>
                                 <th>Agente de IA</th>
                                 <th>Duração</th>
+                                <th>Custo</th>
                                 <th>Pipeline</th>
                                 <th>Qualificação</th>
                                 <th>Status</th>
@@ -270,7 +280,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                         <tbody>
                             <?php if (empty($callLogs)): ?>
                                 <tr>
-                                    <td colspan="10" style="text-align:center; padding:40px; color:var(--ddm-text-muted);">
+                                    <td colspan="11" style="text-align:center; padding:40px; color:var(--ddm-text-muted);">
                                         <i class="fa fa-phone-square" style="font-size:36px; display:block; margin-bottom:12px;"></i>
                                         Nenhuma chamada registrada no período selecionado.
                                     </td>
@@ -285,6 +295,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             $recUrl = $possible;
                                         }
                                     }
+                                    $costVal = isset($c['cost_estimate']) ? (float)$c['cost_estimate'] : 0.00;
                                 ?>
                                     <tr>
                                         <td><span class="ddm-badge ddm-badge-id">#<?php echo $c['id']; ?></span></td>
@@ -301,6 +312,11 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                                     $dur = (int)$c['duration_seconds'];
                                                     echo sprintf("%02d:%02d", floor($dur / 60), $dur % 60);
                                                 ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="ddm-badge ddm-badge-orange" title="Custo estimado total da chamada">
+                                                R$ <?php echo number_format($costVal, 4, ',', '.'); ?>
                                             </span>
                                         </td>
                                         <td>

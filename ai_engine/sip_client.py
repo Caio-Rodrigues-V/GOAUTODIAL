@@ -42,6 +42,13 @@ class OktorSIPCall:
         self.answered_time = 0.0
         self.conversation_history = []
         
+        # Métricas de Custo Real da Chamada
+        self.stt_seconds = 0.0
+        self.tts_characters = 0
+        self.llm_input_tokens = 0
+        self.llm_output_tokens = 0
+        self.cost_breakdown = {}
+        
         # Format destination: 59083 + 55 + DDD + NUM
         digits = re.sub(r'\D', '', phone_number)
         if digits.startswith('0'):
@@ -358,8 +365,50 @@ class DirectSIPEngine:
             else:
                 qualification = "Sem Resposta" if status == "completed" else "Ocupada / Rejeitada"
 
-            # Custo estimado baseado em LLM + Voz + STT (~R$ 0.03 / min)
-            cost_estimate = round(max(0.005, (duration / 60.0) * 0.03), 4)
+            # -------------------------------------------------------------
+            # Cálculo Real e Preciso de Custo por Ligação (STT + LLM + TTS + Telefonia)
+            # -------------------------------------------------------------
+            stt_prov = (agent.get("stt_provider") or "deepgram").lower()
+            llm_prov = (agent.get("llm_provider") or "groq").lower()
+            llm_mod = (agent.get("llm_model") or "llama-3.3-70b-versatile").lower()
+            voice_prov = (agent.get("voice_provider") or "elevenlabs").lower()
+
+            # 1. Custo de Transcrição (STT) por minuto de fala do cliente
+            stt_rate = 0.0043 if "deepgram" in stt_prov else (0.0020 if "groq" in stt_prov else 0.0060)
+            cost_stt_usd = (call.stt_seconds / 60.0) * stt_rate
+
+            # 2. Custo de Inteligência Artificial (LLM) por 1.000 tokens
+            if "groq" in llm_prov:
+                in_rate, out_rate = (0.00005, 0.00008) if "8b" in llm_mod else (0.00059, 0.00079)
+            elif "deepseek" in llm_prov:
+                in_rate, out_rate = 0.00014, 0.00028
+            elif "openai" in llm_prov:
+                in_rate, out_rate = (0.00015, 0.00060) if ("mini" in llm_mod or "nano" in llm_mod) else (0.00250, 0.01000)
+            else:
+                in_rate, out_rate = 0.00050, 0.00080
+
+            cost_llm_usd = (call.llm_input_tokens / 1000.0 * in_rate) + (call.llm_output_tokens / 1000.0 * out_rate)
+
+            # 3. Custo de Síntese de Voz (TTS) por 1.000 caracteres
+            if "elevenlabs" in voice_prov:
+                tts_rate = 0.030
+            elif "cartesia" in voice_prov or "openai" in voice_prov:
+                tts_rate = 0.015
+            else:
+                tts_rate = 0.016
+
+            cost_tts_usd = (call.tts_characters / 1000.0) * tts_rate
+
+            # 4. Custo de Telefonia SIP Trunk Oktor (R$ 0,040 / min)
+            cost_telephony_brl = (duration / 60.0) * 0.040
+
+            # Câmbio USD -> BRL
+            usd_brl = 5.80
+            total_ai_usd = cost_stt_usd + cost_llm_usd + cost_tts_usd
+            total_ai_brl = total_ai_usd * usd_brl
+            cost_estimate = round(max(0.0050, total_ai_brl + cost_telephony_brl), 4)
+
+            logger.info(f"📊 [Custo Real da Chamada]: Total=R$ {cost_estimate:.4f} (STT: R$ {cost_stt_usd*usd_brl:.4f}, LLM: R$ {cost_llm_usd*usd_brl:.4f}, TTS: R$ {cost_tts_usd*usd_brl:.4f}, Tel: R$ {cost_telephony_brl:.4f}) | {call.stt_seconds:.1f}s fala / {call.tts_characters} chars / {call.llm_output_tokens} tokens")
 
             payload = {
                 "call_id": call.call_id,
@@ -384,7 +433,6 @@ class DirectSIPEngine:
             candidate_urls = []
             if agent.get("callback_url"):
                 candidate_urls.append(agent["callback_url"])
-                # Se for https, adiciona também versão http e vice-versa
                 if agent["callback_url"].startswith("https://"):
                     candidate_urls.append(agent["callback_url"].replace("https://", "http://"))
                 elif agent["callback_url"].startswith("http://"):
@@ -437,7 +485,7 @@ class DirectSIPEngine:
             silence_timeout_ms = int(agent.get("silence_timeout_ms") or 500)
             silence_timeout_sec = max(0.2, min(5.0, silence_timeout_ms / 1000.0))
             background_sound = agent.get("background_sound") or "off"
-            background_volume = float(agent.get("background_sound_volume") or 0.10)
+            background_volume = float(agent.get("background_sound_volume") or 0.05)
             
             call.rtp_session = RTPAudioSession(
                 call.rtp_port, remote_ip, remote_port,
@@ -477,6 +525,7 @@ class DirectSIPEngine:
                 async with speech_lock:
                     try:
                         logger.info(f"Processando fala do cliente ({len(pcm_audio)} bytes PCM)...")
+                        call.stt_seconds += len(pcm_audio) / 16000.0
                         
                         # 1. Speech-to-Text (STT)
                         transcript = await AIVoiceBrain.transcribe(pcm_audio, stt_provider, call.api_keys)
@@ -495,6 +544,9 @@ class DirectSIPEngine:
                             return
 
                         # 2. Cérebro LLM (Groq / OpenAI)
+                        prompt_toks = sum(len(m.get("content", "")) for m in call.conversation_history) // 4
+                        call.llm_input_tokens += prompt_toks
+
                         ai_reply = await AIVoiceBrain.chat_completion(
                             call.conversation_history, 
                             llm_provider, 
@@ -504,12 +556,14 @@ class DirectSIPEngine:
                         )
                         logger.info(f"🤖 [IA Formulou Resposta]: \"{ai_reply}\"")
                         call.conversation_history.append({"role": "assistant", "content": ai_reply})
+                        call.llm_output_tokens += len(ai_reply) // 4
 
                         # Checa se o encerramento foi solicitado (end_call tool)
                         should_end_call = "[END_CALL]" in ai_reply or "tchau" in ai_reply.lower() and len(call.conversation_history) > 4
                         clean_reply = ai_reply.replace("[END_CALL]", "").strip()
 
                         # 3. Text-to-Speech (TTS)
+                        call.tts_characters += len(clean_reply)
                         pcm_reply = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys, agent)
                         if pcm_reply and len(pcm_reply) > 0:
                             # 4. Transmitir áudio da resposta para o telefone
@@ -530,6 +584,7 @@ class DirectSIPEngine:
             # 1. Saudação Inicial do Agente (se configurado para falar primeiro)
             if first_message_mode == "assistant_speaks_first":
                 logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
+                call.tts_characters += len(greeting)
                 pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent)
                 
                 if pcm_audio and len(pcm_audio) > 0:

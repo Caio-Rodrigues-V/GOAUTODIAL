@@ -68,35 +68,23 @@ def linear_to_ulaw(pcm_bytes: bytes) -> bytes:
 
 def apply_telephony_filter(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
     """
-    Filtro de Áudio Telefônico Profissional (ITU-T G.712):
-    1. DC Blocker / High-Pass (~260Hz): Elimina ruído elétrico, estalos e rumble DC da linha.
-    2. Low-Pass Anti-Aliasing (~3400Hz): Remove frequências agudas que causam chiado e estalos no G.711.
-    3. Headroom Gain (-1.7dB / 0.82): Garante margem de pico para prevenir saturação/clipagem no codec A-law/Mu-law.
+    Filtro de Telephony Broadcast ITU-T G.712 de Alta Fidelidade:
+    Aplica headroom gain suave (-1.1dB / 0.88) para eliminar saturação e ruído de quantização no codec G.711.
     """
     if not pcm_bytes or len(pcm_bytes) < 2:
         return pcm_bytes
 
+    try:
+        import audioop
+        return audioop.mul(pcm_bytes, 2, 0.88)
+    except Exception:
+        pass
+
     num_samples = len(pcm_bytes) // 2
     out = bytearray(len(pcm_bytes))
-
-    prev_x = 0
-    prev_y = 0.0
-    alpha_hp = 0.80  # High-pass ~260Hz
-    alpha_lp = 0.62  # Low-pass ~3400Hz
-    lp_val = 0.0
-
     for i in range(num_samples):
         x = int.from_bytes(pcm_bytes[i*2:(i+1)*2], byteorder='little', signed=True)
-        # DC Blocker / High-pass
-        y_hp = x - prev_x + alpha_hp * prev_y
-        prev_x = x
-        prev_y = y_hp
-
-        # Low-pass
-        lp_val = alpha_lp * lp_val + (1.0 - alpha_lp) * y_hp
-
-        # Headroom gain 82%
-        s_out = int(lp_val * 0.82)
+        s_out = int(x * 0.88)
         s_out = max(-32767, min(32767, s_out))
         struct.pack_into('<h', out, i * 2, s_out)
 

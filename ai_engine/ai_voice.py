@@ -253,13 +253,13 @@ class AIVoiceBrain:
                     # Suporte a optimize_streaming_latency (0 a 4) igual na Vapi
                     opt_lat = int(voice_settings.get("voice_optimize_latency", 0)) if voice_settings and voice_settings.get("voice_optimize_latency") is not None else 0
                     if opt_lat > 0:
-                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000&optimize_streaming_latency={opt_lat}"
+                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_8000&optimize_streaming_latency={opt_lat}"
                     else:
-                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000"
+                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_8000"
                     
                     # Parâmetros padrão idênticos ao player do site ElevenLabs para 100% de fidelidade
-                    stability = float(voice_settings.get("voice_stability", 0.48)) if voice_settings else 0.48
-                    similarity = float(voice_settings.get("voice_clarity", 0.85)) if voice_settings else 0.85
+                    stability = float(voice_settings.get("voice_stability", 0.50)) if voice_settings else 0.50
+                    similarity = float(voice_settings.get("voice_clarity", 0.80)) if voice_settings else 0.80
                     style = float(voice_settings.get("voice_style_exaggeration", 0.0)) if voice_settings else 0.0
                     use_speaker_boost = True if not voice_settings or voice_settings.get("voice_speaker_boost", "Y") == "Y" else True
 
@@ -279,15 +279,15 @@ class AIVoiceBrain:
                     }
                     r = await client.post(url, json=payload, headers=headers)
                     if r.status_code == 200:
-                        logger.info(f"ElevenLabs TTS gerou áudio com máxima fidelidade (Multilingual v2) para voz '{eleven_voice}'")
-                        return resample_16k_to_8k_pcm(r.content)
+                        logger.info(f"ElevenLabs TTS gerou áudio nativo 8kHz (pcm_8000) com máxima fidelidade para voz '{eleven_voice}'")
+                        return r.content
                     else:
                         logger.error(f"Erro ElevenLabs TTS [{r.status_code}] na voz '{eleven_voice}': {r.text}")
-                        # Fallback 1: Tenta modelo turbo v2.5
+                        # Fallback 1: Tenta modelo turbo v2.5 com pcm_8000
                         payload["model_id"] = "eleven_turbo_v2_5"
                         r_fb = await client.post(url, json=payload, headers=headers)
                         if r_fb.status_code == 200:
-                            return resample_16k_to_8k_pcm(r_fb.content)
+                            return r_fb.content
 
                         # Fallback 2: OpenAI TTS de segurança (nunca deixa a chamada muda)
                         if api_keys.get("openai_api_key"):

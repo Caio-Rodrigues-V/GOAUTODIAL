@@ -578,7 +578,7 @@ Diretrizes da conversa:
     }
 
     public function getCallStats() {
-        if (!$this->db) return array('total' => 0, 'answered' => 0, 'duration' => 0, 'leads' => 0);
+        if (!$this->db) return array('total' => 0, 'answered' => 0, 'duration' => 0, 'leads' => 0, 'cost' => 0.0);
         try {
             $total = $this->db->getValue('go_ai_call_logs', 'count(*)');
             $this->db->where('status', 'completed');
@@ -586,15 +586,17 @@ Diretrizes da conversa:
             $duration = $this->db->getValue('go_ai_call_logs', 'sum(duration_seconds)');
             $this->db->where('qualification', 'Interessado');
             $leads = $this->db->getValue('go_ai_call_logs', 'count(*)');
+            $cost = $this->db->getValue('go_ai_call_logs', 'sum(cost_estimate)');
 
             return array(
                 'total' => (int)$total,
                 'answered' => (int)$answered,
                 'duration' => (int)$duration,
-                'leads' => (int)$leads
+                'leads' => (int)$leads,
+                'cost' => (float)$cost
             );
         } catch (\Throwable $t) {
-            return array('total' => 0, 'answered' => 0, 'duration' => 0, 'leads' => 0);
+            return array('total' => 0, 'answered' => 0, 'duration' => 0, 'leads' => 0, 'cost' => 0.0);
         }
     }
 }
