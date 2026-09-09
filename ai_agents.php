@@ -1,8 +1,8 @@
 <?php
 /**
  * @file        ai_agents.php
- * @brief       AI Voice Agents Management
- * @copyright   (c) Dial GO Voice AI Engine
+ * @brief       Dialog DDM - AI Voice Agents Dashboard (Design System 2.0)
+ * @copyright   (c) Dialog DDM - Grupo DDM
  */
 
 require_once('php/UIHandler.php');
@@ -18,19 +18,18 @@ $lh = \creamy\LanguageHandler::getInstance();
 $user = \creamy\CreamyUser::currentUser();
 $aiHandler = \creamy\AIAgentHandler::getInstance();
 
-	//proper user redirects
-	if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
-		header("location: agent.php");
-		exit();
-	}
+if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
+    header("location: agent.php");
+    exit();
+}
 
 $agents = $aiHandler->getAllAgents();
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Dial GO - Agentes de IA (Voice AI)</title>
+    <title>Dialog DDM - Agentes de Voz IA</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
 
     <?php 
@@ -39,11 +38,23 @@ $agents = $aiHandler->getAllAgents();
         print $ui->dataTablesTheme();
     ?>
     <link href="css/style.css" rel="stylesheet" type="text/css" />
+    <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
     <style>
-        .badge-active { background-color: #00a65a; color: #fff; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
-        .badge-inactive { background-color: #dd4b39; color: #fff; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
-        .agent-avatar { width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3c8dbc; color: #fff; font-weight: bold; margin-right: 10px; }
-        .tech-pill { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #eef2f7; border: 1px solid #d2d6de; font-size: 11px; margin-right: 4px; }
+        .ddm-agent-table-card {
+            background: var(--ddm-surface);
+            border: 1px solid var(--ddm-border);
+            border-radius: var(--ddm-radius-lg);
+            padding: 24px;
+            box-shadow: var(--ddm-shadow-xs);
+        }
+        .ddm-agent-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
     </style>
 </head>
 
@@ -53,31 +64,52 @@ $agents = $aiHandler->getAllAgents();
     <?php print $ui->getSidebar($user->getUserId(), $user->getUserName(), $user->getUserRole(), $user->getUserAvatar()); ?>
 
     <aside class="right-side">
-        <section class="content-header">
-            <h1>
-                <i class="fa fa-magic"></i> Agentes de Voz com IA
-                <small>Gerencie seus robôs de voz com inteligência artificial para discagem e atendimento</small>
-            </h1>
-            <ol class="breadcrumb">
-                <li><a href="./index.php"><i class="fa fa-home"></i> Home</a></li>
-                <li class="active">Agentes de IA</li>
-            </ol>
-        </section>
+        <div class="ddm-container">
+            
+            <!-- Breadcrumbs -->
+            <div class="ddm-breadcrumbs">
+                <a href="index.php"><i class="fa fa-home"></i> Dialog DDM</a>
+                <span class="separator">/</span>
+                <span class="current">Agentes de Voz IA</span>
+            </div>
 
-        <section class="content">
-            <div class="row" style="margin-bottom: 15px;">
-                <div class="col-md-12">
-                    <a href="add_ai_agent.php" class="btn btn-primary btn-flat"><i class="fa fa-plus-circle"></i> Criar Novo Agente de IA</a>
-                    <a href="ai_settings.php" class="btn btn-default btn-flat pull-right"><i class="fa fa-key"></i> Configurar Chaves de API (OpenAI / Groq / Cartesia / Deepgram)</a>
+            <!-- Header -->
+            <div class="ddm-header">
+                <div class="ddm-header-left">
+                    <div class="ddm-agent-avatar">
+                        <i class="fa fa-microphone"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 22px; font-weight: 800; color: var(--ddm-text-primary); letter-spacing: -0.4px;">
+                            Agentes de Voz com IA
+                        </div>
+                        <div style="font-size: 13px; color: var(--ddm-text-secondary); margin-top: 2px;">
+                            Gerencie seus robôs conversacionais inteligentes para atendimento receptivo e discagem ativa.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ddm-header-actions">
+                    <a href="ai_settings.php" class="ddm-btn ddm-btn-secondary">
+                        <i class="fa fa-key"></i> Chaves de API
+                    </a>
+                    <a href="add_ai_agent.php" class="ddm-btn ddm-btn-primary">
+                        <i class="fa fa-plus"></i> Criar Novo Agente
+                    </a>
                 </div>
             </div>
 
-            <div class="box box-primary">
-                <div class="box-header with-border">
-                    <h3 class="box-title"><i class="fa fa-users"></i> Seus Agentes de IA Cadastrados</h3>
+            <!-- Agents List Card -->
+            <div class="ddm-agent-table-card">
+                <div class="ddm-agent-table-header">
+                    <div>
+                        <div class="ddm-section-title"><i class="fa fa-users text-orange"></i> Agentes Cadastrados</div>
+                        <div class="ddm-section-desc">Selecione um agente para editar parâmetros de voz, prompt, LLM ou testar em tempo real.</div>
+                    </div>
                 </div>
-                <div class="box-body">
-                    <table class="table table-bordered table-striped" id="table_ai_agents" width="100%">
+
+                <div style="overflow-x:auto;">
+                    <table class="table table-bordered table-striped ddm-tools-table" id="table_ai_agents" width="100%">
                         <thead>
                             <tr>
                                 <th>Agente</th>
@@ -86,7 +118,7 @@ $agents = $aiHandler->getAllAgents();
                                 <th>Saudação Inicial</th>
                                 <th>Transfere para</th>
                                 <th>Status</th>
-                                <th style="width: 140px; text-align: center;">Ações</th>
+                                <th style="width: 170px; text-align: right;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -94,52 +126,72 @@ $agents = $aiHandler->getAllAgents();
                                 <?php foreach ($agents as $ag): ?>
                                 <tr>
                                     <td>
-                                        <div style="display: flex; align-items: center;">
-                                            <div class="agent-avatar"><?=substr($ag['agent_name'], 0, 1)?></div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <div class="ddm-agent-avatar" style="width:36px; height:36px; font-size:15px; border-radius:8px;">
+                                                <i class="fa fa-microphone"></i>
+                                            </div>
                                             <div>
-                                                <strong><?=htmlspecialchars($ag['agent_name'])?></strong><br/>
-                                                <small class="text-muted"><?=htmlspecialchars($ag['description'])?></small>
+                                                <div style="font-weight:700; color:var(--ddm-text-primary); font-size:14px;">
+                                                    <a href="edit_ai_agent.php?id=<?=$ag['agent_id']?>" style="color:inherit; text-decoration:none;">
+                                                        <?=htmlspecialchars($ag['agent_name'])?>
+                                                    </a>
+                                                </div>
+                                                <div style="font-size:11px; color:var(--ddm-text-muted);">
+                                                    ID #<?=$ag['agent_id']?> <?=!empty($ag['description']) ? '• ' . htmlspecialchars($ag['description']) : ''?>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="tech-pill"><b><?=strtoupper($ag['llm_provider'])?></b></span><br/>
-                                        <small><?=htmlspecialchars($ag['llm_model'])?></small>
+                                        <span class="ddm-badge ddm-badge-id"><b><?=strtoupper($ag['llm_provider'])?></b></span>
+                                        <div style="font-size:11px; color:var(--ddm-text-secondary); margin-top:2px; font-weight:600;">
+                                            <?=htmlspecialchars($ag['llm_model'])?>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="tech-pill"><b><?=strtoupper($ag['voice_provider'])?></b></span><br/>
-                                        <small><?=htmlspecialchars(!empty($ag['voice_name']) ? $ag['voice_name'] : $ag['voice_id'])?></small>
+                                        <span class="ddm-badge ddm-badge-orange"><b><?=strtoupper($ag['voice_provider'])?></b></span>
+                                        <div style="font-size:11px; color:var(--ddm-text-secondary); margin-top:2px;">
+                                            <?=htmlspecialchars(!empty($ag['voice_name']) ? $ag['voice_name'] : $ag['voice_id'])?>
+                                        </div>
                                     </td>
                                     <td>
-                                        <small><i>"<?=htmlspecialchars(mb_strimwidth($ag['greeting_message'], 0, 60, '...'))?>"</i></small>
+                                        <div style="font-size:12px; color:var(--ddm-text-secondary); max-width:280px; font-style:italic;">
+                                            "<?=htmlspecialchars(mb_strimwidth($ag['greeting_message'], 0, 55, '...'))?>"
+                                        </div>
                                     </td>
                                     <td>
                                         <?php if (!empty($ag['transfer_phone_or_queue'])): ?>
-                                            <span class="label label-info"><i class="fa fa-phone"></i> Ramal/Fila: <?=htmlspecialchars($ag['transfer_phone_or_queue'])?></span>
+                                            <span class="ddm-badge ddm-badge-active"><i class="fa fa-phone"></i> Ramal <?=htmlspecialchars($ag['transfer_phone_or_queue'])?></span>
                                         <?php else: ?>
-                                            <span class="text-muted">Sem transferência</span>
+                                            <span style="font-size:12px; color:var(--ddm-text-muted);">Sem transferência</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if ($ag['status'] == 'Y'): ?>
-                                            <span class="badge-active">ATIVO</span>
+                                            <span class="ddm-badge ddm-badge-active"><span class="ddm-dot-indicator ddm-dot-active"></span> Ativo</span>
                                         <?php else: ?>
-                                            <span class="badge-inactive">INATIVO</span>
+                                            <span class="ddm-badge ddm-badge-inactive"><span class="ddm-dot-indicator ddm-dot-inactive"></span> Inativo</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td style="text-align: center;">
-                                        <button class="btn btn-success btn-xs btn-test-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" data-greeting="<?=htmlspecialchars($ag['greeting_message'])?>" title="Testar Conversa no Navegador"><i class="fa fa-headphones"></i> Testar Web</button>
-                                        <button class="btn btn-primary btn-xs btn-open-dial-modal" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" title="Fazer Ligação de Teste para Telefone"><i class="fa fa-phone"></i> <b>Ligar p/ Celular</b></button>
-                                        <a href="edit_ai_agent.php?id=<?=$ag['agent_id']?>" class="btn btn-default btn-xs" title="Editar Agente"><i class="fa fa-pencil"></i></a>
-                                        <button class="btn btn-danger btn-xs btn-delete-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" title="Excluir"><i class="fa fa-trash"></i></button>
+                                    <td style="text-align: right; white-space: nowrap;">
+                                        <button class="ddm-btn ddm-btn-talk ddm-btn-xs btn-open-dial-modal" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" title="Fazer Ligação Telefônica de Teste">
+                                            <i class="fa fa-phone"></i> Ligar
+                                        </button>
+                                        <a href="edit_ai_agent.php?id=<?=$ag['agent_id']?>" class="ddm-btn ddm-btn-secondary ddm-btn-xs" title="Editar Agente">
+                                            <i class="fa fa-pencil"></i>
+                                        </a>
+                                        <button class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-delete-agent" data-id="<?=$ag['agent_id']?>" data-name="<?=htmlspecialchars($ag['agent_name'])?>" title="Excluir" style="color:#EF4444 !important;">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="7" style="text-align: center; padding: 30px;">
-                                        <p class="text-muted">Nenhum agente de IA cadastrado no momento.</p>
-                                        <a href="add_ai_agent.php" class="btn btn-sm btn-primary"><i class="fa fa-plus"></i> Criar Primeiro Agente</a>
+                                    <td colspan="7" style="text-align: center; padding: 40px;">
+                                        <div style="font-size:32px; color:var(--ddm-text-muted); margin-bottom:12px;"><i class="fa fa-microphone-slash"></i></div>
+                                        <p style="color:var(--ddm-text-secondary); font-size:14px; font-weight:600;">Nenhum agente de IA cadastrado no momento.</p>
+                                        <a href="add_ai_agent.php" class="ddm-btn ddm-btn-primary" style="margin-top:10px;"><i class="fa fa-plus"></i> Criar Primeiro Agente</a>
                                     </td>
                                 </tr>
                             <?php endif; ?>
@@ -147,36 +199,39 @@ $agents = $aiHandler->getAllAgents();
                     </table>
                 </div>
             </div>
-        </section>
+
+        </div>
     </aside>
 </div>
 
 <!-- Modal Ligar para Telefone via Oktor -->
 <div class="modal fade" id="modal_dial_phone" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm" style="width: 420px;">
-        <div class="modal-content" style="border-radius: 8px;">
-            <div class="modal-header bg-green" style="color: #fff; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-                <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.9;">&times;</button>
-                <h4 class="modal-title"><i class="fa fa-phone"></i> Teste Telefônico com IA</h4>
+    <div class="modal-dialog modal-sm" style="width: 440px;">
+        <div class="modal-content" style="border-radius: var(--ddm-radius-lg); border: 1px solid var(--ddm-border); box-shadow: var(--ddm-shadow-xl);">
+            <div class="modal-header" style="background: var(--ddm-surface); border-bottom: 1px solid var(--ddm-border); border-top-left-radius: var(--ddm-radius-lg); border-top-right-radius: var(--ddm-radius-lg); padding: 18px 24px;">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title" style="font-weight: 800; font-size: 16px; color: var(--ddm-text-primary);"><i class="fa fa-phone text-orange"></i> Teste Telefônico com IA</h4>
             </div>
             <form id="form_make_ai_call">
                 <input type="hidden" name="agent_id" id="dial_agent_id" value="" />
-                <div class="modal-body" style="padding: 20px;">
-                    <p>O discador vai usar o <strong>Tronco SIP da Oktor (Tech Prefix 5908355)</strong> para ligar para o seu número. Ao atender, a <strong id="dial_agent_name_display">Sofia</strong> vai conversar com você no telefone!</p>
+                <div class="modal-body" style="padding: 24px;">
+                    <p style="font-size: 13px; color: var(--ddm-text-secondary); margin-bottom: 18px;">
+                        O discador Dialog DDM originará a chamada para o número indicado. Ao atender, o assistente <strong id="dial_agent_name_display" style="color:var(--ddm-primary);">Sofia</strong> conversará com você em tempo real!
+                    </p>
                     
-                    <div class="form-group">
-                        <label><i class="fa fa-mobile-phone"></i> Seu Telefone / Celular (com DDD):</label>
-                        <input type="text" name="phone_number" id="dial_phone_input" class="form-control input-lg" placeholder="Ex: 11987654321" required autofocus />
-                        <small class="text-muted">Digite apenas DDD + Número (ex: 11987654321 ou 21999998888).</small>
+                    <div class="ddm-form-group">
+                        <label class="ddm-form-label"><i class="fa fa-mobile-phone"></i> Seu Telefone / Celular (com DDD):</label>
+                        <input type="text" name="phone_number" id="dial_phone_input" class="ddm-input" placeholder="Ex: 11987654321" required autofocus />
+                        <div class="ddm-form-hint">Digite DDD + Número (ex: 11987654321).</div>
                     </div>
 
-                    <div id="dial_call_status" style="display:none; margin-top: 10px;" class="alert alert-info">
+                    <div id="dial_call_status" style="display:none; margin-top: 14px;" class="alert alert-info">
                         <!-- Call status message -->
                     </div>
                 </div>
-                <div class="modal-footer" style="background: #f8fafc;">
-                    <button type="submit" class="btn btn-success btn-lg btn-block" id="btn_submit_dial_call">
-                        <i class="fa fa-phone"></i> <strong>Discar Agora</strong>
+                <div class="modal-footer" style="background: var(--ddm-surface-subtle); border-top: 1px solid var(--ddm-border); border-bottom-left-radius: var(--ddm-radius-lg); border-bottom-right-radius: var(--ddm-radius-lg); padding: 16px 24px;">
+                    <button type="submit" class="ddm-btn ddm-btn-primary" style="width:100%; justify-content:center;" id="btn_submit_dial_call">
+                        <i class="fa fa-phone"></i> Discar Agora
                     </button>
                 </div>
             </form>
@@ -184,30 +239,30 @@ $agents = $aiHandler->getAllAgents();
     </div>
 </div>
 
-<!-- Modal Teste de Agente / Simulador de Voz -->
+<!-- Modal Teste de Agente / Simulador de Voz Web -->
 <div class="modal fade" id="modal_test_agent" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md">
-        <div class="modal-content" style="border-radius: 8px;">
-            <div class="modal-header bg-primary" style="color: #fff; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-                <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.9;">&times;</button>
-                <h4 class="modal-title"><i class="fa fa-headphones"></i> Teste de Voz ao Vivo: <span id="test_agent_title_name"></span></h4>
+        <div class="modal-content" style="border-radius: var(--ddm-radius-lg); border: 1px solid var(--ddm-border); box-shadow: var(--ddm-shadow-xl);">
+            <div class="modal-header" style="background: var(--ddm-surface); border-bottom: 1px solid var(--ddm-border); border-top-left-radius: var(--ddm-radius-lg); border-top-right-radius: var(--ddm-radius-lg); padding: 18px 24px;">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title" style="font-weight: 800; font-size: 16px; color: var(--ddm-text-primary);"><i class="fa fa-headphones text-orange"></i> Teste de Voz ao Vivo: <span id="test_agent_title_name"></span></h4>
             </div>
-            <div class="modal-body" style="background: #f8fafc; padding: 15px;">
-                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; height: 320px; overflow-y: auto;" id="test_chat_box">
+            <div class="modal-body" style="background: var(--ddm-surface-subtle); padding: 20px;">
+                <div style="background: #fff; border: 1px solid var(--ddm-border); border-radius: var(--ddm-radius-md); padding: 16px; height: 320px; overflow-y: auto;" id="test_chat_box">
                     <!-- Dynamic chat bubbles -->
                 </div>
                 
-                <div id="test_agent_status" style="margin-top: 8px; font-size: 13px; color: #64748b; font-weight: 500;">
+                <div id="test_agent_status" style="margin-top: 10px; font-size: 12px; color: var(--ddm-text-secondary); font-weight: 600;">
                     <i class="fa fa-circle text-success"></i> Pronto para conversar
                 </div>
 
                 <!-- Hidden audio player for TTS playback -->
                 <audio id="tts_audio_player" style="display:none;"></audio>
             </div>
-            <div class="modal-footer" style="background: #fff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+            <div class="modal-footer" style="background: var(--ddm-surface); border-top: 1px solid var(--ddm-border); border-bottom-left-radius: var(--ddm-radius-lg); border-bottom-right-radius: var(--ddm-radius-lg); padding: 16px 20px;">
                 <form id="form_send_test_message" style="display: flex; gap: 8px;">
-                    <input type="text" id="test_user_input" class="form-control input-lg" placeholder="Fale algo com a IA (ex: Olá, quem é você?)..." required autocomplete="off" />
-                    <button type="submit" class="btn btn-primary btn-lg" id="btn_send_test_msg">
+                    <input type="text" id="test_user_input" class="ddm-input" placeholder="Fale algo com a IA (ex: Olá, quem é você?)..." required autocomplete="off" />
+                    <button type="submit" class="ddm-btn ddm-btn-primary" id="btn_send_test_msg">
                         <i class="fa fa-paper-plane"></i> Enviar
                     </button>
                 </form>
@@ -224,17 +279,18 @@ var testConversationHistory = [];
 function appendChatMessage(sender, text, isAI, audioUrl) {
     var $box = $('#test_chat_box');
     var align = isAI ? 'left' : 'right';
-    var bg = isAI ? '#e0f2fe' : '#2563eb';
-    var color = isAI ? '#0369a1' : '#ffffff';
+    var bg = isAI ? '#FFF7ED' : '#F97316';
+    var color = isAI ? '#C2410C' : '#ffffff';
+    var border = isAI ? '1px solid #FFEDD5' : 'none';
     var icon = isAI ? '<i class="fa fa-magic"></i>' : '<i class="fa fa-user"></i>';
 
     var audioBtn = '';
     if (isAI && audioUrl) {
-        audioBtn = '<div style="margin-top: 6px;"><button type="button" class="btn btn-xs btn-primary btn-play-msg-audio" style="background:#0284c7; border:none; padding: 2px 8px;"><i class="fa fa-volume-up"></i> Ouvir Voz</button></div>';
+        audioBtn = '<div style="margin-top: 6px;"><button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-play-msg-audio"><i class="fa fa-volume-up text-orange"></i> Ouvir Voz</button></div>';
     }
 
     var $msgElem = $('<div style="margin-bottom: 12px; text-align: ' + align + ';">' +
-        '<div style="display: inline-block; max-width: 80%; text-align: left; padding: 10px 14px; border-radius: 12px; background: ' + bg + '; color: ' + color + '; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">' +
+        '<div style="display: inline-block; max-width: 80%; text-align: left; padding: 10px 14px; border-radius: 12px; background: ' + bg + '; color: ' + color + '; border: ' + border + '; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">' +
             '<div style="font-size: 11px; opacity: 0.85; margin-bottom: 3px;">' + icon + ' <strong>' + sender + '</strong></div>' +
             '<div style="font-size: 13px; line-height: 1.4;">' + text + '</div>' +
             audioBtn +
@@ -290,8 +346,7 @@ $(document).ready(function() {
             $('#test_user_input').focus();
         }, 500);
 
-        // Fetch initial greeting audio
-        $('#test_agent_status').html('<i class="fa fa-spinner fa-spin text-primary"></i> Gerando voz inicial...');
+        $('#test_agent_status').html('<i class="fa fa-spinner fa-spin text-orange"></i> Sintetizando voz inicial...');
         $.post('php/TestAIAgent.php', {
             agent_id: currentTestAgentId,
             message: '',
@@ -304,8 +359,6 @@ $(document).ready(function() {
 
             if (res.status === 1 && res.audio_url) {
                 playVoiceAudio(res.audio_url);
-            } else if (res.tts_error) {
-                $('#test_agent_status').html('<span class="text-warning"><i class="fa fa-exclamation-triangle"></i> ' + res.tts_error + '</span>');
             }
         }, 'json').fail(function() {
             appendChatMessage(agentName, greeting, true);
@@ -324,7 +377,7 @@ $(document).ready(function() {
         testConversationHistory.push({ role: 'user', content: userText });
         $('#test_user_input').val('');
 
-        $('#test_agent_status').html('<i class="fa fa-spinner fa-spin text-primary"></i> Sofia está pensando e sintetizando a voz...');
+        $('#test_agent_status').html('<i class="fa fa-spinner fa-spin text-orange"></i> Processando resposta e gerando áudio...');
         $('#btn_send_test_msg').prop('disabled', true);
 
         $.post('php/TestAIAgent.php', {
@@ -341,8 +394,6 @@ $(document).ready(function() {
 
                 if (res.audio_url) {
                     playVoiceAudio(res.audio_url);
-                } else if (res.tts_error) {
-                    $('#test_agent_status').html('<span class="text-warning"><i class="fa fa-exclamation-triangle"></i> ' + res.tts_error + '</span>');
                 }
             } else {
                 alert(res.message || 'Erro ao processar resposta da IA.');
@@ -372,8 +423,8 @@ $(document).ready(function() {
         var $btn = $('#btn_submit_dial_call');
         var $status = $('#dial_call_status');
 
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Originando chamada via Oktor...');
-        $status.show().removeClass('alert-danger alert-success').addClass('alert-info').html('<i class="fa fa-spinner fa-spin"></i> Conectando ao tronco Oktor e discando...');
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Originando chamada...');
+        $status.show().removeClass('alert-danger alert-success').addClass('alert-info').html('<i class="fa fa-spinner fa-spin"></i> Conectando ao servidor telefônico e discando...');
 
         var formData = $(this).serialize();
         $.post('php/MakeAICall.php', formData, function(res) {

@@ -1,8 +1,8 @@
 <?php
 /**
  * @file        add_ai_agent.php
- * @brief       Vapi-Style Voice AI Agent Creator (Fully Dynamic)
- * @copyright   (c) Dial GO Voice AI Engine
+ * @brief       Dialog DDM - Create New Voice AI Agent (Design System 2.0)
+ * @copyright   (c) Dialog DDM - Grupo DDM
  */
 
 require_once('php/UIHandler.php');
@@ -26,7 +26,7 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
 $defaultTools = $aiHandler->getDefaultTools();
 
 $defaultPrompt = "# PERSONA E OBJETIVO\n" .
-"Você é Sofia, assistente virtual inteligente da {{empresa}}.\n" .
+"Você é Sofia, consultora virtual inteligente da {{empresa}}.\n" .
 "Seu objetivo é entender o motivo do contato do cliente {{customer_name}}, tirar dúvidas com cordialidade e qualificar o atendimento.\n\n" .
 "# DIRETRIZES DA CONVERSA\n" .
 "1. Seja direta, natural e fale no máximo 2 frases por turno para manter o diálogo ágil.\n" .
@@ -34,10 +34,10 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
 "3. Se o cliente pedir para falar com um atendente humano, transfira usando a ferramenta transfer_call.";
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Dial GO - Criar Agente de Voz com IA (Vapi Mode)</title>
+    <title>Dialog DDM - Criar Agente de Voz IA</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
 
     <?php 
@@ -45,631 +45,7 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
         print $ui->creamyThemeCSS();
     ?>
     <link href="css/style.css" rel="stylesheet" type="text/css" />
-    
-    <style>
-        /* MODERN VAPI DARK THEME */
-        body, .right-side, .wrapper {
-            background-color: #0b0d11 !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif !important;
-        }
-
-        .vapi-container {
-            background-color: #0b0d11;
-            color: #f1f5f9;
-            min-height: calc(100vh - 50px);
-            padding: 24px 36px;
-            max-width: 1440px;
-            margin: 0 auto;
-        }
-
-        /* Top Header */
-        .vapi-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 24px;
-        }
-        .vapi-title-area {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-        .vapi-agent-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(16, 185, 129, 0.1));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #38bdf8;
-            font-size: 20px;
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-        }
-        .vapi-agent-name-input {
-            background: transparent;
-            border: 1px solid transparent;
-            color: #ffffff;
-            font-size: 22px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 8px;
-            transition: all 0.2s;
-            letter-spacing: -0.3px;
-        }
-        .vapi-agent-name-input:hover, .vapi-agent-name-input:focus {
-            background: #14171f;
-            border-color: rgba(255, 255, 255, 0.15);
-            outline: none;
-        }
-        .vapi-badge {
-            background: rgba(255, 255, 255, 0.06);
-            color: #94a3b8;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 9px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            letter-spacing: 0.2px;
-        }
-        .vapi-badge-published {
-            background: rgba(16, 185, 129, 0.12);
-            color: #34d399;
-            border-color: rgba(16, 185, 129, 0.25);
-        }
-
-        /* Top Actions */
-        .vapi-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .vapi-btn {
-            background: #151922;
-            color: #f1f5f9;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 9px 18px;
-            border-radius: 9px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-        .vapi-btn:hover {
-            background: #1d2330;
-            border-color: rgba(255, 255, 255, 0.2);
-            color: #fff;
-            transform: translateY(-1px);
-        }
-        .vapi-btn-primary {
-            background: #10b981;
-            color: #0b0d11;
-            border-color: #10b981;
-            font-weight: 700;
-        }
-        .vapi-btn-primary:hover {
-            background: #059669;
-            border-color: #059669;
-            color: #ffffff;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Tab Navigation */
-        .vapi-tabs {
-            display: flex;
-            gap: 28px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 24px;
-        }
-        .vapi-tab {
-            padding: 12px 6px;
-            color: #8392a5;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        .vapi-tab:hover {
-            color: #ffffff;
-        }
-        .vapi-tab.active {
-            color: #38bdf8;
-            border-bottom-color: #38bdf8;
-        }
-
-        /* Telemetry Section */
-        .vapi-telemetry {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-        .vapi-telemetry-item {
-            background: linear-gradient(180deg, #131720 0%, #0f1218 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 18px 22px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        .vapi-telemetry-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 12px;
-        }
-        .vapi-telemetry-label {
-            font-size: 11px;
-            color: #8392a5;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 0.8px;
-        }
-        .vapi-telemetry-value {
-            font-size: 22px;
-            font-weight: 800;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-        }
-        .vapi-progress-bar {
-            height: 7px;
-            background: #1c222e;
-            border-radius: 4px;
-            overflow: hidden;
-            display: flex;
-        }
-        .vapi-seg-stt { background: #10b981; transition: width 0.3s; }
-        .vapi-seg-llm { background: #38bdf8; transition: width 0.3s; }
-        .vapi-seg-tts { background: #a855f7; transition: width 0.3s; }
-
-        /* Presets Bar */
-        .vapi-presets-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
-            background: rgba(255, 255, 255, 0.02);
-            padding: 10px 16px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            flex-wrap: wrap;
-        }
-        .vapi-preset-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: #8392a5;
-            margin-right: 6px;
-        }
-        .vapi-preset-pill {
-            background: #141822;
-            color: #94a3b8;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .vapi-preset-pill:hover {
-            background: #1e2433;
-            color: #ffffff;
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .vapi-preset-pill.active {
-            background: rgba(56, 189, 248, 0.15);
-            color: #38bdf8;
-            border-color: rgba(56, 189, 248, 0.4);
-            font-weight: 700;
-        }
-
-        /* 3 Main Pipeline Cards Grid */
-        .vapi-cards-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-        .vapi-card {
-            background: linear-gradient(180deg, #131720 0%, #0f1218 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 22px;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
-        }
-        .vapi-card:hover {
-            border-color: rgba(56, 189, 248, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
-        .vapi-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-        }
-        .vapi-card-type {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .vapi-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        .vapi-dot-stt { background: #10b981; box-shadow: 0 0 8px #10b981; }
-        .vapi-dot-llm { background: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
-        .vapi-dot-tts { background: #a855f7; box-shadow: 0 0 8px #a855f7; }
-
-        .vapi-card-edit-btn {
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #94a3b8;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-        .vapi-card:hover .vapi-card-edit-btn {
-            background: #38bdf8;
-            color: #0b0d11;
-            border-color: #38bdf8;
-        }
-
-        .vapi-card-title {
-            font-size: 17px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 4px;
-            letter-spacing: -0.2px;
-        }
-        .vapi-card-provider {
-            font-size: 12px;
-            color: #8392a5;
-            margin-bottom: 18px;
-        }
-        .vapi-card-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            padding-top: 14px;
-            border-top: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 11px;
-        }
-        .vapi-card-stat-label {
-            color: #64748b;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-        .vapi-card-stat-val {
-            color: #f1f5f9;
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        /* First Message Block & Prompt Section */
-        .vapi-section-box {
-            background: linear-gradient(180deg, #131720 0%, #0f1218 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 22px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.25);
-        }
-        .vapi-section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .vapi-section-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: -0.2px;
-        }
-        .vapi-select-dark {
-            background: #181d27;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f1f5f9;
-            padding: 7px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .vapi-select-dark:focus {
-            border-color: #38bdf8;
-            outline: none;
-        }
-        .vapi-textarea-dark {
-            width: 100%;
-            background: #0a0c10;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            color: #f1f5f9;
-            padding: 16px;
-            font-size: 13px;
-            line-height: 1.6;
-            resize: vertical;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-        .vapi-textarea-dark:focus {
-            border-color: #10b981;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
-        }
-        .vapi-prompt-editor {
-            font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.6;
-            background: #08090d;
-        }
-
-        /* Tools Table */
-        .vapi-tools-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .vapi-tools-table th {
-            text-align: left;
-            padding: 14px 18px;
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .vapi-tools-table td {
-            padding: 18px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            vertical-align: middle;
-        }
-        .vapi-tool-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-            margin-right: 14px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        .vapi-tool-name {
-            font-weight: 700;
-            color: #ffffff;
-            font-size: 14px;
-        }
-        .vapi-tool-desc {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 4px;
-            max-width: 650px;
-            line-height: 1.4;
-        }
-        .vapi-action-btn {
-            background: #181d26;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #94a3b8;
-            padding: 6px 11px;
-            border-radius: 7px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .vapi-action-btn:hover {
-            background: #232a38;
-            color: #ffffff;
-            border-color: rgba(255, 255, 255, 0.25);
-        }
-        .vapi-action-btn.btn-danger-tool:hover {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            border-color: rgba(239, 68, 68, 0.4);
-        }
-
-        /* Settings Modals / Drawers */
-        .vapi-modal-backdrop {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            display: none;
-            justify-content: flex-end;
-        }
-        .vapi-drawer {
-            background: #0f1218;
-            width: 500px;
-            max-width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 32px 28px;
-            box-sizing: border-box;
-            box-shadow: -15px 0 40px rgba(0,0,0,0.8);
-            animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-        .vapi-drawer-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .vapi-drawer-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: -0.3px;
-        }
-        .vapi-drawer-subtitle {
-            font-size: 13px;
-            color: #94a3b8;
-            margin-bottom: 24px;
-            line-height: 1.5;
-        }
-        .vapi-form-group {
-            margin-bottom: 22px;
-        }
-        .vapi-form-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 700;
-            color: #cbd5e1;
-            margin-bottom: 8px;
-            letter-spacing: 0.2px;
-        }
-        .vapi-input-dark {
-            width: 100%;
-            background: #141720;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: #ffffff;
-            padding: 10px 14px;
-            font-size: 13px;
-            box-sizing: border-box;
-            transition: all 0.2s;
-        }
-        .vapi-input-dark:focus {
-            border-color: #38bdf8;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
-        }
-
-        /* Switches & Sliders */
-        .vapi-switch-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .vapi-switch-info {
-            max-width: 80%;
-        }
-        .vapi-switch-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #ffffff;
-        }
-        .vapi-switch-desc {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 2px;
-        }
-        
-        .vapi-switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-            margin-bottom: 0;
-        }
-        .vapi-switch input { opacity: 0; width: 0; height: 0; }
-        .vapi-slider {
-            position: absolute; cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #272d3b;
-            transition: .3s;
-            border-radius: 24px;
-        }
-        .vapi-slider:before {
-            position: absolute; content: "";
-            height: 18px; width: 18px;
-            left: 3px; bottom: 3px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-        input:checked + .vapi-slider { background-color: #10b981; }
-        input:checked + .vapi-slider:before { transform: translateX(20px); }
-
-        .vapi-range-slider {
-            width: 100%;
-            accent-color: #10b981;
-            height: 6px;
-            background: #272d3b;
-            border-radius: 3px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .vapi-accordion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            cursor: pointer;
-            color: #cbd5e1;
-            font-weight: 700;
-            font-size: 13px;
-        }
-
-        .vapi-pill-group {
-            display: flex;
-            background: #14171f;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 3px;
-            gap: 4px;
-        }
-        .vapi-pill-opt {
-            flex: 1;
-            text-align: center;
-            padding: 7px 10px;
-            font-size: 12px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            color: #94a3b8;
-            transition: all 0.2s;
-        }
-        .vapi-pill-opt.active {
-            background: #222b3a;
-            color: #38bdf8;
-        }
-    </style>
+    <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
 </head>
 
 <?php print $ui->creamyBody(); ?>
@@ -677,9 +53,9 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
     <?php print $ui->creamyHeader($user); ?>
     <?php print $ui->getSidebar($user->getUserId(), $user->getUserName(), $user->getUserRole(), $user->getUserAvatar()); ?>
 
-    <aside class="right-side" style="background-color: #0b0d11;">
+    <aside class="right-side">
         <form id="form_add_vapi_agent" method="POST" action="php/SaveAIAgent.php">
-            <input type="hidden" name="agent_id" value="0" />
+            <input type="hidden" name="agent_id" id="input_agent_id" value="0" />
             <input type="hidden" name="model_preset" id="input_model_preset" value="balanced" />
             <input type="hidden" name="first_message_mode" id="input_first_message_mode" value="assistant_speaks_first" />
             <input type="hidden" name="stt_provider" id="input_stt_provider" value="deepgram" />
@@ -712,240 +88,315 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
             <input type="hidden" name="status" id="input_status" value="Y" />
             <input type="hidden" name="transfer_phone_or_queue" id="input_transfer_phone_or_queue" value="" />
 
-            <div class="vapi-container">
-                <!-- Top Navigation & Actions Bar -->
-                <div class="vapi-header">
-                    <div class="vapi-title-area">
-                        <div class="vapi-agent-icon"><i class="fa fa-microphone"></i></div>
+            <div class="ddm-container">
+                
+                <!-- Breadcrumbs -->
+                <div class="ddm-breadcrumbs">
+                    <a href="index.php"><i class="fa fa-home"></i> Dialog DDM</a>
+                    <span class="separator">/</span>
+                    <a href="ai_agents.php">Agentes de Voz IA</a>
+                    <span class="separator">/</span>
+                    <span class="current">Novo Agente</span>
+                </div>
+
+                <!-- Modern SaaS Top Header -->
+                <div class="ddm-header">
+                    <div class="ddm-header-left">
+                        <div class="ddm-agent-avatar">
+                            <i class="fa fa-plus"></i>
+                        </div>
                         <div>
-                            <input type="text" name="agent_name" class="vapi-agent-name-input" placeholder="Nome do Agente (Ex: Sofia SDR)" value="Sofia - Assistente Virtual" required />
-                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; padding-left: 8px;">
-                                <span class="vapi-badge">Novo Agente</span>
-                                <span class="vapi-badge" id="badge_status_indicator">Ativo</span>
-                                <span class="vapi-badge vapi-badge-published"><i class="fa fa-check-circle"></i> Rascunho</span>
+                            <div class="ddm-agent-title-row">
+                                <input type="text" name="agent_name" class="ddm-agent-name-input vapi-agent-name-input" placeholder="Nome do Agente (Ex: Sofia SDR)" value="Sofia - Assistente Virtual" required />
+                            </div>
+                            <div class="ddm-meta-tags">
+                                <span class="ddm-badge ddm-badge-id">Novo Agente</span>
+                                <span class="ddm-badge ddm-badge-active" id="badge_status_wrap">
+                                    <span class="ddm-dot-indicator ddm-dot-active"></span>
+                                    <span id="badge_status_indicator">Ativo</span>
+                                </span>
+                                <span class="ddm-badge ddm-badge-orange"><i class="fa fa-pencil"></i> Rascunho</span>
                             </div>
                         </div>
                     </div>
-                    <div class="vapi-actions">
-                        <button type="submit" class="vapi-btn vapi-btn-primary" id="btn_save_agent"><i class="fa fa-floppy-o"></i> Criar e Publicar Agente</button>
+                    
+                    <div class="ddm-header-actions">
+                        <button type="submit" class="ddm-btn ddm-btn-primary vapi-btn vapi-btn-primary" id="btn_save_agent">
+                            <i class="fa fa-save"></i> Criar e Publicar Agente
+                        </button>
                     </div>
                 </div>
 
-                <!-- Tabs -->
-                <div class="vapi-tabs">
-                    <a href="#tab_assistant" class="vapi-tab active" data-tab="assistant"><i class="fa fa-cube"></i> Assistant</a>
-                    <a href="#tab_tools" class="vapi-tab" data-tab="tools"><i class="fa fa-wrench"></i> Tools</a>
-                    <a href="#tab_analysis" class="vapi-tab" data-tab="analysis"><i class="fa fa-line-chart"></i> Analysis</a>
-                    <a href="#tab_advanced" class="vapi-tab" data-tab="advanced"><i class="fa fa-sliders"></i> Advanced</a>
+                <!-- Tab Navigation Bar -->
+                <div class="ddm-tabs-container vapi-tabs">
+                    <a href="#tab_assistant" class="ddm-tab vapi-tab active" data-tab="assistant">
+                        <i class="fa fa-sliders"></i> Pipeline & Assistente
+                    </a>
+                    <a href="#tab_tools" class="ddm-tab vapi-tab" data-tab="tools">
+                        <i class="fa fa-wrench"></i> Ferramentas (Tools)
+                    </a>
+                    <a href="#tab_analysis" class="ddm-tab vapi-tab" data-tab="analysis">
+                        <i class="fa fa-pie-chart"></i> Análise & Qualificação
+                    </a>
+                    <a href="#tab_advanced" class="ddm-tab vapi-tab" data-tab="advanced">
+                        <i class="fa fa-cogs"></i> Configurações Avançadas
+                    </a>
                 </div>
 
-                <!-- TAB 1: ASSISTANT -->
+                <!-- ==================== TAB 1: ASSISTANT ==================== -->
                 <div id="view_assistant" class="vapi-tab-view">
-                    <!-- Telemetry Header -->
-                    <div class="vapi-telemetry">
-                        <div class="vapi-telemetry-item">
-                            <div class="vapi-telemetry-header">
-                                <span class="vapi-telemetry-label">Custo Estimado</span>
-                                <span class="vapi-telemetry-value" id="disp_total_cost">~$0.033<span style="font-size:14px; color:#94a3b8;">/min</span></span>
+                    
+                    <!-- Live Telemetry & Pipeline Metrics -->
+                    <div class="ddm-telemetry-grid vapi-telemetry">
+                        <!-- Cost Card -->
+                        <div class="ddm-telemetry-card vapi-telemetry-item">
+                            <div class="ddm-telemetry-header vapi-telemetry-header">
+                                <span class="ddm-telemetry-label vapi-telemetry-label"><i class="fa fa-dollar text-orange"></i> Custo Estimado Total</span>
+                                <span class="ddm-telemetry-value vapi-telemetry-value" id="disp_total_cost">~$0.033<span class="ddm-telemetry-unit">/min</span></span>
                             </div>
-                            <div class="vapi-progress-bar">
-                                <div class="vapi-seg-stt" id="cost_bar_stt" style="width: 25%;"></div>
-                                <div class="vapi-seg-llm" id="cost_bar_llm" style="width: 35%;"></div>
-                                <div class="vapi-seg-tts" id="cost_bar_tts" style="width: 40%;"></div>
+                            <div class="ddm-progress-bar vapi-progress-bar">
+                                <div class="ddm-seg-stt vapi-seg-stt" id="cost_bar_stt" style="width: 25%;"></div>
+                                <div class="ddm-seg-llm vapi-seg-llm" id="cost_bar_llm" style="width: 35%;"></div>
+                                <div class="ddm-seg-tts vapi-seg-tts" id="cost_bar_tts" style="width: 40%;"></div>
+                            </div>
+                            <div class="ddm-telemetry-legend">
+                                <div class="ddm-legend-item"><span class="ddm-legend-dot" style="background:#10B981;"></span> Transcrição (STT)</div>
+                                <div class="ddm-legend-item"><span class="ddm-legend-dot" style="background:#0284C7;"></span> Raciocínio (LLM)</div>
+                                <div class="ddm-legend-item"><span class="ddm-legend-dot" style="background:#8B5CF6;"></span> Voz (TTS)</div>
                             </div>
                         </div>
 
-                        <div class="vapi-telemetry-item">
-                            <div class="vapi-telemetry-header">
-                                <span class="vapi-telemetry-label">Latência de Turno</span>
-                                <span class="vapi-telemetry-value" id="disp_total_latency">~390<span style="font-size:14px; color:#94a3b8;">ms</span></span>
+                        <!-- Latency Card -->
+                        <div class="ddm-telemetry-card vapi-telemetry-item">
+                            <div class="ddm-telemetry-header vapi-telemetry-header">
+                                <span class="ddm-telemetry-label vapi-telemetry-label"><i class="fa fa-bolt text-orange"></i> Latência Total de Turno</span>
+                                <span class="ddm-telemetry-value vapi-telemetry-value" id="disp_total_latency">~390<span class="ddm-telemetry-unit">ms</span></span>
                             </div>
-                            <div class="vapi-progress-bar">
-                                <div class="vapi-seg-stt" id="lat_bar_stt" style="width: 26%;"></div>
-                                <div class="vapi-seg-llm" id="lat_bar_llm" style="width: 39%;"></div>
-                                <div class="vapi-seg-tts" id="lat_bar_tts" style="width: 35%;"></div>
+                            <div class="ddm-progress-bar vapi-progress-bar">
+                                <div class="ddm-seg-stt vapi-seg-stt" id="lat_bar_stt" style="width: 26%;"></div>
+                                <div class="ddm-seg-llm vapi-seg-llm" id="lat_bar_llm" style="width: 39%;"></div>
+                                <div class="ddm-seg-tts vapi-seg-tts" id="lat_bar_tts" style="width: 35%;"></div>
+                            </div>
+                            <div class="ddm-telemetry-legend">
+                                <div class="ddm-legend-item"><span class="ddm-legend-dot" style="background:#10B981;"></span> STT</div>
+                                <div class="ddm-legend-item"><span class="ddm-legend-dot" style="background:#0284C7;"></span> LLM</div>
+                                <div class="ddm-legend-item"><span class="ddm-legend-dot" style="background:#8B5CF6;"></span> TTS</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Model Presets -->
-                    <div class="vapi-presets-bar">
-                        <span class="vapi-preset-label">Model Presets:</span>
-                        <div class="vapi-preset-pill active" data-preset="balanced">Balanced</div>
-                        <div class="vapi-preset-pill" data-preset="high_intelligence">High Intelligence</div>
-                        <div class="vapi-preset-pill" data-preset="ultra_fast">Ultra Fast (<350ms)</div>
-                        <div class="vapi-preset-pill" data-preset="cost_saver">Cost Saver</div>
+                    <!-- Presets Selector -->
+                    <div class="ddm-presets-bar vapi-presets-bar">
+                        <span class="ddm-preset-label"><i class="fa fa-magic text-orange"></i> Presets de Pipeline:</span>
+                        <div class="ddm-preset-pill vapi-preset-pill active" data-preset="balanced">⚡ Equilibrado (Balanced)</div>
+                        <div class="ddm-preset-pill vapi-preset-pill" data-preset="high_intelligence">🧠 Alta Inteligência (GPT-4o)</div>
+                        <div class="ddm-preset-pill vapi-preset-pill" data-preset="ultra_fast">🚀 Ultra-Rápido (&lt;350ms)</div>
+                        <div class="ddm-preset-pill vapi-preset-pill" data-preset="cost_saver">💰 Econômico (Cost Saver)</div>
                     </div>
 
-                    <!-- 3 Pipeline Cards -->
-                    <div class="vapi-cards-grid">
-                        <!-- Card 1: TRANSCRIBER -->
-                        <div class="vapi-card" id="card_transcriber">
-                            <div class="vapi-card-header">
-                                <span class="vapi-card-type"><span class="vapi-dot vapi-dot-stt"></span> TRANSCRIBER</span>
-                                <button type="button" class="vapi-card-edit-btn"><i class="fa fa-pencil"></i></button>
+                    <!-- 3 Core Pipeline Cards -->
+                    <div class="ddm-cards-grid vapi-cards-grid">
+                        
+                        <!-- 1. TRANSCRIBER CARD -->
+                        <div class="ddm-card-pipeline vapi-card" id="card_transcriber">
+                            <div>
+                                <div class="ddm-card-header vapi-card-header">
+                                    <span class="ddm-card-badge-type ddm-badge-type-stt vapi-card-type">
+                                        <i class="fa fa-microphone"></i> TRANSCRIBER
+                                    </span>
+                                    <button type="button" class="ddm-card-edit-btn vapi-card-edit-btn" title="Configurar Transcritor"><i class="fa fa-pencil"></i></button>
+                                </div>
+                                <div class="ddm-card-main-title vapi-card-title" id="disp_stt_title">Deepgram Nova-2</div>
+                                <div class="ddm-card-sub-title vapi-card-provider" id="disp_stt_sub"><i class="fa fa-globe text-green"></i> Deepgram • Brazilian Portuguese</div>
                             </div>
-                            <div class="vapi-card-title" id="disp_stt_title">Deepgram Nova-2</div>
-                            <div class="vapi-card-provider" id="disp_stt_sub"><i class="fa fa-globe text-green"></i> Deepgram • Brazilian Portuguese</div>
-                            <div class="vapi-card-stats">
+                            <div class="ddm-card-stats vapi-card-stats">
                                 <div>
-                                    <div class="vapi-card-stat-label">Latency</div>
-                                    <div class="vapi-card-stat-val" id="disp_stt_lat">120ms</div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Latência</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_stt_lat">120ms</div>
                                 </div>
                                 <div>
-                                    <div class="vapi-card-stat-label">Cost</div>
-                                    <div class="vapi-card-stat-val" id="disp_stt_cost">$0.005/min</div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Custo</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_stt_cost">$0.005/min</div>
                                 </div>
                                 <div>
-                                    <div class="vapi-card-stat-label">Accuracy</div>
-                                    <div class="vapi-card-stat-val" id="disp_stt_acc">98.4%</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Card 2: MODEL -->
-                        <div class="vapi-card" id="card_model">
-                            <div class="vapi-card-header">
-                                <span class="vapi-card-type"><span class="vapi-dot vapi-dot-llm"></span> MODEL</span>
-                                <button type="button" class="vapi-card-edit-btn"><i class="fa fa-pencil"></i></button>
-                            </div>
-                            <div class="vapi-card-title" id="disp_llm_title">Llama 3.3 70B</div>
-                            <div class="vapi-card-provider" id="disp_llm_sub"><i class="fa fa-bolt text-blue"></i> Groq • Versatile</div>
-                            <div class="vapi-card-stats">
-                                <div>
-                                    <div class="vapi-card-stat-label">Latency</div>
-                                    <div class="vapi-card-stat-val" id="disp_llm_lat">180ms</div>
-                                </div>
-                                <div>
-                                    <div class="vapi-card-stat-label">Cost</div>
-                                    <div class="vapi-card-stat-val" id="disp_llm_cost">$0.008/min</div>
-                                </div>
-                                <div>
-                                    <div class="vapi-card-stat-label">Intelligence</div>
-                                    <div class="vapi-card-stat-val" id="disp_llm_intel">92</div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Precisão</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_stt_acc">98.4%</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Card 3: VOICE -->
-                        <div class="vapi-card" id="card_voice">
-                            <div class="vapi-card-header">
-                                <span class="vapi-card-type"><span class="vapi-dot vapi-dot-tts"></span> VOICE</span>
-                                <button type="button" class="vapi-card-edit-btn"><i class="fa fa-pencil"></i></button>
+                        <!-- 2. MODEL CARD -->
+                        <div class="ddm-card-pipeline vapi-card" id="card_model">
+                            <div>
+                                <div class="ddm-card-header vapi-card-header">
+                                    <span class="ddm-card-badge-type ddm-badge-type-llm vapi-card-type">
+                                        <i class="fa fa-brain"></i> MODELO LLM
+                                    </span>
+                                    <button type="button" class="ddm-card-edit-btn vapi-card-edit-btn" title="Configurar Modelo"><i class="fa fa-pencil"></i></button>
+                                </div>
+                                <div class="ddm-card-main-title vapi-card-title" id="disp_llm_title">Llama 3.3 70B</div>
+                                <div class="ddm-card-sub-title vapi-card-provider" id="disp_llm_sub"><i class="fa fa-bolt text-blue"></i> Groq • Versatile & Fast</div>
                             </div>
-                            <div class="vapi-card-title" id="disp_voice_title">Sofia (Natural PT-BR)</div>
-                            <div class="vapi-card-provider" id="disp_voice_sub"><i class="fa fa-volume-up text-purple"></i> Cartesia • Sonic Multilingual</div>
-                            <div class="vapi-card-stats">
+                            <div class="ddm-card-stats vapi-card-stats">
                                 <div>
-                                    <div class="vapi-card-stat-label">Latency</div>
-                                    <div class="vapi-card-stat-val" id="disp_voice_lat">90ms</div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Latência</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_llm_lat">180ms</div>
                                 </div>
                                 <div>
-                                    <div class="vapi-card-stat-label">Cost</div>
-                                    <div class="vapi-card-stat-val" id="disp_voice_cost">$0.020/min</div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Custo</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_llm_cost">$0.008/min</div>
                                 </div>
                                 <div>
-                                    <div class="vapi-card-stat-label">Humanness</div>
-                                    <div class="vapi-card-stat-val" id="disp_voice_hum">96</div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Inteligência</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_llm_intel">92</div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- 3. VOICE CARD -->
+                        <div class="ddm-card-pipeline vapi-card" id="card_voice">
+                            <div>
+                                <div class="ddm-card-header vapi-card-header">
+                                    <span class="ddm-card-badge-type ddm-badge-type-tts vapi-card-type">
+                                        <i class="fa fa-volume-up"></i> VOZ TTS
+                                    </span>
+                                    <button type="button" class="ddm-card-edit-btn vapi-card-edit-btn" title="Configurar Voz"><i class="fa fa-pencil"></i></button>
+                                </div>
+                                <div class="ddm-card-main-title vapi-card-title" id="disp_voice_title">Sofia (Natural PT-BR)</div>
+                                <div class="ddm-card-sub-title vapi-card-provider" id="disp_voice_sub"><i class="fa fa-volume-up text-purple"></i> Cartesia • Sonic Multilingual</div>
+                            </div>
+                            <div class="ddm-card-stats vapi-card-stats">
+                                <div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Latência</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_voice_lat">90ms</div>
+                                </div>
+                                <div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Custo</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_voice_cost">$0.020/min</div>
+                                </div>
+                                <div>
+                                    <div class="ddm-stat-label vapi-card-stat-label">Humanização</div>
+                                    <div class="ddm-stat-val vapi-card-stat-val" id="disp_voice_hum">96</div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- First Message -->
-                    <div class="vapi-section-box">
-                        <div class="vapi-section-header">
-                            <span class="vapi-section-title"><i class="fa fa-commenting-o text-green"></i> First Message</span>
-                            <select id="select_first_message_mode" class="vapi-select-dark">
-                                <option value="assistant_speaks_first">Assistant speaks first (A IA fala primeiro)</option>
-                                <option value="user_speaks_first">User speaks first (A IA aguarda o cliente falar)</option>
-                            </select>
-                        </div>
-                        <textarea name="greeting_message" id="textarea_greeting" class="vapi-textarea-dark" rows="3" placeholder="Olá! Eu sou a Sofia da nossa empresa. Como posso te ajudar hoje?">Olá! Eu sou a Sofia. Como posso te ajudar hoje?</textarea>
-                    </div>
-
-                    <!-- System Prompt -->
-                    <div class="vapi-section-box">
-                        <div class="vapi-section-header">
-                            <span class="vapi-section-title"><i class="fa fa-code text-blue"></i> System Prompt & Instructions</span>
-                            <div style="display: flex; gap: 8px;">
-                                <button type="button" class="vapi-btn" style="padding:4px 10px; font-size:12px;" id="btn_template_sales"><i class="fa fa-bullhorn text-yellow"></i> Template Vendas</button>
-                                <button type="button" class="vapi-btn" style="padding:4px 10px; font-size:12px;" id="btn_template_support"><i class="fa fa-life-ring text-green"></i> Template Suporte/SAC</button>
-                                <button type="button" class="vapi-btn" style="padding:4px 10px; font-size:12px;" id="btn_template_qualify"><i class="fa fa-filter text-purple"></i> Template Qualificação</button>
-                            </div>
-                        </div>
-                        <textarea name="system_prompt" id="textarea_prompt" class="vapi-textarea-dark vapi-prompt-editor" rows="14" required><?=$defaultPrompt?></textarea>
-                        <div style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                            <span style="font-size:11px; color:#64748b; font-weight:700;">VARIÁVEIS DINÂMICAS:</span>
-                            <span class="vapi-badge" style="cursor:pointer;" onclick="insertVar('{{customer_name}}')">{{customer_name}}</span>
-                            <span class="vapi-badge" style="cursor:pointer;" onclick="insertVar('{{phone_number}}')">{{phone_number}}</span>
-                            <span class="vapi-badge" style="cursor:pointer;" onclick="insertVar('{{cpf}}')">{{cpf}}</span>
-                            <span class="vapi-badge" style="cursor:pointer;" onclick="insertVar('{{empresa}}')">{{empresa}}</span>
-                            <span class="vapi-badge" style="cursor:pointer;" onclick="insertVar('{{data_hora}}')">{{data_hora}}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 2: TOOLS -->
-                <div id="view_tools" class="vapi-tab-view" style="display:none;">
-                    <div class="vapi-section-box">
-                        <div class="vapi-section-header">
+                    <div class="ddm-section-box vapi-section-box">
+                        <div class="ddm-section-header vapi-section-header">
                             <div>
-                                <span class="vapi-section-title"><i class="fa fa-wrench text-orange"></i> Tools (Funções & Webhooks da IA)</span>
-                                <div style="font-size:12px; color:#8392a5; margin-top:4px;">Ferramentas que o modelo de IA pode chamar automaticamente durante a conversa.</div>
+                                <span class="ddm-section-title vapi-section-title"><i class="fa fa-comment-o text-orange"></i> Primeira Mensagem (Greeting)</span>
+                                <div class="ddm-section-desc">Defina como o assistente iniciará a interação telefônica com o cliente.</div>
                             </div>
-                            <button type="button" class="vapi-btn vapi-btn-primary" id="btn_add_custom_tool"><i class="fa fa-plus"></i> Criar Custom Tool</button>
+                            <div style="min-width: 280px;">
+                                <select id="select_first_message_mode" class="ddm-select vapi-select-dark">
+                                    <option value="assistant_speaks_first" selected>A IA fala primeiro (Recomendado)</option>
+                                    <option value="user_speaks_first">A IA aguarda o cliente falar</option>
+                                </select>
+                            </div>
                         </div>
+                        <textarea name="greeting_message" id="textarea_greeting" class="ddm-textarea vapi-textarea-dark" rows="3" placeholder="Olá! Eu sou a Sofia da nossa empresa. Como posso te ajudar hoje?">Olá! Eu sou a Sofia da nossa empresa. Como posso te ajudar hoje?</textarea>
+                    </div>
 
-                        <table class="vapi-tools-table" id="tools_table_element">
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;">Status</th>
-                                    <th>Ferramenta</th>
-                                    <th>Tipo</th>
-                                    <th>Descrição / Ação</th>
-                                    <th style="width: 110px; text-align: right;">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tools_table_tbody">
-                                <!-- Rendered dynamically via JS -->
-                            </tbody>
-                        </table>
+                    <!-- System Prompt & Instructions -->
+                    <div class="ddm-section-box vapi-section-box">
+                        <div class="ddm-section-header vapi-section-header">
+                            <div>
+                                <span class="ddm-section-title vapi-section-title"><i class="fa fa-code text-orange"></i> System Prompt & Instruções do Agente</span>
+                                <div class="ddm-section-desc">Instruções completas de comportamento, regras de diálogo e tom de voz da IA.</div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-sm vapi-btn" id="btn_template_sales"><i class="fa fa-bullhorn text-orange"></i> Template Vendas</button>
+                                <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-sm vapi-btn" id="btn_template_support"><i class="fa fa-life-ring text-green"></i> Template Suporte / SAC</button>
+                                <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-sm vapi-btn" id="btn_template_qualify"><i class="fa fa-filter text-purple"></i> Template Qualificação</button>
+                            </div>
+                        </div>
+                        
+                        <textarea name="system_prompt" id="textarea_prompt" class="ddm-textarea ddm-prompt-editor vapi-textarea-dark vapi-prompt-editor" rows="14" required><?=htmlspecialchars($defaultPrompt)?></textarea>
+                        
+                        <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <span style="font-size: 11px; color: var(--ddm-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Variáveis Dinâmicas:</span>
+                            <span class="ddm-var-pill" onclick="insertVar('{{customer_name}}')">{{customer_name}}</span>
+                            <span class="ddm-var-pill" onclick="insertVar('{{phone_number}}')">{{phone_number}}</span>
+                            <span class="ddm-var-pill" onclick="insertVar('{{cpf}}')">{{cpf}}</span>
+                            <span class="ddm-var-pill" onclick="insertVar('{{empresa}}')">{{empresa}}</span>
+                            <span class="ddm-var-pill" onclick="insertVar('{{data_hora}}')">{{data_hora}}</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- TAB 3: ANALYSIS -->
+                <!-- ==================== TAB 2: TOOLS ==================== -->
+                <div id="view_tools" class="vapi-tab-view" style="display:none;">
+                    <div class="ddm-section-box vapi-section-box">
+                        <div class="ddm-section-header vapi-section-header">
+                            <div>
+                                <span class="ddm-section-title vapi-section-title"><i class="fa fa-wrench text-orange"></i> Ferramentas e Webhooks da IA (Function Calling)</span>
+                                <div class="ddm-section-desc">Habilite ações que o modelo pode executar em tempo real (ex: transferir chamada, consultar CRM, validar CPF).</div>
+                            </div>
+                            <button type="button" class="ddm-btn ddm-btn-primary vapi-btn vapi-btn-primary" id="btn_add_custom_tool">
+                                <i class="fa fa-plus"></i> Criar Nova Ferramenta
+                            </button>
+                        </div>
+
+                        <div style="overflow-x:auto; border: 1px solid var(--ddm-border); border-radius: var(--ddm-radius-md);">
+                            <table class="ddm-tools-table vapi-tools-table" id="tools_table_element">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 70px;">Status</th>
+                                        <th>Ferramenta</th>
+                                        <th>Tipo</th>
+                                        <th>Descrição / Ação</th>
+                                        <th style="width: 120px; text-align: right;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tools_table_tbody">
+                                    <!-- Rendered dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== TAB 3: ANALYSIS ==================== -->
                 <div id="view_analysis" class="vapi-tab-view" style="display:none;">
-                    <div class="vapi-section-box">
-                        <div class="vapi-section-header">
-                            <span class="vapi-section-title"><i class="fa fa-pie-chart text-cyan"></i> Structured Summary & Evaluation Schema</span>
+                    <div class="ddm-section-box vapi-section-box">
+                        <div class="ddm-section-header vapi-section-header">
+                            <div>
+                                <span class="ddm-section-title vapi-section-title"><i class="fa fa-pie-chart text-orange"></i> Esquema de Qualificação & Extração Estruturada (JSON)</span>
+                                <div class="ddm-section-desc">Configure os campos e critérios automáticos de pós-atendimento para categorizar cada chamada.</div>
+                            </div>
                         </div>
-                        <p style="color:#94a3b8; font-size:13px;">Defina o esquema de qualificação automática de leads ao término de cada ligação.</p>
-                        <div class="vapi-form-group">
-                            <label class="vapi-form-label">Critérios de Sucesso da Chamada (Structured Output JSON)</label>
-                            <textarea name="analysis_schema_json" class="vapi-textarea-dark vapi-prompt-editor" rows="8">{"qualification": ["Interessado", "Sem interesse", "Caixa Postal", "Pediu para retornar"], "extract_fields": ["nome", "cpf", "horario_preferencial", "resumo_conversa"]}</textarea>
+                        <div class="ddm-form-group">
+                            <label class="ddm-form-label">Critérios de Sucesso e Extração (Structured Output JSON)</label>
+                            <textarea name="analysis_schema_json" class="ddm-textarea ddm-prompt-editor vapi-textarea-dark vapi-prompt-editor" rows="9">{"qualification": ["Interessado", "Sem interesse", "Caixa Postal", "Pediu para retornar"], "extract_fields": ["nome", "cpf", "horario_preferencial", "resumo_conversa"]}</textarea>
+                            <div class="ddm-form-hint">O resultado estruturado é gerado pela IA ao finalizar a ligação e salvo no histórico de chamadas.</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 4: ADVANCED -->
+                <!-- ==================== TAB 4: ADVANCED ==================== -->
                 <div id="view_advanced" class="vapi-tab-view" style="display:none;">
                     
                     <!-- ACCORDION 1: FALLBACKS -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_fallbacks">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-shield text-green" style="margin-right:8px;"></i> Fallbacks</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Backups if the primary voice or transcriber fails</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_fallbacks">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-shield text-green"></i>
+                                <div>
+                                    <div>Fallbacks & Redundância de Provedores</div>
+                                    <div class="ddm-accordion-subtitle">Voz e transcrição de backup em caso de oscilação do provedor primário</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_fallbacks" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                        <div id="adv_sec_fallbacks" class="ddm-accordion-body" style="display:none;">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label"><i class="fa fa-volume-up"></i> Fallback Voice Provider</label>
-                                        <select name="voice_fallback_provider" class="vapi-input-dark">
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label"><i class="fa fa-volume-up"></i> Provedor de Voz de Backup</label>
+                                        <select name="voice_fallback_provider" class="ddm-select vapi-input-dark">
                                             <option value="openai" selected>OpenAI (Nova / Alloy)</option>
                                             <option value="cartesia">Cartesia Sonic</option>
                                             <option value="azure">Azure Speech (Francisca)</option>
@@ -954,9 +405,9 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label"><i class="fa fa-tag"></i> Fallback Voice ID</label>
-                                        <input type="text" name="voice_fallback_id" class="vapi-input-dark" value="nova" placeholder="ex: nova, alloy, EXAVITQu4vr4xnSDxMaL" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label"><i class="fa fa-tag"></i> ID da Voz de Backup</label>
+                                        <input type="text" name="voice_fallback_id" class="ddm-input vapi-input-dark" value="nova" placeholder="ex: nova, alloy, EXAVITQu4vr4xnSDxMaL" />
                                     </div>
                                 </div>
                             </div>
@@ -964,30 +415,33 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                     <!-- ACCORDION 2: WEBHOOK SERVER -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_webhook">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-globe text-blue" style="margin-right:8px;"></i> Webhook Server</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure a webhook server to connect tools and events to your assistant</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_webhook">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-globe text-blue"></i>
+                                <div>
+                                    <div>Servidor Webhook & Integrações</div>
+                                    <div class="ddm-accordion-subtitle">Conecte eventos de início/fim de chamada e ferramentas externas</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_webhook" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
-                            <div class="vapi-form-group">
-                                <label class="vapi-form-label">Server URL (Webhook & Tool Request Endpoint)</label>
-                                <input type="text" name="webhook_url" class="vapi-input-dark" placeholder="https://api.seusistema.com.br/v1/webhook" />
+                        <div id="adv_sec_webhook" class="ddm-accordion-body" style="display:none;">
+                            <div class="ddm-form-group">
+                                <label class="ddm-form-label">URL do Endpoint Webhook</label>
+                                <input type="text" name="webhook_url" class="ddm-input vapi-input-dark" value="" placeholder="https://api.seusistema.com.br/v1/webhook" />
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Timeout (1 sec a 300 sec)</label>
-                                        <input type="number" name="webhook_timeout_seconds" class="vapi-input-dark" min="1" max="300" value="10" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Timeout (1s a 300s)</label>
+                                        <input type="number" name="webhook_timeout_seconds" class="ddm-input vapi-input-dark" min="1" max="300" value="10" />
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">HTTP Custom Headers (JSON)</label>
-                                        <input type="text" name="webhook_headers" class="vapi-input-dark" placeholder='{"Authorization": "Bearer token", "X-Custom": "Val"}' />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Custom HTTP Headers (JSON)</label>
+                                        <input type="text" name="webhook_headers" class="ddm-input vapi-input-dark" value="" placeholder='{"Authorization": "Bearer token", "X-Custom": "Val"}' />
                                     </div>
                                 </div>
                             </div>
@@ -995,35 +449,38 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                     <!-- ACCORDION 3: START SPEAKING PLAN -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_start_speaking">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-play-circle text-info" style="margin-right:8px;"></i> Start Speaking Plan</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Plan for when the assistant should start talking</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_start_speaking">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-play-circle text-info"></i>
+                                <div>
+                                    <div>Start Speaking Plan (Início da Fala)</div>
+                                    <div class="ddm-accordion-subtitle">Sensibilidade e tempo de espera para a IA começar a responder</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_start_speaking" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                        <div id="adv_sec_start_speaking" class="ddm-accordion-body" style="display:none;">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
+                                    <div class="ddm-form-group">
                                         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                                            <label class="vapi-form-label" style="margin-bottom:0;">Wait Seconds (0s a 5s)</label>
-                                            <span class="vapi-badge">0.4s</span>
+                                            <label class="ddm-form-label" style="margin-bottom:0;">Tempo de Espera (Wait Seconds)</label>
+                                            <span class="ddm-badge ddm-badge-orange">0.4s</span>
                                         </div>
-                                        <input type="range" name="start_speaking_wait_seconds" class="vapi-range-slider" min="0.0" max="5.0" step="0.1" value="0.4" />
-                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">How long the assistant waits before speaking.</div>
+                                        <input type="range" name="start_speaking_wait_seconds" class="ddm-range-slider vapi-range-slider" min="0.0" max="5.0" step="0.1" value="0.4" />
+                                        <div class="ddm-form-hint">Tempo que a IA aguarda antes de iniciar a resposta após o cliente parar de falar.</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-switch-row" style="border-top:none; padding-top:0;">
-                                        <div class="vapi-switch-info">
-                                            <div class="vapi-switch-title">Smart Endpointing</div>
-                                            <div class="vapi-switch-desc">Enable for more accurate speech endpoint detection.</div>
+                                    <div class="ddm-switch-row" style="border-top:none; padding-top:0;">
+                                        <div class="ddm-switch-info">
+                                            <div class="ddm-switch-title">Smart Endpointing</div>
+                                            <div class="ddm-switch-desc">Detecção inteligente de pausas naturais na fala do cliente.</div>
                                         </div>
-                                        <label class="vapi-switch">
+                                        <label class="ddm-switch vapi-switch">
                                             <input type="checkbox" name="smart_endpointing" value="Y" checked />
-                                            <span class="vapi-slider"></span>
+                                            <span class="ddm-slider vapi-slider"></span>
                                         </label>
                                     </div>
                                 </div>
@@ -1032,35 +489,38 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                     <!-- ACCORDION 4: STOP SPEAKING PLAN -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_stop_speaking">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-stop-circle text-orange" style="margin-right:8px;"></i> Stop Speaking Plan</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Plan for when the assistant should stop talking (Interruption / Barge-in)</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_stop_speaking">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-stop-circle text-orange"></i>
+                                <div>
+                                    <div>Stop Speaking Plan (Interrupção / Barge-in)</div>
+                                    <div class="ddm-accordion-subtitle">Regras de quando o assistente deve parar de falar ao ser interrompido</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_stop_speaking" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                        <div id="adv_sec_stop_speaking" class="ddm-accordion-body" style="display:none;">
                             <div class="row">
                                 <div class="col-md-4">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Number of Words (0 a 10)</label>
-                                        <input type="number" name="stop_speaking_num_words" class="vapi-input-dark" min="0" max="10" value="2" />
-                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">Number of words customer has to say before assistant stops.</div>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Número de Palavras (0 a 10)</label>
+                                        <input type="number" name="stop_speaking_num_words" class="ddm-input vapi-input-dark" min="0" max="10" value="2" />
+                                        <div class="ddm-form-hint">Quantidade de palavras faladas pelo cliente para acionar a interrupção.</div>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Voice Seconds (0s a 0.5s)</label>
-                                        <input type="number" name="stop_speaking_voice_seconds" class="vapi-input-dark" step="0.05" min="0.0" max="0.5" value="0.20" />
-                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">Seconds customer has to speak before assistant stops.</div>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Segundos de Voz (0s a 0.5s)</label>
+                                        <input type="number" name="stop_speaking_voice_seconds" class="ddm-input vapi-input-dark" step="0.05" min="0.0" max="0.5" value="0.2" />
+                                        <div class="ddm-form-hint">Duração mínima de áudio antes de pausar a fala da IA.</div>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Back Off Seconds (0s a 10s)</label>
-                                        <input type="number" name="stop_speaking_backoff_seconds" class="vapi-input-dark" step="0.1" min="0.0" max="10.0" value="1.0" />
-                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">Wait time before assistant speaks again after interruption.</div>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Backoff Seconds (0s a 10s)</label>
+                                        <input type="number" name="stop_speaking_backoff_seconds" class="ddm-input vapi-input-dark" step="0.1" min="0.0" max="10.0" value="1.0" />
+                                        <div class="ddm-form-hint">Tempo de espera antes da IA retomar a fala.</div>
                                     </div>
                                 </div>
                             </div>
@@ -1068,80 +528,86 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                     <!-- ACCORDION 5: VOICEMAIL DETECTION -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_voicemail">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-envelope-o text-yellow" style="margin-right:8px;"></i> Voicemail Detection</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure how the assistant detects and handles voicemail / answering machines</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_voicemail">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-envelope-o text-yellow"></i>
+                                <div>
+                                    <div>Detecção de Caixa Postal (Voicemail / AMD)</div>
+                                    <div class="ddm-accordion-subtitle">Identificação de secretária eletrônica e comportamento automático</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_voicemail" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                        <div id="adv_sec_voicemail" class="ddm-accordion-body" style="display:none;">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Voicemail Detection Provider</label>
-                                        <select name="voicemail_detection_provider" class="vapi-input-dark">
-                                            <option value="vapi" selected>Vapi AI Engine (Recommended)</option>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Provedor de Detecção</label>
+                                        <select name="voicemail_detection_provider" class="ddm-select vapi-input-dark">
+                                            <option value="vapi" selected>Dialog DDM AI Engine (Recomendado)</option>
                                             <option value="openai">OpenAI Fast Classifier</option>
-                                            <option value="twilio_amd">SIP / Asterisk AMD</option>
+                                            <option value="twilio_amd">Asterisk / SIP AMD</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Ação ao Detectar Caixa Postal</label>
-                                        <select name="hangup_on_voicemail" class="vapi-input-dark">
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Ação ao Detectar Caixa Postal</label>
+                                        <select name="hangup_on_voicemail" class="ddm-select vapi-input-dark">
                                             <option value="Y" selected>Desligar Imediatamente (Hangup)</option>
                                             <option value="N">Deixar Recado de Caixa Postal</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
-                            <div class="vapi-form-group">
-                                <label class="vapi-form-label">Voicemail Message (Recado se for para caixa postal)</label>
-                                <textarea name="voicemail_message" class="vapi-textarea-dark" rows="2" placeholder="Olá, tentei entrar em contato sobre a sua solicitação. Retornarei em breve..."></textarea>
+                            <div class="ddm-form-group">
+                                <label class="ddm-form-label">Mensagem de Caixa Postal (Recado)</label>
+                                <textarea name="voicemail_message" class="ddm-textarea vapi-textarea-dark" rows="2" placeholder="Olá, tentei entrar em contato sobre a sua solicitação. Retornarei em breve..."></textarea>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ACCORDION 6: CALL TIMEOUT SETTINGS -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_timeout">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-clock-o text-cyan" style="margin-right:8px;"></i> Call Timeout Settings</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure when the assistant should end a call based on silence or duration</div>
+                    <!-- ACCORDION 6: TIMEOUT SETTINGS -->
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_timeout">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-clock-o text-cyan"></i>
+                                <div>
+                                    <div>Timeouts e Duração da Chamada</div>
+                                    <div class="ddm-accordion-subtitle">Limites de inatividade, silêncio e tempo máximo de conversação</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_timeout" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                        <div id="adv_sec_timeout" class="ddm-accordion-body" style="display:none;">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Silence Timeout (5s a 3600s)</label>
-                                        <input type="number" name="silence_timeout_ms" class="vapi-input-dark" value="500" />
-                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">How long to wait before a call is automatically ended due to inactivity.</div>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Silence Timeout (5s a 3600s)</label>
+                                        <input type="number" name="silence_timeout_ms" class="ddm-input vapi-input-dark" value="500" />
+                                        <div class="ddm-form-hint">Tempo máximo de silêncio contínuo antes de encerrar.</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Maximum Duration (10s a 43200s)</label>
-                                        <input type="number" name="max_duration_seconds" class="vapi-input-dark" value="600" />
-                                        <div style="font-size:11px; color:#64748b; margin-top:4px;">The maximum number of seconds a call will last.</div>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Duração Máxima da Chamada (Segundos)</label>
+                                        <input type="number" name="max_duration_seconds" class="ddm-input vapi-input-dark" value="600" />
+                                        <div class="ddm-form-hint">Limite total de duração da chamada telefônica.</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Ramal / Fila de Transferência Humana</label>
-                                        <input type="text" name="transfer_phone_or_queue" class="vapi-input-dark" placeholder="Ex: 8300 ou ramal SIP" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Ramal / Fila de Transferência Humana Padrão</label>
+                                        <input type="text" name="transfer_phone_or_queue" class="ddm-input vapi-input-dark" value="" placeholder="Ex: 8300 ou ramal SIP" />
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Sensibilidade de Interrupção (Barge-in)</label>
-                                        <input type="range" name="interruption_sensitivity" class="vapi-range-slider" min="0.1" max="1.0" step="0.05" value="0.8" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Sensibilidade de Interrupção</label>
+                                        <input type="range" name="interruption_sensitivity" class="ddm-range-slider vapi-range-slider" min="0.1" max="1.0" step="0.05" value="0.8" />
                                     </div>
                                 </div>
                             </div>
@@ -1149,36 +615,39 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                     <!-- ACCORDION 7: KEYPAD INPUT (DTMF) -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_keypad">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-th text-purple" style="margin-right:8px;"></i> Keypad Input Settings (DTMF)</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Configure whether a user can input digits via the keypad, and when to process</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_keypad">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-th text-purple"></i>
+                                <div>
+                                    <div>Entrada por Teclado Numérico (DTMF)</div>
+                                    <div class="ddm-accordion-subtitle">Permitir que o cliente digite números no teclado do telefone</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_keypad" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
-                            <div class="vapi-switch-row" style="border-top:none; padding-top:0;">
-                                <div class="vapi-switch-info">
-                                    <div class="vapi-switch-title">Enable Keypad Input</div>
-                                    <div class="vapi-switch-desc">Accept user input via the keypad during call.</div>
+                        <div id="adv_sec_keypad" class="ddm-accordion-body" style="display:none;">
+                            <div class="ddm-switch-row" style="border-top:none; padding-top:0;">
+                                <div class="ddm-switch-info">
+                                    <div class="ddm-switch-title">Habilitar Entrada DTMF (Teclado)</div>
+                                    <div class="ddm-switch-desc">Aceita digitação de números durante a chamada telefônica.</div>
                                 </div>
-                                <label class="vapi-switch">
+                                <label class="ddm-switch vapi-switch">
                                     <input type="checkbox" name="enable_keypad_input" value="Y" />
-                                    <span class="vapi-slider"></span>
+                                    <span class="ddm-slider vapi-slider"></span>
                                 </label>
                             </div>
                             <div class="row" style="margin-top:12px;">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Timeout (Seconds)</label>
-                                        <input type="number" name="keypad_timeout_seconds" class="vapi-input-dark" min="0" max="10" value="5" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Timeout de Digitação (Segundos)</label>
+                                        <input type="number" name="keypad_timeout_seconds" class="ddm-input vapi-input-dark" min="0" max="10" value="5" />
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Delimiter (# ou *)</label>
-                                        <input type="text" name="keypad_delimiter" class="vapi-input-dark" value="#" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Caractere Delimitador (# ou *)</label>
+                                        <input type="text" name="keypad_delimiter" class="ddm-input vapi-input-dark" value="#" />
                                     </div>
                                 </div>
                             </div>
@@ -1186,30 +655,33 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                     <!-- ACCORDION 8: RECORDING & ARTIFACTS -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_recording">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-file-audio-o text-pink" style="margin-right:8px;"></i> Recording & Artifacts</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Call recording, transcript, and artifact storing</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_recording">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-file-audio-o text-pink"></i>
+                                <div>
+                                    <div>Gravação, Áudio e Status</div>
+                                    <div class="ddm-accordion-subtitle">Formato de gravação estereofônica e disponibilidade do agente</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_recording" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
+                        <div id="adv_sec_recording" class="ddm-accordion-body" style="display:none;">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Audio Recording Format</label>
-                                        <select name="recording_audio_format" class="vapi-input-dark">
-                                            <option value="wav" selected>WAV (Uncompressed PCM - High Quality)</option>
-                                            <option value="mp3">MP3 (Compressed)</option>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Formato do Áudio Gravado</label>
+                                        <select name="recording_audio_format" class="ddm-select vapi-input-dark">
+                                            <option value="wav" selected>WAV (PCM sem compressão - Alta Qualidade)</option>
+                                            <option value="mp3">MP3 (Compactado)</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Status do Agente</label>
-                                        <select name="status" id="select_agent_status" class="vapi-select-dark" style="width:100%;">
-                                            <option value="Y" selected>Ativo (Pronto para discar)</option>
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Status Operacional do Agente</label>
+                                        <select name="status" id="select_agent_status" class="ddm-select vapi-select-dark">
+                                            <option value="Y" selected>Ativo (Pronto para discar / receber)</option>
                                             <option value="N">Inativo</option>
                                         </select>
                                     </div>
@@ -1219,41 +691,44 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                     <!-- ACCORDION 9: MESSAGING & IDLE -->
-                    <div class="vapi-section-box" style="margin-bottom: 16px;">
-                        <div class="vapi-accordion-header" style="border-top:none; padding-top:0;" data-target="#adv_sec_messaging">
-                            <div>
-                                <span style="font-size: 15px; font-weight: 700; color: #ffffff;"><i class="fa fa-comments-o text-teal" style="margin-right:8px;"></i> Messaging & Idle Handling</span>
-                                <div style="font-size: 11px; color: #64748b; margin-top:2px;">Message configuration for end-call phrases and customer inactivity</div>
+                    <div class="ddm-accordion-item vapi-section-box">
+                        <div class="ddm-accordion-header vapi-accordion-header" data-target="#adv_sec_messaging">
+                            <div class="ddm-accordion-title">
+                                <i class="fa fa-comments-o text-teal"></i>
+                                <div>
+                                    <div>Mensagens de Inatividade & Finalização</div>
+                                    <div class="ddm-accordion-subtitle">Frases de encerramento e alertas quando o cliente ficar em silêncio</div>
+                                </div>
                             </div>
                             <i class="fa fa-chevron-down text-muted"></i>
                         </div>
-                        <div id="adv_sec_messaging" style="display:none; padding-top:16px; border-top: 1px solid rgba(255,255,255,0.06); margin-top:12px;">
-                            <div class="vapi-form-group">
-                                <label class="vapi-form-label">End Call Message</label>
-                                <input type="text" name="end_call_message" class="vapi-input-dark" placeholder="Message the assistant will say if the call is ended." />
+                        <div id="adv_sec_messaging" class="ddm-accordion-body" style="display:none;">
+                            <div class="ddm-form-group">
+                                <label class="ddm-form-label">Mensagem de Encerramento (End Call Message)</label>
+                                <input type="text" name="end_call_message" class="ddm-input vapi-input-dark" value="" placeholder="Mensagem falada pelo assistente ao encerrar." />
                             </div>
-                            <div class="vapi-form-group">
-                                <label class="vapi-form-label">End Call Phrases (Separadas por vírgula)</label>
-                                <input type="text" name="end_call_phrases" class="vapi-input-dark" placeholder="tenha um bom dia, tchau tchau, até logo, agradeço o contato" />
-                                <div style="font-size:11px; color:#64748b; margin-top:4px;">Phrases that hang up the call when spoken by the assistant.</div>
+                            <div class="ddm-form-group">
+                                <label class="ddm-form-label">Frases de Gatilho para Desligamento (Separadas por vírgula)</label>
+                                <input type="text" name="end_call_phrases" class="ddm-input vapi-input-dark" value="" placeholder="tenha um bom dia, tchau tchau, até logo, agradeço o contato" />
+                                <div class="ddm-form-hint">Quando a IA falar uma dessas frases, a chamada será encerrada imediatamente.</div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Idle Messages (Quando o cliente não responde)</label>
-                                        <input type="text" name="idle_messages" class="vapi-input-dark" placeholder="Você ainda está aí?, Olá, pode me ouvir?" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Mensagens de Inatividade (Quando o cliente não responder)</label>
+                                        <input type="text" name="idle_messages" class="ddm-input vapi-input-dark" value="" placeholder="Você ainda está aí?, Olá, pode me ouvir?" />
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Max Idle Messages</label>
-                                        <input type="number" name="max_idle_messages" class="vapi-input-dark" min="1" max="10" value="3" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Máximo de Mensagens</label>
+                                        <input type="number" name="max_idle_messages" class="ddm-input vapi-input-dark" min="1" max="10" value="3" />
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="vapi-form-group">
-                                        <label class="vapi-form-label">Idle Timeout (s)</label>
-                                        <input type="number" name="idle_timeout_seconds" class="vapi-input-dark" min="5" max="60" value="7" />
+                                    <div class="ddm-form-group">
+                                        <label class="ddm-form-label">Timeout de Inatividade (s)</label>
+                                        <input type="number" name="idle_timeout_seconds" class="ddm-input vapi-input-dark" min="5" max="60" value="7" />
                                     </div>
                                 </div>
                             </div>
@@ -1261,6 +736,7 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
                     </div>
 
                 </div>
+
             </div>
         </form>
     </aside>
@@ -1269,421 +745,436 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
 <!-- ==================== MODALS / DRAWERS ==================== -->
 
 <!-- 1. TRANSCRIBER SETTINGS DRAWER -->
-<div class="vapi-modal-backdrop" id="modal_transcriber">
-    <div class="vapi-drawer">
-        <div class="vapi-drawer-header">
-            <span class="vapi-drawer-title"><i class="fa fa-microphone text-green"></i> Transcriber Settings</span>
-            <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
-        </div>
-        <div class="vapi-drawer-subtitle">
-            Configure the speech-to-text transcriber that converts caller speech into text for the LLM.
-        </div>
-
-        <div class="vapi-form-group">
-            <label class="vapi-form-label">Model / Provider</label>
-            <select id="modal_stt_provider_select" class="vapi-input-dark">
-                <option value="deepgram|nova-2" selected>Deepgram Nova-2 (120ms • $0.005/min)</option>
-                <option value="groq|whisper-large-v3-turbo">Groq Whisper Turbo (90ms • $0.003/min)</option>
-                <option value="elevenlabs|scribe_v1">ElevenLabs Scribe v1 (450ms • $0.010/min)</option>
-                <option value="openai|whisper-1">OpenAI Whisper (950ms • $0.012/min)</option>
-                <option value="azure|azure-default">Azure Speech (650ms • $0.025/min)</option>
-            </select>
-        </div>
-
-        <div class="vapi-form-group">
-            <label class="vapi-form-label"><i class="fa fa-globe"></i> Language</label>
-            <select id="modal_stt_language_select" class="vapi-input-dark">
-                <option value="pt-BR" selected>Brazilian Portuguese (pt-BR)</option>
-                <option value="en-US">English (en-US)</option>
-                <option value="es-ES">Spanish (es-ES)</option>
-            </select>
-        </div>
-
-        <div class="vapi-switch-row">
-            <div class="vapi-switch-info">
-                <div class="vapi-switch-title">Intelligent Turn-Taking</div>
-                <div class="vapi-switch-desc">Detects when the caller has finished speaking.</div>
+<div class="ddm-drawer-backdrop vapi-modal-backdrop" id="modal_transcriber">
+    <div class="ddm-drawer vapi-drawer">
+        <div>
+            <div class="ddm-drawer-header vapi-drawer-header">
+                <span class="ddm-drawer-title vapi-drawer-title"><i class="fa fa-microphone text-green"></i> Configurações do Transcritor</span>
+                <button type="button" class="ddm-drawer-close btn-close-drawer"><i class="fa fa-times"></i></button>
             </div>
-            <label class="vapi-switch">
-                <input type="checkbox" id="modal_turn_taking" checked />
-                <span class="vapi-slider"></span>
-            </label>
-        </div>
-
-        <div class="vapi-switch-row">
-            <div class="vapi-switch-info">
-                <div class="vapi-switch-title">Background Denoising</div>
-                <div class="vapi-switch-desc">Filter background noise while the user is talking.</div>
-            </div>
-            <label class="vapi-switch">
-                <input type="checkbox" id="modal_denoising" checked />
-                <span class="vapi-slider"></span>
-            </label>
-        </div>
-
-        <!-- Collapsible Advanced -->
-        <div class="vapi-accordion-header" id="adv_stt_toggle">
-            <span>Advanced</span>
-            <i class="fa fa-chevron-down"></i>
-        </div>
-        <div id="adv_stt_body" style="padding-top: 15px;">
-            <div class="vapi-form-group">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <label class="vapi-form-label" style="margin-bottom:0;"><i class="fa fa-clock-o"></i> Silence Timeout</label>
-                    <span class="vapi-badge" id="disp_silence_timeout_badge">500 ms</span>
-                </div>
-                <div style="font-size:11px; color:#64748b; margin-bottom:8px;">How much silence this transcriber needs before it closes a segment of speech.</div>
-                <input type="range" id="modal_silence_slider" class="vapi-range-slider" min="100" max="3000" step="50" value="500" />
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                    <span>100ms</span>
-                    <span>3000ms</span>
-                </div>
+            <div class="ddm-drawer-subtitle vapi-drawer-subtitle">
+                Configure o modelo de reconhecimento de fala (STT) que converte o áudio do cliente em texto com ultra-baixa latência.
             </div>
 
-            <div class="vapi-form-group">
-                <label class="vapi-form-label"><i class="fa fa-shield"></i> Transcriber Fallback Provider</label>
-                <select id="modal_stt_fallback_select" class="vapi-input-dark">
-                    <option value="openai" selected>OpenAI Whisper (Auto-Fallback)</option>
-                    <option value="groq">Groq Whisper Turbo</option>
-                    <option value="deepgram">Deepgram Nova-2</option>
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label">Modelo / Provedor STT</label>
+                <select id="modal_stt_provider_select" class="ddm-select vapi-input-dark">
+                    <option value="deepgram|nova-2">Deepgram Nova-2 (120ms • $0.005/min)</option>
+                    <option value="groq|whisper-large-v3-turbo">Groq Whisper Turbo (90ms • $0.003/min)</option>
+                    <option value="elevenlabs|scribe_v1">ElevenLabs Scribe v1 (450ms • $0.010/min)</option>
+                    <option value="openai|whisper-1">OpenAI Whisper (950ms • $0.012/min)</option>
+                    <option value="azure|azure-default">Azure Speech (650ms • $0.025/min)</option>
                 </select>
             </div>
+
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label"><i class="fa fa-globe"></i> Idioma Principal</label>
+                <select id="modal_stt_language_select" class="ddm-select vapi-input-dark">
+                    <option value="pt-BR">Português do Brasil (pt-BR)</option>
+                    <option value="en-US">English (en-US)</option>
+                    <option value="es-ES">Español (es-ES)</option>
+                </select>
+            </div>
+
+            <div class="ddm-switch-row vapi-switch-row">
+                <div class="ddm-switch-info vapi-switch-info">
+                    <div class="ddm-switch-title vapi-switch-title">Intelligent Turn-Taking</div>
+                    <div class="ddm-switch-desc vapi-switch-desc">Detecta com precisão quando o cliente concluiu a fala.</div>
+                </div>
+                <label class="ddm-switch vapi-switch">
+                    <input type="checkbox" id="modal_turn_taking" checked />
+                    <span class="ddm-slider vapi-slider"></span>
+                </label>
+            </div>
+
+            <div class="ddm-switch-row vapi-switch-row">
+                <div class="ddm-switch-info vapi-switch-info">
+                    <div class="ddm-switch-title vapi-switch-title">Redução de Ruído de Fundo (Denoising)</div>
+                    <div class="ddm-switch-desc vapi-switch-desc">Filtra ruídos de fundo da linha do cliente.</div>
+                </div>
+                <label class="ddm-switch vapi-switch">
+                    <input type="checkbox" id="modal_denoising" checked />
+                    <span class="ddm-slider vapi-slider"></span>
+                </label>
+            </div>
+
+            <!-- Collapsible Advanced -->
+            <div class="ddm-accordion-header vapi-accordion-header" id="adv_stt_toggle" style="margin-top:12px; padding:10px 0;">
+                <span style="font-weight:700; font-size:13px; color:var(--ddm-text-primary);">Configurações Avançadas</span>
+                <i class="fa fa-chevron-down"></i>
+            </div>
+            <div id="adv_stt_body" style="padding-top: 10px;">
+                <div class="ddm-form-group vapi-form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;"><i class="fa fa-clock-o"></i> Timeout de Silêncio</label>
+                        <span class="ddm-badge ddm-badge-orange" id="disp_silence_timeout_badge">500 ms</span>
+                    </div>
+                    <div class="ddm-form-hint">Tempo de silêncio necessário para fechar o bloco de transcrição.</div>
+                    <input type="range" id="modal_silence_slider" class="ddm-range-slider vapi-range-slider" min="100" max="3000" step="50" value="500" />
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--ddm-text-muted); margin-top:4px;">
+                        <span>100ms (Mais Rápido)</span>
+                        <span>3000ms</span>
+                    </div>
+                </div>
+
+                <div class="ddm-form-group vapi-form-group">
+                    <label class="ddm-form-label vapi-form-label"><i class="fa fa-shield"></i> Provedor STT de Fallback</label>
+                    <select id="modal_stt_fallback_select" class="ddm-select vapi-input-dark">
+                        <option value="openai">OpenAI Whisper (Auto-Fallback)</option>
+                        <option value="groq">Groq Whisper Turbo</option>
+                        <option value="deepgram">Deepgram Nova-2</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
-        <div style="margin-top: 30px;">
-            <button type="button" class="vapi-btn vapi-btn-primary btn-close-drawer" style="width:100%; justify-content:center;">Apply Transcriber Settings</button>
+        <div style="margin-top: 24px;">
+            <button type="button" class="ddm-btn ddm-btn-primary btn-close-drawer" style="width:100%; justify-content:center;">
+                Aplicar Configurações de Transcrição
+            </button>
         </div>
     </div>
 </div>
 
 <!-- 2. MODEL SETTINGS DRAWER -->
-<div class="vapi-modal-backdrop" id="modal_model">
-    <div class="vapi-drawer">
-        <div class="vapi-drawer-header">
-            <span class="vapi-drawer-title"><i class="fa fa-cogs text-blue"></i> Model Settings</span>
-            <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
-        </div>
-        <div class="vapi-drawer-subtitle">
-            Configure the LLM model that powers your assistant's reasoning and conversation abilities.
-        </div>
-
-        <div class="vapi-form-group">
-            <label class="vapi-form-label">Model <i class="fa fa-info-circle text-muted"></i></label>
-            <select id="modal_llm_model_select" class="vapi-input-dark">
-                <optgroup label="OpenAI (Vapi Frontier & Next-Gen Clusters)">
-                    <option value="openai|gpt-4.1">GPT-4.1 (690ms • $0.023/min • 20 Intel)</option>
-                    <option value="openai|gpt-5.6-sol">GPT-5.6 Sol (1060ms • $0.041/min • 42 Intel)</option>
-                    <option value="openai|gpt-5.6-terra">GPT-5.6 Terra (870ms • $0.021/min • 35 Intel)</option>
-                    <option value="openai|gpt-5.6-luna">GPT-5.6 Luna (770ms • $0.010/min • 27 Intel)</option>
-                    <option value="openai|gpt-5.5">GPT-5.5 (1250ms • $0.052/min • 36 Intel)</option>
-                    <option value="openai|chatgpt-4o-latest">GPT Instant (latest) (700ms • $0.052/min • 99 Intel)</option>
-                    <option value="openai|gpt-5.4">GPT-5.4 (800ms • $0.026/min • 28 Intel)</option>
-                    <option value="openai|gpt-5.4-mini">GPT-5.4 Mini (720ms • $0.010/min • 17 Intel)</option>
-                    <option value="openai|gpt-5.4-nano">GPT-5.4 Nano (1160ms • $0.010/min • 18 Intel)</option>
-                    <option value="openai|gpt-5.2">GPT-5.2 (830ms • $0.019/min • 27 Intel)</option>
-                    <option value="openai|gpt-5.1">GPT-5.1 (810ms • $0.013/min • 21 Intel)</option>
-                    <option value="openai|gpt-5">GPT-5 (840ms • $0.013/min • 17 Intel)</option>
-                    <option value="openai|gpt-5-mini">GPT-5 Mini (820ms • $0.010/min • 14 Intel)</option>
-                    <option value="openai|gpt-5-nano">GPT-5 Nano (710ms • $0.010/min • 8 Intel)</option>
-                    <option value="openai|gpt-4.1-mini">GPT-4.1 Mini (600ms • $0.010/min • 15 Intel)</option>
-                    <option value="openai|gpt-4.1-nano">GPT-4.1 Nano (450ms • $0.010/min • 10 Intel)</option>
-                    <option value="openai|gpt-4o-mini-cluster">GPT-4o Mini Cluster (560ms • $0.010/min • 7 Intel)</option>
-                    <option value="openai|gpt-4o-cluster">GPT-4o Cluster (670ms • $0.045/min • 11 Intel)</option>
-                    <option value="openai|gpt-realtime-cluster">GPT Realtime Cluster (450ms • $0.290/min • 95 Intel)</option>
-                    <option value="openai|gpt-realtime-mini">GPT Realtime Mini (400ms • $0.060/min • 90 Intel)</option>
-                    <option value="openai|gpt-o3-cluster">GPT o3 Cluster (1000ms • $0.036/min • 31 Intel)</option>
-                    <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (320ms • $0.004/min • 88 Intel)</option>
-                    <option value="openai|gpt-4o">OpenAI GPT-4o (620ms • $0.022/min • 99 Intel)</option>
-                    <option value="openai|o3-mini">OpenAI o3-mini (550ms • $0.012/min • 97 Intel - Reasoning)</option>
-                    <option value="openai|o1-mini">OpenAI o1-mini (750ms • $0.015/min • 95 Intel - Reasoning)</option>
-                    <option value="openai|o1">OpenAI o1 (1200ms • $0.080/min • 100 Intel - Deep Reasoning)</option>
-                </optgroup>
-                <optgroup label="Groq (Ultra-Rápido)">
-                    <option value="groq|llama-3.3-70b-versatile" selected>Groq Llama 3.3 70B (180ms • $0.008/min • 92 Intel)</option>
-                    <option value="groq|llama-3.1-8b-instant">Groq Llama 3.1 8B Instant (80ms • $0.002/min • 75 Intel)</option>
-                </optgroup>
-                <optgroup label="Anthropic & DeepSeek">
-                    <option value="anthropic|claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (750ms • $0.030/min • 98 Intel)</option>
-                    <option value="deepseek|deepseek-chat">DeepSeek V3 (280ms • $0.003/min • 90 Intel)</option>
-                </optgroup>
-            </select>
-        </div>
-
-        <div class="vapi-form-group">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <label class="vapi-form-label" style="margin-bottom:0;"><i class="fa fa-thermometer-half"></i> Temperature</label>
-                <span class="vapi-badge" id="disp_temp_badge">0.7</span>
+<div class="ddm-drawer-backdrop vapi-modal-backdrop" id="modal_model">
+    <div class="ddm-drawer vapi-drawer">
+        <div>
+            <div class="ddm-drawer-header vapi-drawer-header">
+                <span class="ddm-drawer-title vapi-drawer-title"><i class="fa fa-brain text-blue"></i> Configurações do Modelo LLM</span>
+                <button type="button" class="ddm-drawer-close btn-close-drawer"><i class="fa fa-times"></i></button>
             </div>
-            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Controls randomness. Lower values are more deterministic, higher values more creative.</div>
-            <input type="range" id="modal_temp_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.7" />
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                <span>Precise</span>
-                <span>Creative</span>
-            </div>
-        </div>
-
-        <!-- Collapsible Advanced -->
-        <div class="vapi-accordion-header" id="adv_llm_toggle">
-            <span>Advanced</span>
-            <i class="fa fa-chevron-down"></i>
-        </div>
-        <div id="adv_llm_body" style="padding-top: 15px;">
-            <div class="vapi-form-group">
-                <label class="vapi-form-label"><i class="fa fa-comment"></i> Max Tokens</label>
-                <div style="font-size:11px; color:#64748b; margin-bottom:6px;">Max number of tokens the assistant can generate in each turn of the conversation.</div>
-                <input type="number" id="modal_max_tokens_input" class="vapi-input-dark" value="250" />
+            <div class="ddm-drawer-subtitle vapi-drawer-subtitle">
+                Selecione o modelo de linguagem generativa que processa o raciocínio, lógica e contexto do assistente.
             </div>
 
-            <div class="vapi-form-group">
-                <label class="vapi-form-label"><i class="fa fa-database"></i> Prompt Cache Retention</label>
-                <select id="modal_cache_select" class="vapi-input-dark">
-                    <option value="in_memory" selected>In-Memory Prompt Cache (Fastest)</option>
-                    <option value="disabled">Disabled</option>
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label">Modelo LLM</label>
+                <select id="modal_llm_model_select" class="ddm-select vapi-input-dark">
+                    <optgroup label="OpenAI (Vapi Frontier & Next-Gen Clusters)">
+                        <option value="openai|gpt-4.1">GPT-4.1 (690ms • $0.023/min • 20 Intel)</option>
+                        <option value="openai|gpt-5.6-sol">GPT-5.6 Sol (1060ms • $0.041/min • 42 Intel)</option>
+                        <option value="openai|gpt-5.6-terra">GPT-5.6 Terra (870ms • $0.021/min • 35 Intel)</option>
+                        <option value="openai|gpt-5.6-luna">GPT-5.6 Luna (770ms • $0.010/min • 27 Intel)</option>
+                        <option value="openai|gpt-5.5">GPT-5.5 (1250ms • $0.052/min • 36 Intel)</option>
+                        <option value="openai|chatgpt-4o-latest">GPT Instant (latest) (700ms • $0.052/min • 99 Intel)</option>
+                        <option value="openai|gpt-5.4">GPT-5.4 (800ms • $0.026/min • 28 Intel)</option>
+                        <option value="openai|gpt-5.4-mini">GPT-5.4 Mini (720ms • $0.010/min • 17 Intel)</option>
+                        <option value="openai|gpt-5.4-nano">GPT-5.4 Nano (1160ms • $0.010/min • 18 Intel)</option>
+                        <option value="openai|gpt-5.2">GPT-5.2 (830ms • $0.019/min • 27 Intel)</option>
+                        <option value="openai|gpt-5.1">GPT-5.1 (810ms • $0.013/min • 21 Intel)</option>
+                        <option value="openai|gpt-5">GPT-5 (840ms • $0.013/min • 17 Intel)</option>
+                        <option value="openai|gpt-5-mini">GPT-5 Mini (820ms • $0.010/min • 14 Intel)</option>
+                        <option value="openai|gpt-5-nano">GPT-5 Nano (710ms • $0.010/min • 8 Intel)</option>
+                        <option value="openai|gpt-4.1-mini">GPT-4.1 Mini (600ms • $0.010/min • 15 Intel)</option>
+                        <option value="openai|gpt-4.1-nano">GPT-4.1 Nano (450ms • $0.010/min • 10 Intel)</option>
+                        <option value="openai|gpt-4o-mini-cluster">GPT-4o Mini Cluster (560ms • $0.010/min • 7 Intel)</option>
+                        <option value="openai|gpt-4o-cluster">GPT-4o Cluster (670ms • $0.045/min • 11 Intel)</option>
+                        <option value="openai|gpt-realtime-cluster">GPT Realtime Cluster (450ms • $0.290/min • 95 Intel)</option>
+                        <option value="openai|gpt-realtime-mini">GPT Realtime Mini (400ms • $0.060/min • 90 Intel)</option>
+                        <option value="openai|gpt-o3-cluster">GPT o3 Cluster (1000ms • $0.036/min • 31 Intel)</option>
+                        <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (320ms • $0.004/min • 88 Intel)</option>
+                        <option value="openai|gpt-4o">OpenAI GPT-4o (620ms • $0.022/min • 99 Intel)</option>
+                        <option value="openai|o3-mini">OpenAI o3-mini (550ms • $0.012/min • 97 Intel - Reasoning)</option>
+                        <option value="openai|o1-mini">OpenAI o1-mini (750ms • $0.015/min • 95 Intel - Reasoning)</option>
+                        <option value="openai|o1">OpenAI o1 (1200ms • $0.080/min • 100 Intel - Deep Reasoning)</option>
+                    </optgroup>
+                    <optgroup label="Groq (Ultra-Rápido)">
+                        <option value="groq|llama-3.3-70b-versatile" selected>Groq Llama 3.3 70B (180ms • $0.008/min • 92 Intel)</option>
+                        <option value="groq|llama-3.1-8b-instant">Groq Llama 3.1 8B Instant (80ms • $0.002/min • 75 Intel)</option>
+                    </optgroup>
+                    <optgroup label="Anthropic & DeepSeek">
+                        <option value="anthropic|claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (750ms • $0.030/min • 98 Intel)</option>
+                        <option value="deepseek|deepseek-chat">DeepSeek V3 (280ms • $0.003/min • 90 Intel)</option>
+                    </optgroup>
                 </select>
             </div>
 
-            <div class="vapi-form-group">
-                <label class="vapi-form-label"><i class="fa fa-check-square-o"></i> Tool Strict Compatibility</label>
-                <select id="modal_tool_strict_select" class="vapi-input-dark">
-                    <option value="N" selected>Off</option>
-                    <option value="Y">On (Strict Mode)</option>
-                </select>
+            <div class="ddm-form-group vapi-form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;"><i class="fa fa-thermometer-half"></i> Temperatura (Criatividade)</label>
+                    <span class="ddm-badge ddm-badge-orange" id="disp_temp_badge">0.7</span>
+                </div>
+                <div class="ddm-form-hint">Valores menores tornam as respostas mais precisas e objetivas.</div>
+                <input type="range" id="modal_temp_slider" class="ddm-range-slider vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.7" />
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--ddm-text-muted); margin-top:4px;">
+                    <span>0.0 (Preciso & Direto)</span>
+                    <span>1.0 (Criativo)</span>
+                </div>
+            </div>
+
+            <!-- Collapsible Advanced -->
+            <div class="ddm-accordion-header vapi-accordion-header" id="adv_llm_toggle" style="margin-top:12px; padding:10px 0;">
+                <span style="font-weight:700; font-size:13px; color:var(--ddm-text-primary);">Configurações Avançadas</span>
+                <i class="fa fa-chevron-down"></i>
+            </div>
+            <div id="adv_llm_body" style="padding-top: 10px;">
+                <div class="ddm-form-group vapi-form-group">
+                    <label class="ddm-form-label vapi-form-label"><i class="fa fa-comment"></i> Max Tokens por Turno</label>
+                    <input type="number" id="modal_max_tokens_input" class="ddm-input vapi-input-dark" value="250" />
+                </div>
+
+                <div class="ddm-form-group vapi-form-group">
+                    <label class="ddm-form-label vapi-form-label"><i class="fa fa-database"></i> Prompt Cache Retention</label>
+                    <select id="modal_cache_select" class="ddm-select vapi-input-dark">
+                        <option value="in_memory">In-Memory Prompt Cache (Ultra Rápido)</option>
+                        <option value="disabled">Desabilitado</option>
+                    </select>
+                </div>
+
+                <div class="ddm-form-group vapi-form-group">
+                    <label class="ddm-form-label vapi-form-label"><i class="fa fa-check-square-o"></i> Tool Strict Compatibility</label>
+                    <select id="modal_tool_strict_select" class="ddm-select vapi-input-dark">
+                        <option value="N">Desativado</option>
+                        <option value="Y">Ativado (Strict Mode)</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <div style="margin-top: 30px;">
-            <button type="button" class="vapi-btn vapi-btn-primary btn-close-drawer" style="width:100%; justify-content:center;">Apply Model Settings</button>
+        <div style="margin-top: 24px;">
+            <button type="button" class="ddm-btn ddm-btn-primary btn-close-drawer" style="width:100%; justify-content:center;">
+                Aplicar Configurações do Modelo
+            </button>
         </div>
     </div>
 </div>
 
 <!-- 3. VOICE SETTINGS DRAWER -->
-<div class="vapi-modal-backdrop" id="modal_voice">
-    <div class="vapi-drawer">
-        <div class="vapi-drawer-header">
-            <span class="vapi-drawer-title"><i class="fa fa-volume-up text-purple"></i> Voice Settings</span>
-            <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
-        </div>
-        <div class="vapi-drawer-subtitle">
-            Configure the text-to-speech voice your assistant uses to speak.
-        </div>
-
-        <div class="vapi-form-group">
-            <label class="vapi-form-label">Voice Provider & Engine</label>
-            <select id="modal_voice_provider_select" class="vapi-input-dark">
-                <option value="cartesia" selected>Cartesia Sonic (90ms • $0.020/min • 96 Humanness)</option>
-                <option value="elevenlabs">ElevenLabs Multilingual v2 (650ms • $0.036/min • 92 Humanness)</option>
-                <option value="openai">OpenAI TTS-1 (350ms • $0.015/min • 84 Humanness)</option>
-                <option value="azure">Microsoft Azure Speech (400ms • $0.016/min • 90 Humanness)</option>
-            </select>
-        </div>
-
-        <div class="vapi-form-group">
-            <label class="vapi-form-label">Voice Model</label>
-            <div class="vapi-pill-group" style="margin-bottom: 8px;">
-                <div class="vapi-pill-opt active" id="tab_voice_library">Voice library</div>
-                <div class="vapi-pill-opt" id="tab_custom_voice_id">Custom voice ID</div>
+<div class="ddm-drawer-backdrop vapi-modal-backdrop" id="modal_voice">
+    <div class="ddm-drawer vapi-drawer">
+        <div>
+            <div class="ddm-drawer-header vapi-drawer-header">
+                <span class="ddm-drawer-title vapi-drawer-title"><i class="fa fa-volume-up text-purple"></i> Configurações de Voz (TTS)</span>
+                <button type="button" class="ddm-drawer-close btn-close-drawer"><i class="fa fa-times"></i></button>
             </div>
-            
-            <div id="voice_library_view">
-                <select id="modal_voice_id_select" class="vapi-input-dark">
-                    <option value="elevenlabs|PznTnBc8X6pvixs9UkQm">PznTnBc8X6pvixs9UkQm • ElevenLabs (Multilingual v2 - Vapi Clone)</option>
-                    <option value="elevenlabs|tMzxR2W7o3RLIY7zWBbG">Júlia (Voz Oficial) • ElevenLabs (Natural Conversational PT-BR)</option>
-                    <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM">Rachel • ElevenLabs (Conversational Female)</option>
-                    <option value="elevenlabs|EXAVITQu4vr4xnSDxMaL">Sarah • ElevenLabs (Warm & Reassuring Female)</option>
-                    <option value="elevenlabs|AZnzlk1XvdvUeBnXmlld">Domi • ElevenLabs (Energetic Female)</option>
-                    <option value="elevenlabs|pNInz6obpgDQGcFmaJgB">Adam • ElevenLabs (Deep & Professional Male)</option>
-                    <option value="elevenlabs|TxGEqnHWrfWFTfGW9XjX">Josh • ElevenLabs (Conversational Young Male)</option>
-                    <option value="elevenlabs|XrExE9yKIg1WjnnlVkGX">Matilda • ElevenLabs (Expressive Female)</option>
-                    <option value="cartesia|cartesia-pt-br-sofia" selected>Sofia • Cartesia Sonic (Natural PT-BR Female)</option>
-                    <option value="cartesia|cartesia-pt-br-lucas">Lucas • Cartesia Sonic (Professional PT-BR Male)</option>
-                    <option value="openai|nova">Nova • OpenAI (Energetic & Friendly)</option>
-                    <option value="openai|alloy">Alloy • OpenAI (Neutral Male)</option>
-                    <option value="azure|pt-BR-FranciscaNeural">Francisca • Azure Speech (Natural PT-BR Female)</option>
-                    <option value="azure|pt-BR-AntonioNeural">Antonio • Azure Speech (Professional PT-BR Male)</option>
-                    <option value="azure|pt-BR-ThalitaNeural">Thalita • Azure Speech (Expressive PT-BR Female)</option>
+            <div class="ddm-drawer-subtitle vapi-drawer-subtitle">
+                Personalize o timbre, emoção, velocidade e ambiente sonoro da voz gerada por IA.
+            </div>
+
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label">Provedor & Motor de Síntese</label>
+                <select id="modal_voice_provider_select" class="ddm-select vapi-input-dark">
+                    <option value="cartesia" selected>Cartesia Sonic (90ms • $0.020/min • 96 Humanização)</option>
+                    <option value="elevenlabs">ElevenLabs Multilingual v2 (650ms • $0.036/min • 92 Humanização)</option>
+                    <option value="openai">OpenAI TTS-1 (350ms • $0.015/min • 84 Humanização)</option>
+                    <option value="azure">Microsoft Azure Speech (400ms • $0.016/min • 90 Humanização)</option>
                 </select>
             </div>
 
-            <div id="custom_voice_id_view" style="display:none;">
-                <input type="text" id="modal_custom_voice_id_input" class="vapi-input-dark" placeholder="Cole o Voice ID customizado aqui..." />
-            </div>
-        </div>
-
-        <div class="vapi-form-group">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <label class="vapi-form-label" style="margin-bottom:0;"><i class="fa fa-tachometer"></i> Speed</label>
-                <span class="vapi-badge" id="disp_speed_badge">1.0x</span>
-            </div>
-            <input type="range" id="modal_speed_slider" class="vapi-range-slider" min="0.75" max="1.50" step="0.05" value="1.0" />
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                <span>Slower (0.75x)</span>
-                <span>Normal (1.0x)</span>
-                <span>Faster (1.5x)</span>
-            </div>
-        </div>
-
-        <div class="vapi-form-group">
-            <label class="vapi-form-label"><i class="fa fa-volume-up"></i> Ruído de Fundo (Ambiente de Escritório / Call Center)</label>
-            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Simula um ambiente sonoro realista para eliminar o silêncio robótico na chamada.</div>
-            <div class="vapi-pill-group" id="bg_sound_pills">
-                <div class="vapi-pill-opt active" data-bgsound="off">Desativado</div>
-                <div class="vapi-pill-opt" data-bgsound="office">Escritório / Call Center</div>
-                <div class="vapi-pill-opt" data-bgsound="typing">Digitação no Teclado</div>
-                <div class="vapi-pill-opt" data-bgsound="room">Ruído de Sala</div>
-            </div>
-        </div>
-
-        <div class="vapi-form-group" id="bg_volume_group" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <label class="vapi-form-label"><i class="fa fa-sliders"></i> Volume do Som de Fundo</label>
-                <span id="modal_bg_vol_val" style="font-size:12px; color:#38bdf8; font-weight:700;">10%</span>
-            </div>
-            <input type="range" id="modal_bg_vol_slider" class="vapi-range-slider" min="0.02" max="0.30" step="0.01" value="0.10" />
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
-                <span>Sutil (2%)</span>
-                <span>Recomendado (10%)</span>
-                <span>Forte (30%)</span>
-            </div>
-        </div>
-
-        <!-- Collapsible Advanced -->
-        <div class="vapi-accordion-header" id="adv_voice_toggle">
-            <span>Advanced</span>
-            <i class="fa fa-chevron-down"></i>
-        </div>
-        <div id="adv_voice_body" style="padding-top: 15px;">
-            <div class="vapi-form-group">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <label class="vapi-form-label" style="margin-bottom:0;">Stability</label>
-                    <span class="vapi-badge" id="disp_stability_badge">0.7</span>
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label">Biblioteca de Vozes</label>
+                <div class="ddm-pill-group vapi-pill-group" style="margin-bottom: 8px;">
+                    <div class="ddm-pill-opt vapi-pill-opt active" id="tab_voice_library">Catálogo Oficial</div>
+                    <div class="ddm-pill-opt vapi-pill-opt" id="tab_custom_voice_id">Voice ID Customizado</div>
                 </div>
-                <input type="range" id="modal_stability_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.7" />
+                
+                <div id="voice_library_view">
+                    <select id="modal_voice_id_select" class="ddm-select vapi-input-dark">
+                        <option value="elevenlabs|PznTnBc8X6pvixs9UkQm">PznTnBc8X6pvixs9UkQm • ElevenLabs (Multilingual v2 - Vapi Clone)</option>
+                        <option value="elevenlabs|tMzxR2W7o3RLIY7zWBbG">Júlia (Voz Oficial) • ElevenLabs (Natural Conversational PT-BR)</option>
+                        <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM">Rachel • ElevenLabs (Conversational Female)</option>
+                        <option value="elevenlabs|EXAVITQu4vr4xnSDxMaL">Sarah • ElevenLabs (Warm & Reassuring Female)</option>
+                        <option value="elevenlabs|AZnzlk1XvdvUeBnXmlld">Domi • ElevenLabs (Energetic Female)</option>
+                        <option value="elevenlabs|pNInz6obpgDQGcFmaJgB">Adam • ElevenLabs (Deep & Professional Male)</option>
+                        <option value="elevenlabs|TxGEqnHWrfWFTfGW9XjX">Josh • ElevenLabs (Conversational Young Male)</option>
+                        <option value="elevenlabs|XrExE9yKIg1WjnnlVkGX">Matilda • ElevenLabs (Expressive Female)</option>
+                        <option value="cartesia|cartesia-pt-br-sofia" selected>Sofia • Cartesia Sonic (Natural PT-BR Female)</option>
+                        <option value="cartesia|cartesia-pt-br-lucas">Lucas • Cartesia Sonic (Professional PT-BR Male)</option>
+                        <option value="openai|nova">Nova • OpenAI (Energetic & Friendly)</option>
+                        <option value="openai|alloy">Alloy • OpenAI (Neutral Male)</option>
+                        <option value="azure|pt-BR-FranciscaNeural">Francisca • Azure Speech (Natural PT-BR Female)</option>
+                        <option value="azure|pt-BR-AntonioNeural">Antonio • Azure Speech (Professional PT-BR Male)</option>
+                        <option value="azure|pt-BR-ThalitaNeural">Thalita • Azure Speech (Expressive PT-BR Female)</option>
+                    </select>
+                </div>
+
+                <div id="custom_voice_id_view" style="display:none;">
+                    <input type="text" id="modal_custom_voice_id_input" class="ddm-input vapi-input-dark" placeholder="Cole o Voice ID customizado aqui..." value="" />
+                </div>
             </div>
 
-            <div class="vapi-form-group">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <label class="vapi-form-label" style="margin-bottom:0;">Clarity + Similarity</label>
-                    <span class="vapi-badge" id="disp_clarity_badge">0.6</span>
+            <div class="ddm-form-group vapi-form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;"><i class="fa fa-tachometer"></i> Velocidade de Fala (Speed)</label>
+                    <span class="ddm-badge ddm-badge-orange" id="disp_speed_badge">1.0x</span>
                 </div>
-                <input type="range" id="modal_clarity_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.6" />
+                <input type="range" id="modal_speed_slider" class="ddm-range-slider vapi-range-slider" min="0.75" max="1.50" step="0.05" value="1.0" />
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--ddm-text-muted); margin-top:4px;">
+                    <span>0.75x (Mais Lento)</span>
+                    <span>1.00x (Natural)</span>
+                    <span>1.50x (Rápido)</span>
+                </div>
             </div>
 
-            <div class="vapi-form-group">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <label class="vapi-form-label" style="margin-bottom:0;">Style Exaggeration</label>
-                    <span class="vapi-badge" id="disp_style_badge">0.2</span>
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label"><i class="fa fa-volume-up"></i> Ruído de Fundo (Ambiente Call Center / Escritório)</label>
+                <div class="ddm-form-hint" style="margin-bottom: 8px;">Simula ambiente sonoro humanizado para eliminar o silêncio de linha estéril.</div>
+                <div class="ddm-pill-group vapi-pill-group" id="bg_sound_pills">
+                    <div class="ddm-pill-opt vapi-pill-opt active" data-bgsound="off">Desativado</div>
+                    <div class="ddm-pill-opt vapi-pill-opt" data-bgsound="office">Escritório</div>
+                    <div class="ddm-pill-opt vapi-pill-opt" data-bgsound="typing">Teclado</div>
+                    <div class="ddm-pill-opt vapi-pill-opt" data-bgsound="room">Sala</div>
                 </div>
-                <input type="range" id="modal_style_slider" class="vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.2" />
             </div>
 
-            <div class="vapi-form-group">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <label class="vapi-form-label" style="margin-bottom:0;">Optimize Latency</label>
-                    <span class="vapi-badge" id="disp_opt_lat_badge">1</span>
+            <div class="ddm-form-group vapi-form-group" id="bg_volume_group" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;"><i class="fa fa-sliders"></i> Volume do Som de Fundo</label>
+                    <span class="ddm-badge ddm-badge-orange" id="modal_bg_vol_val">10%</span>
                 </div>
-                <input type="range" id="modal_opt_lat_slider" class="vapi-range-slider" min="0" max="4" step="1" value="1" />
+                <input type="range" id="modal_bg_vol_slider" class="ddm-range-slider vapi-range-slider" min="0.02" max="0.30" step="0.01" value="0.10" />
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--ddm-text-muted); margin-top:4px;">
+                    <span>Sutil (2%)</span>
+                    <span>Recomendado (10%)</span>
+                    <span>Forte (30%)</span>
+                </div>
+            </div>
+
+            <!-- Collapsible Advanced -->
+            <div class="ddm-accordion-header vapi-accordion-header" id="adv_voice_toggle" style="margin-top:12px; padding:10px 0;">
+                <span style="font-weight:700; font-size:13px; color:var(--ddm-text-primary);">Configurações Avançadas</span>
+                <i class="fa fa-chevron-down"></i>
+            </div>
+            <div id="adv_voice_body" style="padding-top: 10px;">
+                <div class="ddm-form-group vapi-form-group">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;">Estabilidade (Stability)</label>
+                        <span class="ddm-badge ddm-badge-orange" id="disp_stability_badge">0.7</span>
+                    </div>
+                    <input type="range" id="modal_stability_slider" class="ddm-range-slider vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.7" />
+                </div>
+
+                <div class="ddm-form-group vapi-form-group">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;">Clareza e Similaridade</label>
+                        <span class="ddm-badge ddm-badge-orange" id="disp_clarity_badge">0.6</span>
+                    </div>
+                    <input type="range" id="modal_clarity_slider" class="ddm-range-slider vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.6" />
+                </div>
+
+                <div class="ddm-form-group vapi-form-group">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;">Exagero de Estilo</label>
+                        <span class="ddm-badge ddm-badge-orange" id="disp_style_badge">0.2</span>
+                    </div>
+                    <input type="range" id="modal_style_slider" class="ddm-range-slider vapi-range-slider" min="0.0" max="1.0" step="0.05" value="0.2" />
+                </div>
+
+                <div class="ddm-form-group vapi-form-group">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;">Otimização de Latência</label>
+                        <span class="ddm-badge ddm-badge-orange" id="disp_opt_lat_badge">1</span>
+                    </div>
+                    <input type="range" id="modal_opt_lat_slider" class="ddm-range-slider vapi-range-slider" min="0" max="4" step="1" value="1" />
+                </div>
             </div>
         </div>
 
-        <div style="margin-top: 30px;">
-            <button type="button" class="vapi-btn vapi-btn-primary btn-close-drawer" style="width:100%; justify-content:center;">Apply Voice Settings</button>
+        <div style="margin-top: 24px;">
+            <button type="button" class="ddm-btn ddm-btn-primary btn-close-drawer" style="width:100%; justify-content:center;">
+                Aplicar Configurações de Voz
+            </button>
         </div>
     </div>
 </div>
 
 <!-- 4. CUSTOM TOOL DRAWER -->
-<div class="vapi-modal-backdrop" id="modal_tool_drawer">
-    <div class="vapi-drawer" style="width: 540px;">
-        <div class="vapi-drawer-header">
-            <span class="vapi-drawer-title" id="tool_drawer_title"><i class="fa fa-wrench text-orange"></i> Custom Tool</span>
-            <button type="button" class="btn btn-link text-muted btn-close-drawer" style="font-size:18px;"><i class="fa fa-times"></i></button>
-        </div>
-        <div class="vapi-drawer-subtitle">
-            Configure an external function, webhook or action that the assistant can execute.
-        </div>
+<div class="ddm-drawer-backdrop vapi-modal-backdrop" id="modal_tool_drawer">
+    <div class="ddm-drawer vapi-drawer" style="width: 560px;">
+        <div>
+            <div class="ddm-drawer-header vapi-drawer-header">
+                <span class="ddm-drawer-title vapi-drawer-title" id="tool_drawer_title"><i class="fa fa-wrench text-orange"></i> Ferramenta / Tool</span>
+                <button type="button" class="ddm-drawer-close btn-close-drawer"><i class="fa fa-times"></i></button>
+            </div>
+            <div class="ddm-drawer-subtitle vapi-drawer-subtitle">
+                Configure uma função, webhook ou ação externa invocável pelo modelo de IA durante o diálogo.
+            </div>
 
-        <input type="hidden" id="tool_drawer_mode" value="add" />
-        <input type="hidden" id="tool_edit_orig_id" value="" />
+            <input type="hidden" id="tool_drawer_mode" value="add" />
+            <input type="hidden" id="tool_edit_orig_id" value="" />
 
-        <div class="vapi-form-group">
-            <label class="vapi-form-label">Modelo Rápido / Template</label>
-            <select id="tool_quick_template_select" class="vapi-input-dark">
-                <option value="">-- Selecione um Modelo Pré-configurado --</option>
-                <option value="custom_webhook">Custom Webhook (Chamar API Externa / CRM)</option>
-                <option value="end_call">End Call (Encerrar Ligação Telefônica)</option>
-                <option value="transfer_call">Transfer Call (Transferir para Ramal/Humano)</option>
-                <option value="voicemail_tool">Voicemail Tool (Detecção de Caixa Postal)</option>
-                <option value="capturar_cpf">Capturar & Validar CPF</option>
-            </select>
-        </div>
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label">Modelo Rápido / Template</label>
+                <select id="tool_quick_template_select" class="ddm-select vapi-input-dark">
+                    <option value="">-- Selecione um Template Pré-configurado --</option>
+                    <option value="custom_webhook">Custom Webhook (Chamar API Externa / CRM)</option>
+                    <option value="end_call">End Call (Encerrar Ligação Telefônica)</option>
+                    <option value="transfer_call">Transfer Call (Transferir para Ramal/Humano)</option>
+                    <option value="voicemail_tool">Voicemail Tool (Detecção de Caixa Postal)</option>
+                    <option value="capturar_cpf">Capturar & Validar CPF</option>
+                </select>
+            </div>
 
-        <div class="vapi-form-group">
-            <label class="vapi-form-label">Identificador / Nome da Função (snake_case)</label>
-            <input type="text" id="tool_input_name" class="vapi-input-dark" placeholder="ex: transfer_call ou consultar_saldo" />
-        </div>
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label">Identificador / Nome da Função (snake_case)</label>
+                <input type="text" id="tool_input_name" class="ddm-input vapi-input-dark" placeholder="ex: transfer_call ou consultar_saldo" />
+            </div>
 
-        <div class="row">
-            <div class="col-md-6">
-                <div class="vapi-form-group">
-                    <label class="vapi-form-label">Tipo da Ferramenta</label>
-                    <select id="tool_input_type" class="vapi-input-dark">
-                        <option value="Custom tool">Custom tool (Webhook / API)</option>
-                        <option value="Transfer call">Transfer call</option>
-                        <option value="End call">End call</option>
-                        <option value="Voicemail tool">Voicemail tool</option>
-                        <option value="Function">Function</option>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="ddm-form-group vapi-form-group">
+                        <label class="ddm-form-label vapi-form-label">Tipo da Ferramenta</label>
+                        <select id="tool_input_type" class="ddm-select vapi-input-dark">
+                            <option value="Custom tool">Custom tool (Webhook / API)</option>
+                            <option value="Transfer call">Transfer call</option>
+                            <option value="End call">End call</option>
+                            <option value="Voicemail tool">Voicemail tool</option>
+                            <option value="Function">Function</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="ddm-form-group vapi-form-group">
+                        <label class="ddm-form-label vapi-form-label">Versão</label>
+                        <input type="text" id="tool_input_version" class="ddm-input vapi-input-dark" value="Latest" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="ddm-form-group vapi-form-group">
+                <label class="ddm-form-label vapi-form-label">Descrição (Como o modelo sabe quando chamar)</label>
+                <textarea id="tool_input_desc" class="ddm-textarea vapi-textarea-dark" rows="3" placeholder="Descreva claramente o que esta função faz para que o LLM a acione na hora certa..."></textarea>
+            </div>
+
+            <div id="tool_webhook_fields">
+                <div class="ddm-form-group vapi-form-group">
+                    <label class="ddm-form-label vapi-form-label">URL do Endpoint Webhook</label>
+                    <input type="text" id="tool_input_url" class="ddm-input vapi-input-dark" placeholder="https://api.empresa.com.br/v1/webhook" />
+                </div>
+                <div class="ddm-form-group vapi-form-group">
+                    <label class="ddm-form-label vapi-form-label">Método HTTP</label>
+                    <select id="tool_input_method" class="ddm-select vapi-input-dark">
+                        <option value="POST">POST (application/json)</option>
+                        <option value="GET">GET</option>
                     </select>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="vapi-form-group">
-                    <label class="vapi-form-label">Versão</label>
-                    <input type="text" id="tool_input_version" class="vapi-input-dark" value="Latest" />
+
+            <div class="ddm-form-group vapi-form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="ddm-form-label vapi-form-label" style="margin-bottom:0;">Parâmetros (JSON Schema)</label>
+                    <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs" id="btn_tool_format_json"><i class="fa fa-code"></i> Formatar JSON</button>
                 </div>
+                <textarea id="tool_input_params" class="ddm-textarea ddm-prompt-editor vapi-textarea-dark vapi-prompt-editor" rows="6">{}</textarea>
+            </div>
+
+            <div class="ddm-switch-row vapi-switch-row">
+                <div class="ddm-switch-info vapi-switch-info">
+                    <div class="ddm-switch-title vapi-switch-title">Ferramenta Habilitada</div>
+                    <div class="ddm-switch-desc vapi-switch-desc">Se ativada, o assistente poderá chamá-la durante a chamada.</div>
+                </div>
+                <label class="ddm-switch vapi-switch">
+                    <input type="checkbox" id="tool_input_enabled" checked />
+                    <span class="ddm-slider vapi-slider"></span>
+                </label>
             </div>
         </div>
 
-        <div class="vapi-form-group">
-            <label class="vapi-form-label">Descrição (Como o modelo deve saber quando chamar)</label>
-            <textarea id="tool_input_desc" class="vapi-textarea-dark" rows="3" placeholder="Descreva claramente o que esta função faz para que o LLM a acione na hora certa..."></textarea>
-        </div>
-
-        <div id="tool_webhook_fields">
-            <div class="vapi-form-group">
-                <label class="vapi-form-label">URL do Endpoint Webhook</label>
-                <input type="text" id="tool_input_url" class="vapi-input-dark" placeholder="https://api.empresa.com.br/v1/webhook" />
-            </div>
-            <div class="vapi-form-group">
-                <label class="vapi-form-label">Método HTTP</label>
-                <select id="tool_input_method" class="vapi-input-dark">
-                    <option value="POST">POST (application/json)</option>
-                    <option value="GET">GET</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="vapi-form-group">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <label class="vapi-form-label" style="margin-bottom:0;">Parâmetros (JSON Schema)</label>
-                <button type="button" class="vapi-btn" id="btn_tool_format_json" style="padding:2px 8px; font-size:11px;"><i class="fa fa-code"></i> Formatar JSON</button>
-            </div>
-            <textarea id="tool_input_params" class="vapi-textarea-dark vapi-prompt-editor" rows="6">{}</textarea>
-        </div>
-
-        <div class="vapi-switch-row">
-            <div class="vapi-switch-info">
-                <div class="vapi-switch-title">Ferramenta Habilitada</div>
-                <div class="vapi-switch-desc">Se ativada, a IA terá permissão de acioná-la durante a ligação.</div>
-            </div>
-            <label class="vapi-switch">
-                <input type="checkbox" id="tool_input_enabled" checked />
-                <span class="vapi-slider"></span>
-            </label>
-        </div>
-
-        <div style="margin-top: 30px;">
-            <button type="button" class="vapi-btn vapi-btn-primary" id="btn_save_tool_drawer" style="width:100%; justify-content:center;">Salvar Ferramenta</button>
+        <div style="margin-top: 24px;">
+            <button type="button" class="ddm-btn ddm-btn-primary" id="btn_save_tool_drawer" style="width:100%; justify-content:center;">
+                Salvar Ferramenta
+            </button>
         </div>
     </div>
 </div>
@@ -1691,7 +1182,7 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
 <?php print $ui->standardizedThemeJS(); ?>
 <script type="text/javascript">
 // ==========================================
-// VAPI REACTIVE CATALOG & LIVE PIPELINE SYNC
+// DIALOG DDM REACTIVE PIPELINE ENGINE
 // ==========================================
 var VAPI_CONFIG = {
     stt: {
@@ -1764,53 +1255,57 @@ function renderToolsTable() {
     $tbody.empty();
 
     if (!currentTools || currentTools.length === 0) {
-        $tbody.html('<tr><td colspan="5" style="text-align:center; color:#64748b; padding:30px;">Nenhuma ferramenta cadastrada. Clique em "Criar Custom Tool" para adicionar.</td></tr>');
+        $tbody.html('<tr><td colspan="5" style="text-align:center; color:var(--ddm-text-muted); padding:36px;"><i class="fa fa-wrench" style="font-size:24px; margin-bottom:8px; display:block;"></i>Nenhuma ferramenta cadastrada. Clique em "Criar Nova Ferramenta" para adicionar.</td></tr>');
         return;
     }
 
     currentTools.forEach(function(tool) {
         var isChecked = tool.enabled !== false ? 'checked' : '';
-        var typeBadgeColor = 'bg-blue';
-        var iconClass = 'fa-wrench text-blue';
-        var iconBg = 'rgba(56, 189, 248, 0.15)';
+        var typeBadgeClass = 'ddm-badge-orange';
+        var iconClass = 'fa-wrench';
+        var iconColor = '#F97316';
+        var iconBg = '#FFF7ED';
 
         if (tool.type === 'Transfer call') {
-            typeBadgeColor = 'bg-green';
-            iconClass = 'fa-phone-square text-green';
-            iconBg = 'rgba(16, 185, 129, 0.15)';
+            typeBadgeClass = 'ddm-badge-active';
+            iconClass = 'fa-phone-square';
+            iconColor = '#10B981';
+            iconBg = '#ECFDF5';
         } else if (tool.type === 'End call') {
-            typeBadgeColor = 'bg-red';
-            iconClass = 'fa-phone-slash text-red';
-            iconBg = 'rgba(239, 68, 68, 0.15)';
+            typeBadgeClass = 'ddm-badge-inactive';
+            iconClass = 'fa-phone-slash';
+            iconColor = '#EF4444';
+            iconBg = '#FEF2F2';
         } else if (tool.type === 'Voicemail tool') {
-            typeBadgeColor = 'bg-yellow';
-            iconClass = 'fa-envelope-open text-yellow';
-            iconBg = 'rgba(245, 158, 11, 0.15)';
+            typeBadgeClass = 'ddm-badge-orange';
+            iconClass = 'fa-envelope-open';
+            iconColor = '#F59E0B';
+            iconBg = '#FFFBEB';
         }
 
         var html = '<tr>' +
             '<td>' +
-                '<label class="vapi-switch">' +
+                '<label class="ddm-switch vapi-switch">' +
                     '<input type="checkbox" class="tool-toggle" data-tool-id="' + tool.id + '" ' + isChecked + ' />' +
-                    '<span class="vapi-slider"></span>' +
+                    '<span class="ddm-slider vapi-slider"></span>' +
                 '</label>' +
             '</td>' +
             '<td>' +
                 '<div style="display:flex; align-items:center;">' +
-                    '<div class="vapi-tool-icon" style="background:' + iconBg + ';">' +
+                    '<div class="ddm-tool-icon-box" style="background:' + iconBg + '; color:' + iconColor + ';">' +
                         '<i class="fa ' + iconClass + '"></i>' +
                     '</div>' +
                     '<div>' +
-                        '<div class="vapi-tool-name">' + (tool.name || tool.id) + '</div>' +
-                        '<div style="font-size:11px; color:#64748b;">v' + (tool.version || 'Latest') + '</div>' +
+                        '<div class="ddm-tool-name">' + (tool.name || tool.id) + '</div>' +
+                        '<div style="font-size:11px; color:var(--ddm-text-muted);">v' + (tool.version || 'Latest') + '</div>' +
                     '</div>' +
                 '</div>' +
             '</td>' +
-            '<td><span class="vapi-badge">' + (tool.type || 'Custom tool') + '</span></td>' +
-            '<td><div class="vapi-tool-desc">' + (tool.description || 'Sem descrição') + '</div></td>' +
+            '<td><span class="ddm-badge ' + typeBadgeClass + '">' + (tool.type || 'Custom tool') + '</span></td>' +
+            '<td><div class="ddm-tool-desc">' + (tool.description || 'Sem descrição') + '</div></td>' +
             '<td style="text-align: right;">' +
-                '<button type="button" class="vapi-action-btn btn-edit-tool" data-tool-id="' + tool.id + '" title="Editar"><i class="fa fa-pencil"></i></button> ' +
-                '<button type="button" class="vapi-action-btn btn-danger-tool btn-delete-tool" data-tool-id="' + tool.id + '" title="Remover"><i class="fa fa-trash"></i></button>' +
+                '<button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-edit-tool" data-tool-id="' + tool.id + '" title="Editar"><i class="fa fa-pencil"></i></button> ' +
+                '<button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-delete-tool" data-tool-id="' + tool.id + '" title="Remover" style="color:#EF4444 !important;"><i class="fa fa-trash"></i></button>' +
             '</td>' +
         '</tr>';
 
@@ -1833,7 +1328,7 @@ function openToolDrawer(mode, toolObj) {
         $('#tool_input_enabled').prop('checked', toolObj.enabled !== false);
         $('#tool_quick_template_select').val('');
     } else {
-        $('#tool_drawer_title').html('<i class="fa fa-wrench text-orange"></i> Criar Custom Tool');
+        $('#tool_drawer_title').html('<i class="fa fa-wrench text-orange"></i> Criar Nova Ferramenta');
         $('#tool_edit_orig_id').val('');
         $('#tool_input_name').val('');
         $('#tool_input_type').val('Custom tool');
@@ -1848,7 +1343,6 @@ function openToolDrawer(mode, toolObj) {
     $('#modal_tool_drawer').fadeIn(200).css('display', 'flex');
 }
 
-// Update all 3 Cards, Telemetry, and Sync Hidden Inputs
 function updatePipelineUI() {
     var sttKey = $('#input_stt_provider').val() + '|' + $('#input_stt_model').val();
     var llmKey = $('#input_llm_provider').val() + '|' + $('#input_llm_model').val();
@@ -1859,7 +1353,6 @@ function updatePipelineUI() {
     var stt = VAPI_CONFIG.stt[sttKey] || { name: $('#input_stt_model').val(), sub: $('#input_stt_provider').val(), latency: 120, cost: 0.005, accuracy: '98.0%' };
     var llm = VAPI_CONFIG.llm[llmKey] || { name: $('#input_llm_model').val(), sub: $('#input_llm_provider').val(), latency: 250, cost: 0.008, intel: 85 };
     
-    // Voice resolution: check if known in library
     var isKnownVoice = !!VAPI_CONFIG.voice[voiceKey];
     var isCustomTab = $('#tab_custom_voice_id').hasClass('active') || !isKnownVoice;
     
@@ -1875,7 +1368,7 @@ function updatePipelineUI() {
         var shortId = curVoiceId.length > 14 ? (curVoiceId.substring(0, 14) + '...') : curVoiceId;
         voice = { 
             name: 'Custom Voice (' + shortId + ')', 
-            sub: '<span style="color:#38bdf8; font-weight:700;">' + curProv.toUpperCase() + '</span> • ID: <span style="color:#f43f5e; font-family:monospace; font-weight:bold;">' + curVoiceId + '</span>', 
+            sub: '<span style="color:#F97316; font-weight:700;">' + curProv.toUpperCase() + '</span> • ID: <span style="font-family:monospace; font-weight:bold;">' + curVoiceId + '</span>', 
             latency: voiceLatency, 
             cost: voiceCost, 
             humanness: 95 
@@ -1907,8 +1400,8 @@ function updatePipelineUI() {
     var totalLat = stt.latency + llm.latency + voice.latency;
     var totalCost = stt.cost + llm.cost + voice.cost;
 
-    $('#disp_total_latency').html('~' + totalLat + '<span style="font-size:14px; color:#94a3b8;">ms</span>');
-    $('#disp_total_cost').html('~$' + totalCost.toFixed(3) + '<span style="font-size:14px; color:#94a3b8;">/min</span>');
+    $('#disp_total_latency').html('~' + totalLat + '<span class="ddm-telemetry-unit">ms</span>');
+    $('#disp_total_cost').html('~$' + totalCost.toFixed(3) + '<span class="ddm-telemetry-unit">/min</span>');
 
     // Latency Progress Bar
     var latSttPct = Math.round((stt.latency / totalLat) * 100);
@@ -1949,38 +1442,33 @@ function updatePipelineUI() {
 }
 
 $(document).ready(function() {
-    // Initial Render
     renderToolsTable();
     updatePipelineUI();
 
-    // Tab Navigation
-    $('.vapi-tab').click(function(e) {
+    $('.ddm-tab, .vapi-tab').click(function(e) {
         e.preventDefault();
-        $('.vapi-tab').removeClass('active');
+        $('.ddm-tab, .vapi-tab').removeClass('active');
         $(this).addClass('active');
         var target = $(this).data('tab');
         $('.vapi-tab-view').hide();
-        $('#view_' + target).show();
+        $('#view_' + target).fadeIn(150);
     });
 
-    // Drawers Open
     $('#card_transcriber').click(function() { $('#modal_transcriber').fadeIn(200).css('display', 'flex'); });
     $('#card_model').click(function() { $('#modal_model').fadeIn(200).css('display', 'flex'); });
     $('#card_voice').click(function() { $('#modal_voice').fadeIn(200).css('display', 'flex'); });
 
-    $('.btn-close-drawer, .vapi-modal-backdrop').click(function(e) {
-        if (e.target === this || $(this).hasClass('btn-close-drawer')) {
-            $('.vapi-modal-backdrop').fadeOut(200);
+    $('.btn-close-drawer, .ddm-drawer-backdrop, .vapi-modal-backdrop').click(function(e) {
+        if (e.target === this || $(this).hasClass('btn-close-drawer') || $(this).hasClass('ddm-drawer-close')) {
+            $('.ddm-drawer-backdrop, .vapi-modal-backdrop').fadeOut(200);
         }
     });
 
-    // Accordions
     $('#adv_stt_toggle').click(function() { $('#adv_stt_body').slideToggle(200); });
     $('#adv_llm_toggle').click(function() { $('#adv_llm_body').slideToggle(200); });
     $('#adv_voice_toggle').click(function() { $('#adv_voice_body').slideToggle(200); });
 
-    // Vapi Advanced Accordions
-    $('.vapi-accordion-header[data-target]').click(function() {
+    $('.ddm-accordion-header[data-target], .vapi-accordion-header[data-target]').click(function() {
         var target = $(this).data('target');
         $(target).slideToggle(200);
         var $icon = $('i.fa-chevron-down, i.fa-chevron-up', this);
@@ -1991,7 +1479,6 @@ $(document).ready(function() {
         }
     });
 
-    // Transcriber Drawer Events
     $('#modal_stt_provider_select').change(function() {
         var parts = $(this).val().split('|');
         $('#input_stt_provider').val(parts[0]);
@@ -1999,17 +1486,9 @@ $(document).ready(function() {
         updatePipelineUI();
     });
 
-    $('#modal_stt_language_select').change(function() {
-        $('#input_stt_language').val($(this).val());
-    });
-
-    $('#modal_turn_taking').change(function() {
-        $('#input_intelligent_turn_taking').val($(this).is(':checked') ? 'Y' : 'N');
-    });
-
-    $('#modal_denoising').change(function() {
-        $('#input_background_denoising').val($(this).is(':checked') ? 'Y' : 'N');
-    });
+    $('#modal_stt_language_select').change(function() { $('#input_stt_language').val($(this).val()); });
+    $('#modal_turn_taking').change(function() { $('#input_intelligent_turn_taking').val($(this).is(':checked') ? 'Y' : 'N'); });
+    $('#modal_denoising').change(function() { $('#input_background_denoising').val($(this).is(':checked') ? 'Y' : 'N'); });
 
     $('#modal_silence_slider').on('input', function() {
         var val = $(this).val();
@@ -2017,11 +1496,8 @@ $(document).ready(function() {
         $('#input_silence_timeout_ms').val(val);
     });
 
-    $('#modal_stt_fallback_select').change(function() {
-        $('#input_stt_fallback_provider').val($(this).val());
-    });
+    $('#modal_stt_fallback_select').change(function() { $('#input_stt_fallback_provider').val($(this).val()); });
 
-    // Model Drawer Events
     $('#modal_llm_model_select').change(function() {
         var parts = $(this).val().split('|');
         $('#input_llm_provider').val(parts[0]);
@@ -2035,19 +1511,10 @@ $(document).ready(function() {
         $('#input_temperature').val(val);
     });
 
-    $('#modal_max_tokens_input').on('input', function() {
-        $('#input_max_tokens').val($(this).val());
-    });
+    $('#modal_max_tokens_input').on('input', function() { $('#input_max_tokens').val($(this).val()); });
+    $('#modal_cache_select').change(function() { $('#input_prompt_cache_retention').val($(this).val()); });
+    $('#modal_tool_strict_select').change(function() { $('#input_tool_strict_compatibility').val($(this).val()); });
 
-    $('#modal_cache_select').change(function() {
-        $('#input_prompt_cache_retention').val($(this).val());
-    });
-
-    $('#modal_tool_strict_select').change(function() {
-        $('#input_tool_strict_compatibility').val($(this).val());
-    });
-
-    // Voice Drawer Events
     $('#modal_voice_provider_select').change(function() {
         var prov = $(this).val();
         $('#input_voice_provider').val(prov);
@@ -2084,6 +1551,8 @@ $(document).ready(function() {
     });
 
     $('#modal_custom_voice_id_input').on('input change keyup paste', function() {
+        var prov = $('#modal_voice_provider_select').val() || 'elevenlabs';
+        $('#input_voice_provider').val(prov);
         var val = $(this).val().trim();
         if (val) {
             $('#input_voice_id').val(val);
@@ -2121,9 +1590,8 @@ $(document).ready(function() {
         $('#input_voice_optimize_latency').val($(this).val());
     });
 
-    // Background Sound Pills
-    $('#bg_sound_pills .vapi-pill-opt').click(function() {
-        $('#bg_sound_pills .vapi-pill-opt').removeClass('active');
+    $('#bg_sound_pills .ddm-pill-opt, #bg_sound_pills .vapi-pill-opt').click(function() {
+        $('#bg_sound_pills .ddm-pill-opt, #bg_sound_pills .vapi-pill-opt').removeClass('active');
         $(this).addClass('active');
         var bgsound = $(this).data('bgsound');
         $('#input_background_sound').val(bgsound);
@@ -2142,7 +1610,7 @@ $(document).ready(function() {
     });
 
     $('#tab_voice_library').click(function() {
-        $('.vapi-pill-opt', $(this).parent()).removeClass('active');
+        $('.ddm-pill-opt, .vapi-pill-opt', $(this).parent()).removeClass('active');
         $(this).addClass('active');
         $('#voice_library_view').show();
         $('#custom_voice_id_view').hide();
@@ -2164,10 +1632,13 @@ $(document).ready(function() {
     });
 
     $('#tab_custom_voice_id').click(function() {
-        $('.vapi-pill-opt', $(this).parent()).removeClass('active');
+        $('.ddm-pill-opt, .vapi-pill-opt', $(this).parent()).removeClass('active');
         $(this).addClass('active');
         $('#voice_library_view').hide();
         $('#custom_voice_id_view').show();
+
+        var prov = $('#modal_voice_provider_select').val() || 'elevenlabs';
+        $('#input_voice_provider').val(prov);
 
         var customVal = $('#modal_custom_voice_id_input').val().trim();
         if (customVal) {
@@ -2177,19 +1648,15 @@ $(document).ready(function() {
         updatePipelineUI();
     });
 
-    $('#select_first_message_mode').change(function() {
-        $('#input_first_message_mode').val($(this).val());
-    });
-
+    $('#select_first_message_mode').change(function() { $('#input_first_message_mode').val($(this).val()); });
     $('#select_agent_status').change(function() {
         var val = $(this).val();
         $('#input_status').val(val);
         $('#badge_status_indicator').text(val === 'Y' ? 'Ativo' : 'Inativo');
     });
 
-    // Presets Click Handler
-    $('.vapi-preset-pill').click(function() {
-        $('.vapi-preset-pill').removeClass('active');
+    $('.ddm-preset-pill, .vapi-preset-pill').click(function() {
+        $('.ddm-preset-pill, .vapi-preset-pill').removeClass('active');
         $(this).addClass('active');
         var preset = $(this).data('preset');
         $('#input_model_preset').val(preset);
@@ -2230,7 +1697,6 @@ $(document).ready(function() {
         updatePipelineUI();
     });
 
-    // Prompt Templates
     $('#btn_template_sales').click(function() {
         $('#textarea_prompt').val(
             "# PERSONA E OBJETIVO\n" +
@@ -2267,7 +1733,6 @@ $(document).ready(function() {
         );
     });
 
-    // Custom Tools Handling
     $('#btn_add_custom_tool').click(function() { openToolDrawer('add'); });
 
     $(document).on('click', '.btn-edit-tool', function(e) {
@@ -2389,11 +1854,9 @@ $(document).ready(function() {
         $('#modal_tool_drawer').fadeOut(200);
     });
 
-    // Form Submission with Save & Feedback
     $('#form_add_vapi_agent').submit(function(e) {
         e.preventDefault();
 
-        // Ensure custom voice ID is persisted
         if ($('#tab_custom_voice_id').hasClass('active') || $('#custom_voice_id_view').is(':visible')) {
             var customVal = $('#modal_custom_voice_id_input').val().trim();
             if (customVal) {
@@ -2411,15 +1874,15 @@ $(document).ready(function() {
         var formData = $(this).serialize();
 
         $.post('php/SaveAIAgent.php', formData, function(res) {
-            $btn.prop('disabled', false).html('<i class="fa fa-floppy-o"></i> Criar e Publicar Agente');
+            $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Criar e Publicar Agente');
             if (res.status == 1) {
-                alert("✨ Agente de IA criado com sucesso!");
+                alert("✨ Agente de voz criado com sucesso no Dialog DDM!");
                 window.location.href = 'edit_ai_agent.php?id=' + res.agent_id;
             } else {
                 alert(res.message || 'Erro ao criar agente.');
             }
         }, 'json').fail(function() {
-            $btn.prop('disabled', false).html('<i class="fa fa-floppy-o"></i> Criar e Publicar Agente');
+            $btn.prop('disabled', false).html('<i class="fa fa-save"></i> Criar e Publicar Agente');
             alert('Erro de comunicação com o servidor.');
         });
     });
