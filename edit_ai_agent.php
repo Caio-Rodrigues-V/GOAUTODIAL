@@ -1036,6 +1036,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <select id="modal_stt_provider_select" class="vapi-input-dark">
                 <option value="deepgram|nova-2">Deepgram Nova-2 (120ms • $0.005/min)</option>
                 <option value="groq|whisper-large-v3-turbo">Groq Whisper Turbo (90ms • $0.003/min)</option>
+                <option value="elevenlabs|scribe_v1">ElevenLabs Scribe v1 (450ms • $0.010/min)</option>
                 <option value="openai|whisper-1">OpenAI Whisper (950ms • $0.012/min)</option>
                 <option value="azure|azure-default">Azure Speech (650ms • $0.025/min)</option>
             </select>
@@ -1227,8 +1228,11 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                     <option value="cartesia|cartesia-pt-br-sofia">Sofia • Cartesia Sonic (Natural PT-BR Female)</option>
                     <option value="cartesia|cartesia-pt-br-lucas">Lucas • Cartesia Sonic (Professional PT-BR Male)</option>
                     <option value="elevenlabs|21m00Tcm4TlvDq8ikWAM">Rachel • ElevenLabs (Conversational Female)</option>
-                    <option value="elevenlabs|PznTnBc8X6pvixs9UkQm">Sarah • ElevenLabs (Reassuring Female)</option>
+                    <option value="elevenlabs|PznTnBc8X6pvixs9UkQm">Sarah • ElevenLabs (Warm & Reassuring Female)</option>
                     <option value="elevenlabs|AZnzlk1XvdvUeBnXmlld">Domi • ElevenLabs (Energetic Female)</option>
+                    <option value="elevenlabs|pNInz6obpgDQGcFmaJgB">Adam • ElevenLabs (Deep & Professional Male)</option>
+                    <option value="elevenlabs|TxGEqnHWrfWFTfGW9XjX">Josh • ElevenLabs (Conversational Young Male)</option>
+                    <option value="elevenlabs|XrExE9yKIg1WjnnlVkGX">Matilda • ElevenLabs (Expressive Female)</option>
                     <option value="openai|nova">Nova • OpenAI (Energetic & Friendly)</option>
                     <option value="openai|alloy">Alloy • OpenAI (Neutral Male)</option>
                 </select>
@@ -1426,6 +1430,7 @@ var VAPI_CONFIG = {
     stt: {
         'deepgram|nova-2': { name: 'Deepgram Nova-2', provider: 'deepgram', model: 'nova-2', sub: 'Deepgram • Brazilian Portuguese', latency: 120, cost: 0.005, accuracy: '98.4%', icon: 'fa fa-globe text-green' },
         'groq|whisper-large-v3-turbo': { name: 'Groq Whisper Turbo', provider: 'groq', model: 'whisper-large-v3-turbo', sub: 'Groq • Ultra-fast Whisper', latency: 90, cost: 0.003, accuracy: '97.8%', icon: 'fa fa-bolt text-yellow' },
+        'elevenlabs|scribe_v1': { name: 'ElevenLabs Scribe', provider: 'elevenlabs', model: 'scribe_v1', sub: 'ElevenLabs • Scribe v1 Multilingual', latency: 450, cost: 0.010, accuracy: '98.6%', icon: 'fa fa-music text-purple' },
         'openai|whisper-1': { name: 'OpenAI Whisper', provider: 'openai', model: 'whisper-1', sub: 'OpenAI • Audio API', latency: 950, cost: 0.012, accuracy: '98.9%', icon: 'fa fa-circle-o-notch text-blue' },
         'azure|azure-default': { name: 'Azure Speech', provider: 'azure', model: 'azure-default', sub: 'Microsoft Azure Speech', latency: 650, cost: 0.025, accuracy: '98.1%', icon: 'fa fa-windows text-info' }
     },
@@ -1454,6 +1459,9 @@ var VAPI_CONFIG = {
         'elevenlabs|21m00Tcm4TlvDq8ikWAM': { name: 'Rachel (ElevenLabs)', provider: 'elevenlabs', id: '21m00Tcm4TlvDq8ikWAM', sub: 'ElevenLabs • Conversational Female', latency: 650, cost: 0.036, humanness: 92, icon: 'fa fa-volume-up text-pink' },
         'elevenlabs|PznTnBc8X6pvixs9UkQm': { name: 'Sarah (ElevenLabs)', provider: 'elevenlabs', id: 'PznTnBc8X6pvixs9UkQm', sub: 'ElevenLabs • Warm & Reassuring Female', latency: 650, cost: 0.036, humanness: 93, icon: 'fa fa-volume-up text-pink' },
         'elevenlabs|AZnzlk1XvdvUeBnXmlld': { name: 'Domi (ElevenLabs)', provider: 'elevenlabs', id: 'AZnzlk1XvdvUeBnXmlld', sub: 'ElevenLabs • Energetic Female', latency: 650, cost: 0.036, humanness: 91, icon: 'fa fa-volume-up text-pink' },
+        'elevenlabs|pNInz6obpgDQGcFmaJgB': { name: 'Adam (ElevenLabs)', provider: 'elevenlabs', id: 'pNInz6obpgDQGcFmaJgB', sub: 'ElevenLabs • Deep & Professional Male', latency: 650, cost: 0.036, humanness: 94, icon: 'fa fa-volume-up text-pink' },
+        'elevenlabs|TxGEqnHWrfWFTfGW9XjX': { name: 'Josh (ElevenLabs)', provider: 'elevenlabs', id: 'TxGEqnHWrfWFTfGW9XjX', sub: 'ElevenLabs • Young Conversational Male', latency: 650, cost: 0.036, humanness: 92, icon: 'fa fa-volume-up text-pink' },
+        'elevenlabs|XrExE9yKIg1WjnnlVkGX': { name: 'Matilda (ElevenLabs)', provider: 'elevenlabs', id: 'XrExE9yKIg1WjnnlVkGX', sub: 'ElevenLabs • Expressive & Warm Female', latency: 650, cost: 0.036, humanness: 93, icon: 'fa fa-volume-up text-pink' },
         'openai|nova': { name: 'Nova (OpenAI)', provider: 'openai', id: 'nova', sub: 'OpenAI TTS • Friendly Female', latency: 350, cost: 0.015, humanness: 84, icon: 'fa fa-volume-up text-green' },
         'openai|alloy': { name: 'Alloy (OpenAI)', provider: 'openai', id: 'alloy', sub: 'OpenAI TTS • Neutral Male', latency: 350, cost: 0.015, humanness: 82, icon: 'fa fa-volume-up text-green' }
     }

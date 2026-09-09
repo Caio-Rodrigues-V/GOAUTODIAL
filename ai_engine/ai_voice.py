@@ -98,7 +98,7 @@ class AIVoiceBrain:
                             return transcript
 
                 # 4. Microsoft Azure Speech to Text (STT)
-                elif (stt_provider == "azure" or not stt_provider) and api_keys.get("azure_speech_key"):
+                elif stt_provider == "azure" and api_keys.get("azure_speech_key"):
                     api_key = api_keys.get("azure_speech_key")
                     region = api_keys.get("azure_speech_region") or "eastus"
                     url = f"https://{region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=pt-BR&format=detailed"
@@ -116,6 +116,29 @@ class AIVoiceBrain:
                                 return transcript
                     else:
                         logger.error(f"Erro Azure Speech STT [{r.status_code}]: {r.text}")
+
+                # 5. ElevenLabs Scribe v1 (STT)
+                elif (stt_provider == "elevenlabs" or not stt_provider) and api_keys.get("elevenlabs_api_key"):
+                    api_key = api_keys.get("elevenlabs_api_key")
+                    files = {
+                        "file": ("audio.wav", wav_data, "audio/wav")
+                    }
+                    data = {
+                        "model_id": "scribe_v1",
+                        "language_code": "por"
+                    }
+                    headers = {
+                        "xi-api-key": api_key
+                    }
+                    r = await client.post("https://api.elevenlabs.io/v1/speech-to-text", files=files, data=data, headers=headers)
+                    if r.status_code == 200:
+                        res = r.json()
+                        transcript = res.get("text", "").strip()
+                        if transcript:
+                            logger.info(f"[ElevenLabs Scribe STT]: '{transcript}'")
+                            return transcript
+                    else:
+                        logger.error(f"Erro ElevenLabs STT [{r.status_code}]: {r.text}")
 
                 # Fallback genérico para qualquer chave STT disponível
                 elif api_keys.get("openai_api_key"):

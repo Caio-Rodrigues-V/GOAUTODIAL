@@ -441,6 +441,12 @@ Diretrizes da conversa:
                     'whisper-large-v3' => 'Whisper Large v3'
                 )
             ),
+            'elevenlabs' => array(
+                'name' => 'ElevenLabs Scribe v1 (Alta Fidelidade Multilíngue)',
+                'models' => array(
+                    'scribe_v1' => 'ElevenLabs Scribe v1 (Reconhecimento Ultra-Fiel)'
+                )
+            ),
             'openai' => array(
                 'name' => 'OpenAI Whisper',
                 'models' => array(
