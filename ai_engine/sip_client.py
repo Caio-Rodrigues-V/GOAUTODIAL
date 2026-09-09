@@ -244,13 +244,25 @@ class DirectSIPEngine:
         if to_match:
             call.to_tag = to_match.group(1).strip()
 
+        # Extract CSeq method
+        cseq_match = re.search(r'CSeq:\s*\d+\s+([A-Za-z]+)', msg, re.IGNORECASE)
+        cseq_method = cseq_match.group(1).upper() if cseq_match else ""
+
         if " 180 Ringing" in first_line or " 183 Session Progress" in first_line:
             call.status = "ringing"
             logger.info(f"Chamada {call.dial_string} está TOCANDO no celular do cliente!")
 
         elif " 200 OK" in first_line:
+            if cseq_method == "BYE":
+                logger.info(f"Oktor confirmou encerramento (BYE 200 OK) da chamada {call.dial_string}.")
+                self.active_calls.pop(call_id, None)
+                return
+
+            if cseq_method and cseq_method != "INVITE":
+                return
+
             # Evita processar 200 OK duplicado
-            if call.status == "answered":
+            if call.status in ("answered", "completed", "busy"):
                 # Apenas reenviar ACK para confirmar
                 ack_msg = call.build_ack(call.local_ip)
                 if self.transport:

@@ -71,7 +71,7 @@ class AIVoiceBrain:
                 # 1. Deepgram Nova-2 (Ultra-rápido ~100ms, especialista em telefonia PT-BR - Padrão Vapi)
                 if (stt_provider == "deepgram" or not stt_provider) and api_keys.get("deepgram_api_key"):
                     api_key = api_keys.get("deepgram_api_key")
-                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true&endpointing=300&vad_turnoff=500&encoding=linear16&sample_rate=8000"
+                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true"
                     headers = {
                         "Authorization": f"Token {api_key}",
                         "Content-Type": "audio/wav"
@@ -83,6 +83,8 @@ class AIVoiceBrain:
                         if transcript and not is_hallucination(transcript):
                             logger.info(f"[Deepgram STT]: '{transcript}'")
                             return transcript
+                    else:
+                        logger.warning(f"[Deepgram STT Error {r.status_code}]: {r.text}")
 
                 # 2. Groq Whisper Large v3 Turbo (Latência ~120ms com Prompt Biasing anti-alucinação)
                 elif stt_provider == "groq" and api_keys.get("groq_api_key"):
@@ -177,7 +179,7 @@ class AIVoiceBrain:
                 # Fallbacks automáticos se o provedor principal não tiver chave
                 if api_keys.get("deepgram_api_key"):
                     api_key = api_keys.get("deepgram_api_key")
-                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true&endpointing=300&vad_turnoff=500&encoding=linear16&sample_rate=8000"
+                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true"
                     r = await client.post(url, content=wav_data, headers={"Authorization": f"Token {api_key}", "Content-Type": "audio/wav"})
                     if r.status_code == 200:
                         return r.json()["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
