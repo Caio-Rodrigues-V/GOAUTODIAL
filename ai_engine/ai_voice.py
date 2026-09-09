@@ -24,6 +24,18 @@ def create_wav_from_pcm(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
         wav.writeframes(pcm_bytes)
     return buf.getvalue()
 
+def clean_text_for_tts(text: str) -> str:
+    """Higieniza o texto para remover emojis, asteriscos de ação e markdown antes do sintetizador de voz"""
+    if not text:
+        return ""
+    import re
+    text = re.sub(r'\[.*?\]', '', text)
+    text = re.sub(r'\*.*?\*', '', text)
+    text = re.sub(r'[\*\_#`~]', '', text)
+    text = re.sub(r'[\U00010000-\U0010ffff]', '', text, flags=re.UNICODE)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
 class AIVoiceBrain:
     @staticmethod
     async def transcribe(pcm_bytes: bytes, stt_provider: str, api_keys: Dict[str, str]) -> str:
@@ -179,6 +191,10 @@ class AIVoiceBrain:
         """
         Sintetiza texto em áudio PCM 16-bit 8000Hz Mono para streaming de telefonia.
         """
+        text = clean_text_for_tts(text)
+        if not text:
+            return b''
+
         voice_provider = (voice_provider or "openai").lower()
         logger.info(f"Sintetizando voz: Provedor={voice_provider}, Voz={voice_id}, Texto='{text[:60]}...'")
 
