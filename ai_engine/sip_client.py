@@ -495,7 +495,7 @@ class DirectSIPEngine:
                         clean_reply = ai_reply.replace("[END_CALL]", "").strip()
 
                         # 3. Text-to-Speech (TTS)
-                        pcm_reply = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys)
+                        pcm_reply = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys, agent)
                         if pcm_reply and len(pcm_reply) > 0:
                             # 4. Transmitir áudio da resposta para o telefone
                             await call.rtp_session.stream_pcm_audio(pcm_reply)
@@ -515,7 +515,7 @@ class DirectSIPEngine:
             # 1. Saudação Inicial do Agente (se configurado para falar primeiro)
             if first_message_mode == "assistant_speaks_first":
                 logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
-                pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys)
+                pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent)
                 
                 if pcm_audio and len(pcm_audio) > 0:
                     await call.rtp_session.stream_pcm_audio(pcm_audio)
