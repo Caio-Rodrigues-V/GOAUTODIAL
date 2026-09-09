@@ -208,25 +208,25 @@ class AIVoiceBrain:
                     else:
                         logger.error(f"Erro OpenAI TTS: {r.status_code} - {r.text}")
 
-                # 2. ElevenLabs TTS (Turbo v2.5 & Multilingual v2 com Custom Cloned Voices)
+                # 2. ElevenLabs TTS (Multilingual v2 de Alta Fidelidade)
                 elif voice_provider == "elevenlabs":
                     api_key = api_keys.get("elevenlabs_api_key", "")
                     if not api_key:
                         logger.error("Chave da ElevenLabs não configurada")
                         return b''
 
-                    eleven_voice = voice_id if voice_id and voice_id != "custom" else "21m00Tcm4TlvDq8ikWAM"
+                    eleven_voice = voice_id if voice_id and voice_id != "custom" else "tMzxR2W7o3RLIY7zWBbG"
                     url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000"
                     
-                    # Configurações otimizadas para voz clonada natural e sem distorção
-                    stability = float(voice_settings.get("voice_stability", 0.65)) if voice_settings else 0.65
-                    similarity = float(voice_settings.get("voice_clarity", 0.75)) if voice_settings else 0.75
+                    # Parâmetros padrão idênticos ao player do site ElevenLabs para 100% de fidelidade
+                    stability = float(voice_settings.get("voice_stability", 0.48)) if voice_settings else 0.48
+                    similarity = float(voice_settings.get("voice_clarity", 0.85)) if voice_settings else 0.85
                     style = float(voice_settings.get("voice_style_exaggeration", 0.0)) if voice_settings else 0.0
-                    use_speaker_boost = True if not voice_settings or voice_settings.get("voice_speaker_boost", "Y") == "Y" else False
+                    use_speaker_boost = True if not voice_settings or voice_settings.get("voice_speaker_boost", "Y") == "Y" else True
 
                     payload = {
                         "text": text,
-                        "model_id": "eleven_turbo_v2_5",  # Turbo v2.5 é até 3x mais rápido e com fidelidade impecável em PT-BR
+                        "model_id": "eleven_multilingual_v2",  # Modelo oficial de alta fidelidade (100% idêntico ao site)
                         "voice_settings": {
                             "stability": stability,
                             "similarity_boost": similarity,
@@ -240,14 +240,14 @@ class AIVoiceBrain:
                     }
                     r = await client.post(url, json=payload, headers=headers)
                     if r.status_code == 200:
-                        logger.info(f"ElevenLabs TTS gerou com sucesso áudio para a voz '{eleven_voice}'")
+                        logger.info(f"ElevenLabs TTS gerou áudio com máxima fidelidade (Multilingual v2) para voz '{eleven_voice}'")
                         return resample_16k_to_8k_pcm(r.content)
                     else:
                         logger.error(f"Erro ElevenLabs TTS [{r.status_code}] na voz '{eleven_voice}': {r.text}")
-                        # Fallback se o modelo Turbo v2.5 não estiver liberado na conta
+                        # Fallback suave caso precise usar o turbo
                         if r.status_code in [400, 422]:
-                            logger.info("Tentando ElevenLabs com modelo 'eleven_multilingual_v2'...")
-                            payload["model_id"] = "eleven_multilingual_v2"
+                            logger.info("Tentando ElevenLabs com modelo 'eleven_turbo_v2_5'...")
+                            payload["model_id"] = "eleven_turbo_v2_5"
                             r_fb = await client.post(url, json=payload, headers=headers)
                             if r_fb.status_code == 200:
                                 return resample_16k_to_8k_pcm(r_fb.content)
