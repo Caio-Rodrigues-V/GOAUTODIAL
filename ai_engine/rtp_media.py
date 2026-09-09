@@ -358,10 +358,11 @@ class RTPAudioSession:
         
         # VAD & Supressão de Eco
         self.speech_buffer = bytearray()
+        self.pre_speech_ring_buffer = bytearray()  # Pre-buffer de 160ms para não cortar o início da fala ("A" em "Alô", "S" em "Sim")
         self.is_collecting_speech = False
         self.last_speech_time = 0.0
         self.last_transmit_end_time = 0.0
-        self.vad_threshold = 550.0  # Threshold calibrado para voz humana clara
+        self.vad_threshold = 450.0  # Threshold calibrado para telefonia celular e fixa PT-BR
         self.silence_timeout = silence_timeout  # Pausa natural antes de fechar o turno de fala
         self._rx_task: Optional[asyncio.Task] = None
 
@@ -426,10 +427,10 @@ class RTPAudioSession:
 
     async def _receive_loop(self):
         """
-        Escuta pacotes RTP do cliente com cancelamento de eco acústico (AEC)
-        e detecção precisa de término de fala.
+        Escuta pacotes RTP do cliente com cancelamento de eco acústico (AEC),
+        pre-buffering de início de fala e detecção precisa de término de fala.
         """
-        logger.info("Escutador RTP com supressão de eco iniciado...")
+        logger.info("Escutador RTP com supressão de eco e pre-buffering iniciado...")
         loop = asyncio.get_running_loop()
 
         while self.is_running and self.sock:
@@ -454,8 +455,9 @@ class RTPAudioSession:
                 if rms > self.vad_threshold:
                     if not self.is_collecting_speech:
                         self.is_collecting_speech = True
-                        self.speech_buffer.clear()
-                        logger.info("🎙️ [Cliente Falando...] Capturando áudio...")
+                        # Inclui os últimos 160ms anteriores para nunca perder o início de palavras curtas ("Alô", "Sim")
+                        self.speech_buffer = bytearray(self.pre_speech_ring_buffer)
+                        logger.info("🎙️ [Cliente Falando...] Capturando áudio com pre-buffer...")
 
                     self.speech_buffer.extend(pcm_chunk)
                     self.full_recorded_pcm.extend(pcm_chunk)
@@ -470,10 +472,17 @@ class RTPAudioSession:
                         self.is_collecting_speech = False
                         audio_len = len(self.speech_buffer)
                         logger.info(f"🤫 [Silêncio detectado]: Final de fala ({audio_len} bytes PCM). Processando com IA...")
-                        if self.on_speech_ready and audio_len >= 4000:
+                        if self.on_speech_ready and audio_len >= 2400:
                             collected_audio = bytes(self.speech_buffer)
                             asyncio.create_task(self.on_speech_ready(collected_audio))
                         self.speech_buffer.clear()
+                        self.pre_speech_ring_buffer.clear()
+
+                else:
+                    # Mantém buffer circular contínuo de 160ms enquanto o cliente está em silêncio
+                    self.pre_speech_ring_buffer.extend(pcm_chunk)
+                    if len(self.pre_speech_ring_buffer) > 2560:  # ~160ms a 8kHz 16-bit
+                        self.pre_speech_ring_buffer = self.pre_speech_ring_buffer[-2560:]
 
             except asyncio.CancelledError:
                 break

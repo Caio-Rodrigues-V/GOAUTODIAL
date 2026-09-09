@@ -28,20 +28,21 @@ class AIVoiceBrain:
     @staticmethod
     async def transcribe(pcm_bytes: bytes, stt_provider: str, api_keys: Dict[str, str]) -> str:
         """
-        Transcreve o áudio do cliente em texto em < 150ms usando Deepgram, Groq ou OpenAI.
+        Transcreve o áudio do cliente em texto em < 150ms usando Deepgram, Groq, OpenAI ou Azure.
         """
-        if not pcm_bytes or len(pcm_bytes) < 3200:  # Menos de 200ms de áudio é ruído
+        if not pcm_bytes or len(pcm_bytes) < 2400:  # Menos de 150ms de áudio é ruído
             return ""
 
         stt_provider = (stt_provider or "deepgram").lower()
         wav_data = create_wav_from_pcm(pcm_bytes, 8000)
+        whisper_pt_prompt = "Transcrição em português do Brasil em chamada telefônica. Entenda com precisão: sim, não, alô, quem fala, tá bom, olá, pode falar, não quero, tenho interesse."
 
         async with httpx.AsyncClient(timeout=6.0) as client:
             try:
-                # 1. Deepgram Nova-2 (Ultra-rápido ~100ms, especialista em telefonia PT-BR)
+                # 1. Deepgram Nova-2 (Ultra-rápido ~100ms, especialista em telefonia PT-BR - Padrão Vapi)
                 if (stt_provider == "deepgram" or not stt_provider) and api_keys.get("deepgram_api_key"):
                     api_key = api_keys.get("deepgram_api_key")
-                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&encoding=linear16&sample_rate=8000"
+                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true&endpointing=300&vad_turnoff=500&encoding=linear16&sample_rate=8000"
                     headers = {
                         "Authorization": f"Token {api_key}",
                         "Content-Type": "audio/wav"
@@ -54,8 +55,8 @@ class AIVoiceBrain:
                             logger.info(f"[Deepgram STT]: '{transcript}'")
                             return transcript
 
-                # 2. Groq Whisper Large v3 Turbo (Latência ~120ms)
-                if api_keys.get("groq_api_key"):
+                # 2. Groq Whisper Large v3 Turbo (Latência ~120ms com Prompt Biasing anti-alucinação)
+                elif stt_provider == "groq" and api_keys.get("groq_api_key"):
                     api_key = api_keys.get("groq_api_key")
                     files = {
                         "file": ("audio.wav", wav_data, "audio/wav")
@@ -63,7 +64,9 @@ class AIVoiceBrain:
                     data = {
                         "model": "whisper-large-v3-turbo",
                         "language": "pt",
-                        "response_format": "json"
+                        "response_format": "json",
+                        "temperature": "0.0",
+                        "prompt": whisper_pt_prompt
                     }
                     headers = {
                         "Authorization": f"Bearer {api_key}"
@@ -76,7 +79,7 @@ class AIVoiceBrain:
                             logger.info(f"[Groq Whisper STT]: '{transcript}'")
                             return transcript
 
-                # 3. OpenAI Whisper
+                # 3. OpenAI Whisper (com Prompt Biasing anti-alucinação)
                 elif stt_provider == "openai" and api_keys.get("openai_api_key"):
                     api_key = api_keys.get("openai_api_key")
                     files = {
@@ -84,7 +87,9 @@ class AIVoiceBrain:
                     }
                     data = {
                         "model": "whisper-1",
-                        "language": "pt"
+                        "language": "pt",
+                        "temperature": "0.0",
+                        "prompt": whisper_pt_prompt
                     }
                     headers = {
                         "Authorization": f"Bearer {api_key}"
@@ -118,7 +123,7 @@ class AIVoiceBrain:
                         logger.error(f"Erro Azure Speech STT [{r.status_code}]: {r.text}")
 
                 # 5. ElevenLabs Scribe v1 (STT)
-                elif (stt_provider == "elevenlabs" or not stt_provider) and api_keys.get("elevenlabs_api_key"):
+                elif stt_provider == "elevenlabs" and api_keys.get("elevenlabs_api_key"):
                     api_key = api_keys.get("elevenlabs_api_key")
                     files = {
                         "file": ("audio.wav", wav_data, "audio/wav")
@@ -140,11 +145,26 @@ class AIVoiceBrain:
                     else:
                         logger.error(f"Erro ElevenLabs STT [{r.status_code}]: {r.text}")
 
-                # Fallback genérico para qualquer chave STT disponível
+                # Fallbacks automáticos se o provedor principal não tiver chave
+                if api_keys.get("deepgram_api_key"):
+                    api_key = api_keys.get("deepgram_api_key")
+                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true&endpointing=300&vad_turnoff=500&encoding=linear16&sample_rate=8000"
+                    r = await client.post(url, content=wav_data, headers={"Authorization": f"Token {api_key}", "Content-Type": "audio/wav"})
+                    if r.status_code == 200:
+                        return r.json()["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
+
+                elif api_keys.get("groq_api_key"):
+                    api_key = api_keys.get("groq_api_key")
+                    files = {"file": ("audio.wav", wav_data, "audio/wav")}
+                    data = {"model": "whisper-large-v3-turbo", "language": "pt", "prompt": whisper_pt_prompt}
+                    r = await client.post("https://api.groq.com/openai/v1/audio/transcriptions", files=files, data=data, headers={"Authorization": f"Bearer {api_key}"})
+                    if r.status_code == 200:
+                        return r.json().get("text", "").strip()
+
                 elif api_keys.get("openai_api_key"):
                     api_key = api_keys.get("openai_api_key")
                     files = {"file": ("audio.wav", wav_data, "audio/wav")}
-                    data = {"model": "whisper-1", "language": "pt"}
+                    data = {"model": "whisper-1", "language": "pt", "prompt": whisper_pt_prompt}
                     r = await client.post("https://api.openai.com/v1/audio/transcriptions", files=files, data=data, headers={"Authorization": f"Bearer {api_key}"})
                     if r.status_code == 200:
                         return r.json().get("text", "").strip()
