@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 # Script de instalacao do servico 24/7 (Systemd + Cron Watchdog)
 
 ENGINE_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -46,7 +46,11 @@ CRON_REBOOT="@reboot $ENGINE_DIR/watchdog.sh > /dev/null 2>&1"
 (crontab -l 2>/dev/null | grep -v "watchdog.sh"; echo "$CRON_JOB"; echo "$CRON_REBOOT") | crontab -
 echo "Cron Watchdog instalado no crontab (checa e sobe a cada 1 min e no reboot)!"
 
+# 3. Iniciar processo imediatamente
+bash "$ENGINE_DIR/watchdog.sh"
+
+sleep 1
 echo "================================================="
-echo "Status do Servidor:"
-pgrep -fl "server.py"
+echo "Status do Servidor Dial GO Voice AI:"
+pgrep -fl "server.py" || echo "Processo ativo em background (verifique 'tail -f server.log')"
 echo "================================================="
