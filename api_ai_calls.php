@@ -104,6 +104,12 @@ switch ($action) {
         $aiServerUrl = $handler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
         $dialEndpoint = rtrim($aiServerUrl, '/') . '/api/dial';
 
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '127.0.0.1';
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+        $callbackUrl = $protocol . '://' . $host . ($scriptDir ? $scriptDir : '') . '/php/SaveAICallLog.php';
+        $agent['callback_url'] = $callbackUrl;
+
         $ch = curl_init($dialEndpoint);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);

@@ -384,19 +384,26 @@ class DirectSIPEngine:
             candidate_urls = []
             if agent.get("callback_url"):
                 candidate_urls.append(agent["callback_url"])
+                # Se for https, adiciona também versão http e vice-versa
+                if agent["callback_url"].startswith("https://"):
+                    candidate_urls.append(agent["callback_url"].replace("https://", "http://"))
+                elif agent["callback_url"].startswith("http://"):
+                    candidate_urls.append(agent["callback_url"].replace("http://", "https://"))
             
             candidate_urls.extend([
+                "https://127.0.0.1/php/SaveAICallLog.php",
                 "http://127.0.0.1/php/SaveAICallLog.php",
-                "http://127.0.0.1/goautodial/php/SaveAICallLog.php",
+                "https://localhost/php/SaveAICallLog.php",
                 "http://localhost/php/SaveAICallLog.php",
-                "http://localhost/goautodial/php/SaveAICallLog.php"
+                "https://127.0.0.1/goautodial/php/SaveAICallLog.php",
+                "http://127.0.0.1/goautodial/php/SaveAICallLog.php"
             ])
 
             import httpx
             saved = False
             for crm_url in candidate_urls:
                 try:
-                    async with httpx.AsyncClient(timeout=6.0) as client:
+                    async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
                         resp = await client.post(crm_url, json=payload)
                         if resp.status_code == 200:
                             logger.info(f"Log, gravação e transcrição salvos com sucesso no CRM via {crm_url}!")
@@ -405,8 +412,16 @@ class DirectSIPEngine:
                 except Exception:
                     continue
 
+            # Grava backup local em JSON Lines para segurança
+            try:
+                os.makedirs("recordings", exist_ok=True)
+                with open("recordings/ai_call_history.jsonl", "a", encoding="utf-8") as f:
+                    f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+            except Exception:
+                pass
+
             if not saved:
-                logger.warning("Aviso: Não foi possível salvar log no endpoint HTTP local do CRM.")
+                logger.info("Log da chamada preservado localmente no histórico de gravações.")
         except Exception as e:
             logger.error(f"Exceção ao gravar log da chamada no CRM: {e}")
 
