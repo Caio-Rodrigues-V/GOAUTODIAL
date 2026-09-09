@@ -319,12 +319,18 @@ Diretrizes da conversa:
             'openai' => array(
                 'name' => 'OpenAI',
                 'models' => array(
-                    'gpt-4o' => 'GPT-4o (Máxima inteligência & raciocínio)',
+                    'gpt-4o' => 'GPT-4o (Máxima inteligência & multimodal)',
                     'gpt-4o-mini' => 'GPT-4o Mini (Recomendado - Rápido e econômico)',
+                    'chatgpt-4o-latest' => 'ChatGPT-4o Latest (Último Checkpoint Dinâmico)',
+                    'gpt-5.6' => 'GPT-5.6 Preview (Fronteira de Próxima Geração 5.6)',
+                    'gpt-5.5' => 'GPT-5.5 Preview (Fronteira de Próxima Geração 5.5)',
+                    'gpt-5-preview' => 'GPT-5 Preview (Próxima Geração Flagship)',
+                    'gpt-4.5-preview' => 'GPT-4.5 Preview (Frontier Ultra-Deep Knowledge)',
                     'o3-mini' => 'o3-mini (Raciocínio ultra-rápido)',
+                    'o3' => 'o3 (Raciocínio de Fronteira Completo)',
                     'o1-mini' => 'o1-mini (Raciocínio avançado)',
                     'o1' => 'o1 (Raciocínio profundo avançado)',
-                    'gpt-4-turbo' => 'GPT-4 Turbo',
+                    'gpt-4-turbo' => 'GPT-4 Turbo (128k Contexto)',
                     'gpt-3.5-turbo' => 'GPT-3.5 Turbo',
                     'custom' => 'Outro Modelo (Digitar ID)'
                 )

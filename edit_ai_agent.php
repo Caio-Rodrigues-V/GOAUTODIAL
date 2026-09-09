@@ -1128,7 +1128,13 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
                 <optgroup label="OpenAI (Modelos Oficiais 2025/2026)">
                     <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (320ms • $0.004/min • 88 Intel)</option>
                     <option value="openai|gpt-4o">OpenAI GPT-4o (620ms • $0.022/min • 99 Intel)</option>
+                    <option value="openai|chatgpt-4o-latest">OpenAI ChatGPT-4o Latest (590ms • $0.022/min • 99 Intel)</option>
+                    <option value="openai|gpt-5.6">OpenAI GPT-5.6 Preview (650ms • $0.035/min • 100 Intel)</option>
+                    <option value="openai|gpt-5.5">OpenAI GPT-5.5 Preview (580ms • $0.030/min • 100 Intel)</option>
+                    <option value="openai|gpt-5-preview">OpenAI GPT-5 Preview (520ms • $0.028/min • 100 Intel)</option>
+                    <option value="openai|gpt-4.5-preview">OpenAI GPT-4.5 Preview (850ms • $0.050/min • 100 Intel)</option>
                     <option value="openai|o3-mini">OpenAI o3-mini (550ms • $0.012/min • 97 Intel - Reasoning)</option>
+                    <option value="openai|o3">OpenAI o3 (950ms • $0.045/min • 100 Intel - Full Reasoning)</option>
                     <option value="openai|o1-mini">OpenAI o1-mini (750ms • $0.015/min • 95 Intel - Reasoning)</option>
                     <option value="openai|o1">OpenAI o1 (1200ms • $0.080/min • 100 Intel - Deep Reasoning)</option>
                     <option value="openai|gpt-4-turbo">OpenAI GPT-4 Turbo (720ms • $0.040/min • 96 Intel)</option>
@@ -1428,7 +1434,13 @@ var VAPI_CONFIG = {
         'groq|llama-3.1-8b-instant': { name: 'Llama 3.1 8B Instant', provider: 'groq', model: 'llama-3.1-8b-instant', sub: 'Groq • Ultra Fast (<100ms)', latency: 80, cost: 0.002, intel: 75, icon: 'fa fa-bolt text-yellow' },
         'openai|gpt-4o-mini': { name: 'GPT-4o Mini', provider: 'openai', model: 'gpt-4o-mini', sub: 'OpenAI • Ultra-Fast & Cost Effective', latency: 320, cost: 0.004, intel: 88, icon: 'fa fa-cube text-green' },
         'openai|gpt-4o': { name: 'GPT-4o', provider: 'openai', model: 'gpt-4o', sub: 'OpenAI • Flagship Multimodal', latency: 620, cost: 0.022, intel: 99, icon: 'fa fa-cube text-green' },
+        'openai|chatgpt-4o-latest': { name: 'ChatGPT-4o Latest', provider: 'openai', model: 'chatgpt-4o-latest', sub: 'OpenAI • Dynamic Latest GPT-4o Checkpoint', latency: 590, cost: 0.022, intel: 99, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.6': { name: 'GPT-5.6 Preview', provider: 'openai', model: 'gpt-5.6', sub: 'OpenAI • Next-Gen 5.6 Frontier Model', latency: 650, cost: 0.035, intel: 100, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5.5': { name: 'GPT-5.5 Preview', provider: 'openai', model: 'gpt-5.5', sub: 'OpenAI • Next-Gen 5.5 Frontier Model', latency: 580, cost: 0.030, intel: 100, icon: 'fa fa-cube text-green' },
+        'openai|gpt-5-preview': { name: 'GPT-5 Preview', provider: 'openai', model: 'gpt-5-preview', sub: 'OpenAI • Next-Gen Flagship Model', latency: 520, cost: 0.028, intel: 100, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4.5-preview': { name: 'GPT-4.5 Preview', provider: 'openai', model: 'gpt-4.5-preview', sub: 'OpenAI • Ultra-Deep Knowledge & Frontier', latency: 850, cost: 0.050, intel: 100, icon: 'fa fa-cube text-green' },
         'openai|o3-mini': { name: 'o3-mini', provider: 'openai', model: 'o3-mini', sub: 'OpenAI • Next-Gen Fast Reasoning', latency: 550, cost: 0.012, intel: 97, icon: 'fa fa-cube text-green' },
+        'openai|o3': { name: 'o3 (Full Reasoning)', provider: 'openai', model: 'o3', sub: 'OpenAI • Full-Scale Frontier Reasoning', latency: 950, cost: 0.045, intel: 100, icon: 'fa fa-cube text-green' },
         'openai|o1-mini': { name: 'o1-mini', provider: 'openai', model: 'o1-mini', sub: 'OpenAI • STEM & Coding Reasoning', latency: 750, cost: 0.015, intel: 95, icon: 'fa fa-cube text-green' },
         'openai|o1': { name: 'o1 (Deep Reasoning)', provider: 'openai', model: 'o1', sub: 'OpenAI • Deep Complex Reasoning', latency: 1200, cost: 0.080, intel: 100, icon: 'fa fa-cube text-green' },
         'openai|gpt-4-turbo': { name: 'GPT-4 Turbo', provider: 'openai', model: 'gpt-4-turbo', sub: 'OpenAI • High Precision 128k Context', latency: 720, cost: 0.040, intel: 96, icon: 'fa fa-cube text-green' },
