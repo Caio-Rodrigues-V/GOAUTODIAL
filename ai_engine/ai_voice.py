@@ -248,6 +248,8 @@ class AIVoiceBrain:
                         logger.error("Chave da ElevenLabs não configurada")
                         return b''
 
+                    eleven_voice = voice_id if voice_id and voice_id != "custom" else "PznTnBc8X6pvixs9UkQm"
+
                     # Suporte a optimize_streaming_latency (0 a 4) igual na Vapi
                     opt_lat = int(voice_settings.get("voice_optimize_latency", 0)) if voice_settings and voice_settings.get("voice_optimize_latency") is not None else 0
                     if opt_lat > 0:
