@@ -316,11 +316,14 @@ class RTPAudioSession:
         if sound_key in ("off", "none", "desativado", "disabled", "false", "0", ""):
             self.background_sound = "off"
             self.background_volume = 0.0
+            self.effective_gain = 0.0
             self.ambient_pcm = b""
         else:
             self.background_sound = sound_key
             self.background_volume = max(0.0, min(1.0, float(background_volume or 0.0)))
-            self.ambient_pcm = AmbientSoundEngine.get_ambient_pcm(self.background_sound) if self.background_volume > 0.0 else b""
+            # Curva perceptual de volume telefônico: 5% slider -> ~15% de ganho audível e natural
+            self.effective_gain = min(0.50, max(0.08, float(self.background_volume) * 2.5))
+            self.ambient_pcm = AmbientSoundEngine.get_ambient_pcm(self.background_sound)
             
         self.ambient_pos = 0
         self._ambient_task: Optional[asyncio.Task] = None
@@ -351,20 +354,20 @@ class RTPAudioSession:
             self.sock.bind(("0.0.0.0", self.local_port))
             self.sock.setblocking(False)
             self.is_running = True
-            logger.info(f"Socket RTP local aberto em 0.0.0.0:{self.local_port} <-> Oktor Mídia {self.remote_ip}:{self.remote_port} (Fundo: '{self.background_sound}', Vol: {int(self.background_volume*100)}%)")
+            logger.info(f"Socket RTP local aberto em 0.0.0.0:{self.local_port} <-> Oktor Mídia {self.remote_ip}:{self.remote_port} (Fundo: '{self.background_sound}', Vol: {int(self.background_volume*100)}%, Ganho: {int(self.effective_gain*100)}%)")
             
             # Iniciar loop de recepção de áudio do cliente em background
             self._rx_task = asyncio.create_task(self._receive_loop())
             
             # Iniciar streaming contínuo de ruído ambiente somente se houver áudio real
-            if self.ambient_pcm and len(self.ambient_pcm) > 0 and self.background_volume > 0.0:
+            if self.ambient_pcm and len(self.ambient_pcm) > 0 and self.effective_gain > 0.0:
                 self._ambient_task = asyncio.create_task(self._ambient_loop())
         except Exception as e:
             logger.error(f"Erro ao abrir socket RTP na porta {self.local_port}: {e}")
 
     async def _ambient_loop(self):
-        """Transmite ruído ambiente suave caso tenha sido configurado um arquivo WAV válido"""
-        if not self.ambient_pcm or self.background_volume <= 0.0:
+        """Transmite ruído de fundo suave nos momentos de silêncio/escuta da IA"""
+        if not self.ambient_pcm or self.effective_gain <= 0.0:
             return
 
         frame_samples = 160
@@ -378,7 +381,7 @@ class RTPAudioSession:
                     for i in range(0, frame_bytes, 2):
                         pos = (self.ambient_pos + i) % amb_len
                         s = int.from_bytes(self.ambient_pcm[pos:pos+2], byteorder='little', signed=True)
-                        s_vol = int(s * self.background_volume)
+                        s_vol = int(s * self.effective_gain)
                         s_vol = max(-32768, min(32767, s_vol))
                         chunk_pcm[i:i+2] = s_vol.to_bytes(2, byteorder='little', signed=True)
 
@@ -489,7 +492,8 @@ class RTPAudioSession:
 
     async def stream_pcm_audio(self, pcm_bytes: bytes):
         """
-        Envia áudio PCM para a Oktor com timer de alta precisão monotonic e filtro telefônico ITU-T G.712.
+        Envia áudio PCM para a Oktor com timer de alta precisão monotonic,
+        mixagem contínua de som de fundo e micro-fades suaves anti-estalo.
         """
         if not self.sock or not self.is_running:
             self.start_socket()
@@ -504,14 +508,47 @@ class RTPAudioSession:
         # Aplica filtro telefônico passa-faixa anti-chiado e headroom gain
         filtered_audio = apply_telephony_filter(pcm_bytes, 8000)
 
-        # Grava áudio falado pela IA no master recording
-        self.full_recorded_pcm.extend(filtered_audio)
+        # Micro-fade in (10ms = 80 samples) e micro-fade out no início/fim para eliminar estalos
+        num_s = len(filtered_audio) // 2
+        faded_pcm = bytearray(filtered_audio)
+        fade_samples = min(80, num_s // 4)
+        for i in range(fade_samples):
+            # Fade in
+            gain_in = i / float(fade_samples)
+            s_in = int.from_bytes(faded_pcm[i*2:(i+1)*2], byteorder='little', signed=True)
+            s_in = int(s_in * gain_in)
+            struct.pack_into('<h', faded_pcm, i * 2, s_in)
+            # Fade out
+            gain_out = (fade_samples - 1 - i) / float(fade_samples)
+            idx_out = num_s - 1 - i
+            s_out = int.from_bytes(faded_pcm[idx_out*2:(idx_out+1)*2], byteorder='little', signed=True)
+            s_out = int(s_out * gain_out)
+            struct.pack_into('<h', faded_pcm, idx_out * 2, s_out)
 
-        # Converte PCM filtrado para G.711 A-law ou Mu-law
-        if self.payload_type == 8:
-            g711_audio = linear_to_alaw(filtered_audio)
+        # Grava áudio falado pela IA no master recording
+        self.full_recorded_pcm.extend(faded_pcm)
+
+        # Se ruído de fundo estiver ativo, mixa suavemente com a fala da IA de forma contínua
+        if self.ambient_pcm and self.effective_gain > 0.0:
+            mixed_buf = bytearray(len(faded_pcm))
+            amb_len = len(self.ambient_pcm)
+            for i in range(0, len(faded_pcm) - 1, 2):
+                s_speech = int.from_bytes(faded_pcm[i:i+2], byteorder='little', signed=True)
+                pos = (self.ambient_pos + i) % amb_len
+                s_amb = int.from_bytes(self.ambient_pcm[pos:pos+2], byteorder='little', signed=True)
+                mixed = int(s_speech + s_amb * self.effective_gain)
+                mixed = max(-32767, min(32767, mixed))
+                mixed_buf[i:i+2] = mixed.to_bytes(2, byteorder='little', signed=True)
+            self.ambient_pos = (self.ambient_pos + len(faded_pcm)) % amb_len
+            audio_to_encode = bytes(mixed_buf)
         else:
-            g711_audio = linear_to_ulaw(filtered_audio)
+            audio_to_encode = bytes(faded_pcm)
+
+        # Converte PCM filtrado e mixado para G.711 A-law ou Mu-law
+        if self.payload_type == 8:
+            g711_audio = linear_to_alaw(audio_to_encode)
+        else:
+            g711_audio = linear_to_ulaw(audio_to_encode)
 
         frame_size = 160  # 160 bytes = 20ms de áudio a 8kHz
         total_frames = len(g711_audio) // frame_size
@@ -574,4 +611,5 @@ class RTPAudioSession:
                 pass
             self.sock = None
         logger.info("Sessão RTP encerrada.")
+
 
