@@ -94,8 +94,14 @@ async def media_stream_endpoint(websocket: WebSocket, agent_id: int):
                 user_transcript = data.get("text", "")
                 logger.info(f"[Cliente Falou]: {user_transcript}")
 
-                # 1. Processar cérebro na LLM (Groq / OpenAI)
-                ai_response = f"Entendi perfeitamente. Como posso te ajudar com isso hoje?"
+                # 1. Processar cérebro na LLM dinâmica
+                ai_response = await AIVoiceBrain.chat_completion(
+                    [{"role": "user", "content": user_transcript}],
+                    "openai",
+                    "gpt-4o-mini",
+                    0.7,
+                    {}
+                )
                 logger.info(f"[IA Respondeu]: {ai_response}")
 
                 # 2. Devolver resposta em texto e áudio
