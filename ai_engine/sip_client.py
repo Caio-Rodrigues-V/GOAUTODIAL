@@ -319,7 +319,8 @@ class DirectSIPEngine:
             
             # Obter áudio gravado da sessão RTP se disponível
             audio_b64 = ""
-            recording_filename = f"ai_call_{re.sub(r'[^a-zA-Z0-9_\-]', '_', call.call_id)}.wav"
+            clean_call_id = re.sub(r'[^a-zA-Z0-9_-]', '_', call.call_id)
+            recording_filename = f"ai_call_{clean_call_id}.wav"
             recording_rel_path = f"recordings/{recording_filename}"
             
             if call.rtp_session:
