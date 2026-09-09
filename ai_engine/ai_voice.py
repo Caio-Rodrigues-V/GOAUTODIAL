@@ -68,9 +68,12 @@ class AIVoiceBrain:
 
         async with httpx.AsyncClient(timeout=6.0) as client:
             try:
-                # 1. Deepgram Nova-2 (Ultra-rápido ~100ms, especialista em telefonia PT-BR - Padrão Vapi)
-                if (stt_provider == "deepgram" or not stt_provider) and api_keys.get("deepgram_api_key"):
+                # 1. Deepgram Nova-2 (Telefonia PT-BR)
+                if stt_provider == "deepgram":
                     api_key = api_keys.get("deepgram_api_key")
+                    if not api_key:
+                        logger.warning("Chave da Deepgram não configurada para STT")
+                        return ""
                     url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true"
                     headers = {
                         "Authorization": f"Token {api_key}",
@@ -83,15 +86,18 @@ class AIVoiceBrain:
                         if transcript and not is_hallucination(transcript):
                             logger.info(f"[Deepgram STT]: '{transcript}'")
                             return transcript
+                        return ""
                     else:
                         logger.warning(f"[Deepgram STT Error {r.status_code}]: {r.text}")
+                        return ""
 
-                # 2. Groq Whisper Large v3 Turbo (Latência ~120ms com Prompt Biasing anti-alucinação)
-                elif stt_provider == "groq" and api_keys.get("groq_api_key"):
+                # 2. Groq Whisper Large v3 Turbo
+                elif stt_provider == "groq":
                     api_key = api_keys.get("groq_api_key")
-                    files = {
-                        "file": ("audio.wav", wav_data, "audio/wav")
-                    }
+                    if not api_key:
+                        logger.warning("Chave da Groq não configurada para STT")
+                        return ""
+                    files = {"file": ("audio.wav", wav_data, "audio/wav")}
                     data = {
                         "model": "whisper-large-v3-turbo",
                         "language": "pt",
@@ -99,9 +105,7 @@ class AIVoiceBrain:
                         "temperature": "0.0",
                         "prompt": whisper_pt_prompt
                     }
-                    headers = {
-                        "Authorization": f"Bearer {api_key}"
-                    }
+                    headers = {"Authorization": f"Bearer {api_key}"}
                     r = await client.post("https://api.groq.com/openai/v1/audio/transcriptions", files=files, data=data, headers=headers)
                     if r.status_code == 200:
                         res = r.json()
@@ -109,22 +113,25 @@ class AIVoiceBrain:
                         if transcript and not is_hallucination(transcript):
                             logger.info(f"[Groq Whisper STT]: '{transcript}'")
                             return transcript
+                        return ""
+                    else:
+                        logger.warning(f"[Groq STT Error {r.status_code}]: {r.text}")
+                        return ""
 
-                # 3. OpenAI Whisper (com Prompt Biasing anti-alucinação)
-                elif stt_provider == "openai" and api_keys.get("openai_api_key"):
+                # 3. OpenAI Whisper-1
+                elif stt_provider == "openai":
                     api_key = api_keys.get("openai_api_key")
-                    files = {
-                        "file": ("audio.wav", wav_data, "audio/wav")
-                    }
+                    if not api_key:
+                        logger.warning("Chave da OpenAI não configurada para STT")
+                        return ""
+                    files = {"file": ("audio.wav", wav_data, "audio/wav")}
                     data = {
                         "model": "whisper-1",
                         "language": "pt",
                         "temperature": "0.0",
                         "prompt": whisper_pt_prompt
                     }
-                    headers = {
-                        "Authorization": f"Bearer {api_key}"
-                    }
+                    headers = {"Authorization": f"Bearer {api_key}"}
                     r = await client.post("https://api.openai.com/v1/audio/transcriptions", files=files, data=data, headers=headers)
                     if r.status_code == 200:
                         res = r.json()
@@ -132,10 +139,17 @@ class AIVoiceBrain:
                         if transcript and not is_hallucination(transcript):
                             logger.info(f"[OpenAI Whisper STT]: '{transcript}'")
                             return transcript
+                        return ""
+                    else:
+                        logger.warning(f"[OpenAI STT Error {r.status_code}]: {r.text}")
+                        return ""
 
                 # 4. Microsoft Azure Speech to Text (STT)
-                elif stt_provider == "azure" and api_keys.get("azure_speech_key"):
+                elif stt_provider == "azure":
                     api_key = api_keys.get("azure_speech_key")
+                    if not api_key:
+                        logger.warning("Chave do Azure Speech não configurada")
+                        return ""
                     region = api_keys.get("azure_speech_region") or "eastus"
                     url = f"https://{region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=pt-BR&format=detailed"
                     headers = {
@@ -150,22 +164,23 @@ class AIVoiceBrain:
                             if transcript:
                                 logger.info(f"[Azure Speech STT]: '{transcript}'")
                                 return transcript
+                        return ""
                     else:
                         logger.error(f"Erro Azure Speech STT [{r.status_code}]: {r.text}")
+                        return ""
 
                 # 5. ElevenLabs Scribe v1 (STT)
-                elif stt_provider == "elevenlabs" and api_keys.get("elevenlabs_api_key"):
+                elif stt_provider == "elevenlabs":
                     api_key = api_keys.get("elevenlabs_api_key")
-                    files = {
-                        "file": ("audio.wav", wav_data, "audio/wav")
-                    }
+                    if not api_key:
+                        logger.warning("Chave da ElevenLabs não configurada para STT")
+                        return ""
+                    files = {"file": ("audio.wav", wav_data, "audio/wav")}
                     data = {
                         "model_id": "scribe_v1",
                         "language_code": "por"
                     }
-                    headers = {
-                        "xi-api-key": api_key
-                    }
+                    headers = {"xi-api-key": api_key}
                     r = await client.post("https://api.elevenlabs.io/v1/speech-to-text", files=files, data=data, headers=headers)
                     if r.status_code == 200:
                         res = r.json()
@@ -173,30 +188,16 @@ class AIVoiceBrain:
                         if transcript:
                             logger.info(f"[ElevenLabs Scribe STT]: '{transcript}'")
                             return transcript
+                        return ""
                     else:
                         logger.error(f"Erro ElevenLabs STT [{r.status_code}]: {r.text}")
+                        return ""
 
-                # Fallbacks automáticos se o provedor principal não tiver chave
-                if api_keys.get("deepgram_api_key"):
-                    api_key = api_keys.get("deepgram_api_key")
-                    url = "https://api.deepgram.com/v1/listen?model=nova-2&language=pt-BR&smart_format=true&punctuate=true&numerals=true"
-                    r = await client.post(url, content=wav_data, headers={"Authorization": f"Token {api_key}", "Content-Type": "audio/wav"})
-                    if r.status_code == 200:
-                        return r.json()["results"]["channels"][0]["alternatives"][0]["transcript"].strip()
-
-                elif api_keys.get("groq_api_key"):
-                    api_key = api_keys.get("groq_api_key")
-                    files = {"file": ("audio.wav", wav_data, "audio/wav")}
-                    data = {"model": "whisper-large-v3-turbo", "language": "pt", "prompt": whisper_pt_prompt}
-                    r = await client.post("https://api.groq.com/openai/v1/audio/transcriptions", files=files, data=data, headers={"Authorization": f"Bearer {api_key}"})
-                    if r.status_code == 200:
-                        return r.json().get("text", "").strip()
-
-                elif api_keys.get("openai_api_key"):
-                    api_key = api_keys.get("openai_api_key")
+                # Se o provedor informado não for reconhecido, tenta na ordem de chaves disponíveis
+                if api_keys.get("openai_api_key"):
                     files = {"file": ("audio.wav", wav_data, "audio/wav")}
                     data = {"model": "whisper-1", "language": "pt", "prompt": whisper_pt_prompt}
-                    r = await client.post("https://api.openai.com/v1/audio/transcriptions", files=files, data=data, headers={"Authorization": f"Bearer {api_key}"})
+                    r = await client.post("https://api.openai.com/v1/audio/transcriptions", files=files, data=data, headers={"Authorization": f"Bearer {api_keys['openai_api_key']}"})
                     if r.status_code == 200:
                         return r.json().get("text", "").strip()
 
