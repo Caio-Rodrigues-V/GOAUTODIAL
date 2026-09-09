@@ -166,8 +166,30 @@ class AIAgentHandler {
             );
             foreach ($checkCols as $col => $definition) {
                 try {
-                    $this->db->rawQuery("ALTER TABLE `go_ai_call_logs` ADD COLUMN `{$col}` {$definition};");
-                } catch (\Throwable $t) {}
+                    $this->db->rawQuery("ALTER TABLE `go_ai_call_logs` ADD COLUMN IF NOT EXISTS `{$col}` {$definition};");
+                } catch (\Throwable $t) {
+                    try {
+                        $this->db->rawQuery("ALTER TABLE `go_ai_call_logs` ADD COLUMN `{$col}` {$definition};");
+                    } catch (\Throwable $t2) {}
+                }
+            }
+            $indexesToEnsure = array(
+                'idx_call_id' => '(`call_id`)',
+                'idx_agent_id' => '(`agent_id`)',
+                'idx_phone_number' => '(`phone_number`)',
+                'idx_created_at' => '(`created_at`)',
+                'idx_status' => '(`status`)',
+                'idx_qualification' => '(`qualification`)',
+                'idx_agent_created' => '(`agent_id`, `created_at`)'
+            );
+            foreach ($indexesToEnsure as $idxName => $idxCols) {
+                try {
+                    $this->db->rawQuery("ALTER TABLE `go_ai_call_logs` ADD INDEX IF NOT EXISTS `{$idxName}` {$idxCols};");
+                } catch (\Throwable $t) {
+                    try {
+                        $this->db->rawQuery("ALTER TABLE `go_ai_call_logs` ADD INDEX `{$idxName}` {$idxCols};");
+                    } catch (\Throwable $t2) {}
+                }
             }
 
             // Insert default sample agent if none exists
