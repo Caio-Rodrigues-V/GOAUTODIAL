@@ -59,6 +59,7 @@ class AIAgentHandler {
                 `voice_speaker_boost` enum('Y','N') NOT NULL DEFAULT 'N',
                 `voice_caching` enum('Y','N') NOT NULL DEFAULT 'Y',
                 `background_sound` varchar(50) NOT NULL DEFAULT 'off',
+                `background_sound_volume` decimal(3,2) NOT NULL DEFAULT '0.10',
                 `stt_provider` varchar(50) NOT NULL DEFAULT 'deepgram',
                 `stt_model` varchar(50) NOT NULL DEFAULT 'nova-2',
                 `stt_language` varchar(20) NOT NULL DEFAULT 'pt-BR',

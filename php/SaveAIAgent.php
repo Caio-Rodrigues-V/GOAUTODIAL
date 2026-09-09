@@ -65,6 +65,7 @@ $data = array(
     'voice_speaker_boost' => (isset($_POST['voice_speaker_boost']) && $_POST['voice_speaker_boost'] == 'Y') ? 'Y' : 'N',
     'voice_caching' => (isset($_POST['voice_caching']) && $_POST['voice_caching'] == 'N') ? 'N' : 'Y',
     'background_sound' => isset($_POST['background_sound']) ? $_POST['background_sound'] : 'off',
+    'background_sound_volume' => isset($_POST['background_sound_volume']) ? (float)$_POST['background_sound_volume'] : 0.10,
     'stt_provider' => isset($_POST['stt_provider']) ? $_POST['stt_provider'] : 'deepgram',
     'stt_model' => isset($_POST['stt_model']) ? $_POST['stt_model'] : 'nova-2',
     'stt_language' => isset($_POST['stt_language']) ? $_POST['stt_language'] : 'pt-BR',

@@ -235,7 +235,7 @@ class AmbientSoundEngine:
         total_samples = int(duration_sec * sample_rate)
         samples = [0.0] * total_samples
 
-        # Filtro de Ruído Rosa acústico (Simula ar condicionado e presença de microfone)
+        # Filtro de Ruído Rosa acústico (Simula ar condicionado e presença de microfone de headset)
         b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0
         for i in range(total_samples):
             white = random.uniform(-1.0, 1.0)
@@ -248,13 +248,27 @@ class AmbientSoundEngine:
             pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362
             b6 = white * 0.115926
 
-            # Base suave de ruído ambiente
-            samples[i] += (pink * 0.09)
-            # Frequência base de eletricidade/sala
+            # Base suave de ruído ambiente de sala
+            samples[i] += (pink * 0.12)
+            # Frequência base sutil de eletricidade/sala
             samples[i] += 0.02 * math.sin(2 * math.pi * 60 * i / sample_rate)
 
         if sound_type == "office":
-            # Sons de digitação em teclado de escritório
+            # 1. Simulação acústica de call center: murmúrio distante e difuso (distant babble/chatter)
+            num_voices = 4
+            for _ in range(num_voices):
+                f_formant = random.uniform(350, 950)
+                speed_mod = random.uniform(2.5, 4.5)
+                phase_off = random.uniform(0, math.pi * 2)
+                for i in range(total_samples):
+                    t = i / sample_rate
+                    # Modulação de amplitude para simular fala humana distante
+                    speech_env = max(0.0, math.sin(2 * math.pi * speed_mod * t + phase_off)) * (0.5 + 0.5 * math.sin(2 * math.pi * 0.3 * t))
+                    if speech_env > 0.15:
+                        carrier = math.sin(2 * math.pi * f_formant * t) + 0.5 * math.sin(2 * math.pi * (f_formant * 1.8) * t)
+                        samples[i] += carrier * speech_env * 0.035
+
+            # 2. Sons de digitação em teclado de escritório
             t = 0.4
             while t < duration_sec - 0.4:
                 burst_len = random.randint(3, 8)
@@ -263,7 +277,7 @@ class AmbientSoundEngine:
                     if idx >= total_samples - 400:
                         break
                     freq = random.uniform(1200, 2400)
-                    click_amp = random.uniform(0.30, 0.55)
+                    click_amp = random.uniform(0.40, 0.70)
                     for k in range(int(0.025 * sample_rate)):
                         if idx + k < total_samples:
                             env = math.exp(-k / (0.005 * sample_rate))
@@ -271,13 +285,13 @@ class AmbientSoundEngine:
                     t += random.uniform(0.08, 0.18)
                 t += random.uniform(0.7, 2.5)
 
-            # Sons de cliques sutis de mouse
+            # 3. Sons de cliques sutis de mouse
             t = 0.9
             while t < duration_sec - 0.9:
                 idx = int(t * sample_rate)
                 if idx < total_samples - 200:
                     freq = random.uniform(2800, 3500)
-                    amp = random.uniform(0.18, 0.30)
+                    amp = random.uniform(0.20, 0.35)
                     for k in range(int(0.015 * sample_rate)):
                         if idx + k < total_samples:
                             env = math.exp(-k / (0.003 * sample_rate))
@@ -285,7 +299,7 @@ class AmbientSoundEngine:
                 t += random.uniform(2.2, 5.5)
 
         elif sound_type == "typing":
-            # Sons contínuos de digitação
+            # Sons contínuos de digitação realista
             t = 0.2
             while t < duration_sec - 0.2:
                 burst_len = random.randint(4, 12)
@@ -294,7 +308,7 @@ class AmbientSoundEngine:
                     if idx >= total_samples - 400:
                         break
                     freq = random.uniform(1100, 2600)
-                    click_amp = random.uniform(0.35, 0.65)
+                    click_amp = random.uniform(0.45, 0.80)
                     for k in range(int(0.025 * sample_rate)):
                         if idx + k < total_samples:
                             env = math.exp(-k / (0.006 * sample_rate))
@@ -305,7 +319,7 @@ class AmbientSoundEngine:
         # Converter para PCM 16-bit Little Endian
         out = bytearray(total_samples * 2)
         for i, s in enumerate(samples):
-            val = int(max(-1.0, min(1.0, s * 0.7)) * 32767)
+            val = int(max(-1.0, min(1.0, s * 0.8)) * 32767)
             struct.pack_into('<h', out, i * 2, val)
 
         pcm_bytes = bytes(out)
