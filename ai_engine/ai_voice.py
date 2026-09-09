@@ -204,13 +204,13 @@ class AIVoiceBrain:
     @staticmethod
     async def chat_completion(messages: List[Dict[str, str]], llm_provider: str, llm_model: str, temperature: float, api_keys: Dict[str, str]) -> str:
         """
-        Executa completion da LLM com altíssima velocidade (< 300ms) e suporte a modelos de raciocínio (o1, o3-mini).
+        Executa completion da LLM com altíssima velocidade (< 300ms) de forma 100% dinâmica.
         """
         llm_provider = (llm_provider or "groq").lower()
         
         async with httpx.AsyncClient(timeout=10.0) as client:
             try:
-                # 1. Groq (Llama 3.3 70B Versatile, Llama 3.1 8B Instant)
+                # 1. Groq (Llama 3.3 70B, Llama 3.1 8B, DeepSeek-R1-Distill, Mixtral, etc.)
                 if llm_provider == "groq" and api_keys.get("groq_api_key"):
                     api_key = api_keys.get("groq_api_key")
                     model = llm_model if llm_model and llm_model != "custom" else "llama-3.3-70b-versatile"
@@ -228,8 +228,10 @@ class AIVoiceBrain:
                     if r.status_code == 200:
                         data = r.json()
                         return data["choices"][0]["message"]["content"].strip()
+                    else:
+                        logger.error(f"Erro Groq API [{r.status_code}]: {r.text}")
 
-                # 2. DeepSeek (DeepSeek V3 / R1)
+                # 2. DeepSeek (DeepSeek V3, DeepSeek R1)
                 elif llm_provider == "deepseek" and api_keys.get("deepseek_api_key"):
                     api_key = api_keys.get("deepseek_api_key")
                     model = llm_model if llm_model and llm_model != "custom" else "deepseek-chat"
@@ -247,8 +249,91 @@ class AIVoiceBrain:
                     if r.status_code == 200:
                         data = r.json()
                         return data["choices"][0]["message"]["content"].strip()
+                    else:
+                        logger.error(f"Erro DeepSeek API [{r.status_code}]: {r.text}")
 
-                # 3. OpenAI (GPT-4o, GPT-4o Mini, o3-mini, o1, o1-mini, GPT-4 Turbo, GPT-3.5 Turbo)
+                # 3. Anthropic Claude (Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3 Opus)
+                elif llm_provider == "anthropic" and api_keys.get("anthropic_api_key"):
+                    api_key = api_keys.get("anthropic_api_key")
+                    model = llm_model if llm_model and llm_model != "custom" else "claude-3-5-sonnet-20241022"
+                    
+                    system_text = ""
+                    anthropic_messages = []
+                    for m in messages:
+                        if m.get("role") == "system":
+                            system_text = m.get("content", "")
+                        else:
+                            anthropic_messages.append({
+                                "role": "user" if m.get("role") == "user" else "assistant",
+                                "content": m.get("content", "")
+                            })
+                    
+                    if not anthropic_messages:
+                        anthropic_messages = [{"role": "user", "content": "Olá"}]
+
+                    payload = {
+                        "model": model,
+                        "max_tokens": 150,
+                        "temperature": float(temperature) if temperature is not None else 0.7,
+                        "messages": anthropic_messages
+                    }
+                    if system_text:
+                        payload["system"] = system_text
+
+                    headers = {
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json"
+                    }
+                    r = await client.post("https://api.anthropic.com/v1/messages", json=payload, headers=headers)
+                    if r.status_code == 200:
+                        data = r.json()
+                        content_list = data.get("content", [])
+                        if content_list and len(content_list) > 0:
+                            return content_list[0].get("text", "").strip()
+                    else:
+                        logger.error(f"Erro Anthropic API [{r.status_code}]: {r.text}")
+
+                # 4. Google Gemini (Gemini 2.0 Flash, Gemini 1.5 Pro, etc.)
+                elif llm_provider == "gemini" and api_keys.get("gemini_api_key"):
+                    api_key = api_keys.get("gemini_api_key")
+                    model = llm_model if llm_model and llm_model != "custom" else "gemini-2.0-flash"
+                    
+                    system_text = ""
+                    contents = []
+                    for m in messages:
+                        if m.get("role") == "system":
+                            system_text = m.get("content", "")
+                        else:
+                            role_str = "user" if m.get("role") == "user" else "model"
+                            contents.append({
+                                "role": role_str,
+                                "parts": [{"text": m.get("content", "")}]
+                            })
+                    
+                    payload = {
+                        "contents": contents,
+                        "generationConfig": {
+                            "temperature": float(temperature) if temperature is not None else 0.7,
+                            "maxOutputTokens": 150
+                        }
+                    }
+                    if system_text:
+                        payload["systemInstruction"] = {"parts": [{"text": system_text}]}
+
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                    r = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
+                    if r.status_code == 200:
+                        data = r.json()
+                        candidates = data.get("candidates", [])
+                        if candidates and "content" in candidates[0]:
+                            parts = candidates[0]["content"].get("parts", [])
+                            if parts:
+                                return parts[0].get("text", "").strip()
+                    else:
+                        logger.error(f"Erro Gemini API [{r.status_code}]: {r.text}")
+
+                # 5. OpenAI (GPT-4o, GPT-4o Mini, o3-mini, o1, o1-mini, GPT-4 Turbo, GPT-3.5 Turbo) ou Fallback
                 if api_keys.get("openai_api_key"):
                     api_key = api_keys.get("openai_api_key")
                     model = llm_model if llm_model and llm_model != "custom" else "gpt-4o-mini"
