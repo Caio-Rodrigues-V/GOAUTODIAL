@@ -1075,12 +1075,23 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
         <div class="vapi-form-group">
             <label class="vapi-form-label">Model <i class="fa fa-info-circle text-muted"></i></label>
             <select id="modal_llm_model_select" class="vapi-input-dark">
-                <option value="groq|llama-3.3-70b-versatile" selected>Groq Llama 3.3 70B (180ms • $0.008/min • 92 Intel)</option>
-                <option value="groq|llama-3.1-8b-instant">Groq Llama 3.1 8B Instant (80ms • $0.002/min • 75 Intel)</option>
-                <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (380ms • $0.006/min • 88 Intel)</option>
-                <option value="openai|gpt-4o">OpenAI GPT-4o (680ms • $0.025/min • 99 Intel)</option>
-                <option value="anthropic|claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (750ms • $0.030/min • 98 Intel)</option>
-                <option value="deepseek|deepseek-chat">DeepSeek V3 (280ms • $0.003/min • 90 Intel)</option>
+                <optgroup label="Groq (Ultra-Rápido)">
+                    <option value="groq|llama-3.3-70b-versatile" selected>Groq Llama 3.3 70B (180ms • $0.008/min • 92 Intel)</option>
+                    <option value="groq|llama-3.1-8b-instant">Groq Llama 3.1 8B Instant (80ms • $0.002/min • 75 Intel)</option>
+                </optgroup>
+                <optgroup label="OpenAI (Modelos Oficiais 2025/2026)">
+                    <option value="openai|gpt-4o-mini">OpenAI GPT-4o Mini (320ms • $0.004/min • 88 Intel)</option>
+                    <option value="openai|gpt-4o">OpenAI GPT-4o (620ms • $0.022/min • 99 Intel)</option>
+                    <option value="openai|o3-mini">OpenAI o3-mini (550ms • $0.012/min • 97 Intel - Reasoning)</option>
+                    <option value="openai|o1-mini">OpenAI o1-mini (750ms • $0.015/min • 95 Intel - Reasoning)</option>
+                    <option value="openai|o1">OpenAI o1 (1200ms • $0.080/min • 100 Intel - Deep Reasoning)</option>
+                    <option value="openai|gpt-4-turbo">OpenAI GPT-4 Turbo (720ms • $0.040/min • 96 Intel)</option>
+                    <option value="openai|gpt-3.5-turbo">OpenAI GPT-3.5 Turbo (240ms • $0.003/min • 72 Intel)</option>
+                </optgroup>
+                <optgroup label="Anthropic & DeepSeek">
+                    <option value="anthropic|claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (750ms • $0.030/min • 98 Intel)</option>
+                    <option value="deepseek|deepseek-chat">DeepSeek V3 (280ms • $0.003/min • 90 Intel)</option>
+                </optgroup>
             </select>
         </div>
 
@@ -1369,8 +1380,13 @@ var VAPI_CONFIG = {
     llm: {
         'groq|llama-3.3-70b-versatile': { name: 'Llama 3.3 70B', provider: 'groq', model: 'llama-3.3-70b-versatile', sub: 'Groq • Versatile & Fast', latency: 180, cost: 0.008, intel: 92, icon: 'fa fa-bolt text-blue' },
         'groq|llama-3.1-8b-instant': { name: 'Llama 3.1 8B Instant', provider: 'groq', model: 'llama-3.1-8b-instant', sub: 'Groq • Ultra Fast (<100ms)', latency: 80, cost: 0.002, intel: 75, icon: 'fa fa-bolt text-yellow' },
-        'openai|gpt-4o-mini': { name: 'GPT-4o Mini', provider: 'openai', model: 'gpt-4o-mini', sub: 'OpenAI • Smart & Affordable', latency: 380, cost: 0.006, intel: 88, icon: 'fa fa-cube text-green' },
-        'openai|gpt-4o': { name: 'GPT-4o', provider: 'openai', model: 'gpt-4o', sub: 'OpenAI • Flagship Multimodal', latency: 680, cost: 0.025, intel: 99, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4o-mini': { name: 'GPT-4o Mini', provider: 'openai', model: 'gpt-4o-mini', sub: 'OpenAI • Ultra-Fast & Cost Effective', latency: 320, cost: 0.004, intel: 88, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4o': { name: 'GPT-4o', provider: 'openai', model: 'gpt-4o', sub: 'OpenAI • Flagship Multimodal', latency: 620, cost: 0.022, intel: 99, icon: 'fa fa-cube text-green' },
+        'openai|o3-mini': { name: 'o3-mini', provider: 'openai', model: 'o3-mini', sub: 'OpenAI • Next-Gen Fast Reasoning', latency: 550, cost: 0.012, intel: 97, icon: 'fa fa-cube text-green' },
+        'openai|o1-mini': { name: 'o1-mini', provider: 'openai', model: 'o1-mini', sub: 'OpenAI • STEM & Coding Reasoning', latency: 750, cost: 0.015, intel: 95, icon: 'fa fa-cube text-green' },
+        'openai|o1': { name: 'o1 (Deep Reasoning)', provider: 'openai', model: 'o1', sub: 'OpenAI • Deep Complex Reasoning', latency: 1200, cost: 0.080, intel: 100, icon: 'fa fa-cube text-green' },
+        'openai|gpt-4-turbo': { name: 'GPT-4 Turbo', provider: 'openai', model: 'gpt-4-turbo', sub: 'OpenAI • High Precision 128k Context', latency: 720, cost: 0.040, intel: 96, icon: 'fa fa-cube text-green' },
+        'openai|gpt-3.5-turbo': { name: 'GPT-3.5 Turbo', provider: 'openai', model: 'gpt-3.5-turbo', sub: 'OpenAI • Legacy Fast Standard', latency: 240, cost: 0.003, intel: 72, icon: 'fa fa-cube text-green' },
         'anthropic|claude-3-5-sonnet-20241022': { name: 'Claude 3.5 Sonnet', provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', sub: 'Anthropic • Deep Reasoning', latency: 750, cost: 0.030, intel: 98, icon: 'fa fa-diamond text-orange' },
         'deepseek|deepseek-chat': { name: 'DeepSeek V3', provider: 'deepseek', model: 'deepseek-chat', sub: 'DeepSeek • Low Cost & High Intel', latency: 280, cost: 0.003, intel: 90, icon: 'fa fa-star text-blue' }
     },

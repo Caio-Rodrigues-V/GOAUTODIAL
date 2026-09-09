@@ -299,10 +299,11 @@ Diretrizes da conversa:
                 'models' => array(
                     'gpt-4o' => 'GPT-4o (Máxima inteligência & raciocínio)',
                     'gpt-4o-mini' => 'GPT-4o Mini (Recomendado - Rápido e econômico)',
+                    'o3-mini' => 'o3-mini (Raciocínio ultra-rápido)',
+                    'o1-mini' => 'o1-mini (Raciocínio avançado)',
+                    'o1' => 'o1 (Raciocínio profundo avançado)',
                     'gpt-4-turbo' => 'GPT-4 Turbo',
                     'gpt-3.5-turbo' => 'GPT-3.5 Turbo',
-                    'o1-mini' => 'o1-mini (Raciocínio avançado)',
-                    'o3-mini' => 'o3-mini (Raciocínio ultra-rápido)',
                     'custom' => 'Outro Modelo (Digitar ID)'
                 )
             ),

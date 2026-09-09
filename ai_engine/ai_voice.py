@@ -204,21 +204,21 @@ class AIVoiceBrain:
     @staticmethod
     async def chat_completion(messages: List[Dict[str, str]], llm_provider: str, llm_model: str, temperature: float, api_keys: Dict[str, str]) -> str:
         """
-        Executa completion da LLM com altíssima velocidade (< 300ms).
+        Executa completion da LLM com altíssima velocidade (< 300ms) e suporte a modelos de raciocínio (o1, o3-mini).
         """
         llm_provider = (llm_provider or "groq").lower()
         
         async with httpx.AsyncClient(timeout=10.0) as client:
             try:
-                # 1. Groq (Llama 3.3 70B Versatile)
+                # 1. Groq (Llama 3.3 70B Versatile, Llama 3.1 8B Instant)
                 if llm_provider == "groq" and api_keys.get("groq_api_key"):
                     api_key = api_keys.get("groq_api_key")
                     model = llm_model if llm_model and llm_model != "custom" else "llama-3.3-70b-versatile"
                     payload = {
                         "model": model,
                         "messages": messages,
-                        "temperature": temperature or 0.7,
-                        "max_tokens": 120
+                        "temperature": float(temperature) if temperature is not None else 0.7,
+                        "max_tokens": 150
                     }
                     headers = {
                         "Authorization": f"Bearer {api_key}",
@@ -229,16 +229,43 @@ class AIVoiceBrain:
                         data = r.json()
                         return data["choices"][0]["message"]["content"].strip()
 
-                # 2. OpenAI (GPT-4o Mini / GPT-4o)
-                if api_keys.get("openai_api_key"):
-                    api_key = api_keys.get("openai_api_key")
-                    model = llm_model if llm_model and llm_model != "custom" else "gpt-4o-mini"
+                # 2. DeepSeek (DeepSeek V3 / R1)
+                elif llm_provider == "deepseek" and api_keys.get("deepseek_api_key"):
+                    api_key = api_keys.get("deepseek_api_key")
+                    model = llm_model if llm_model and llm_model != "custom" else "deepseek-chat"
                     payload = {
                         "model": model,
                         "messages": messages,
-                        "temperature": temperature or 0.7,
-                        "max_tokens": 120
+                        "temperature": float(temperature) if temperature is not None else 0.7,
+                        "max_tokens": 150
                     }
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    }
+                    r = await client.post("https://api.deepseek.com/chat/completions", json=payload, headers=headers)
+                    if r.status_code == 200:
+                        data = r.json()
+                        return data["choices"][0]["message"]["content"].strip()
+
+                # 3. OpenAI (GPT-4o, GPT-4o Mini, o3-mini, o1, o1-mini, GPT-4 Turbo, GPT-3.5 Turbo)
+                if api_keys.get("openai_api_key"):
+                    api_key = api_keys.get("openai_api_key")
+                    model = llm_model if llm_model and llm_model != "custom" else "gpt-4o-mini"
+                    is_reasoning = any(model.startswith(prefix) for prefix in ["o1", "o3"])
+
+                    payload = {
+                        "model": model,
+                        "messages": messages
+                    }
+                    
+                    if is_reasoning:
+                        # Modelos de raciocínio da OpenAI não aceitam o parâmetro 'temperature'
+                        payload["max_completion_tokens"] = 250
+                    else:
+                        payload["temperature"] = float(temperature) if temperature is not None else 0.7
+                        payload["max_tokens"] = 150
+
                     headers = {
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json"
@@ -247,8 +274,10 @@ class AIVoiceBrain:
                     if r.status_code == 200:
                         data = r.json()
                         return data["choices"][0]["message"]["content"].strip()
+                    else:
+                        logger.error(f"Erro OpenAI API [{r.status_code}]: {r.text}")
 
             except Exception as e:
-                logger.error(f"Exceção na LLM: {e}")
+                logger.error(f"Exceção na LLM ({llm_provider}): {e}")
 
         return "Entendi perfeitamente. Como posso te ajudar?"
