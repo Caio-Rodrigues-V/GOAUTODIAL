@@ -73,6 +73,17 @@ def resample_24k_to_8k_pcm(pcm_24k: bytes) -> bytes:
         out.extend(pcm_24k[i:i+2])
     return bytes(out)
 
+def resample_16k_to_8k_pcm(pcm_16k: bytes) -> bytes:
+    """Decimação exata 2:1 de PCM 16-bit 16000Hz para 8000Hz"""
+    try:
+        import audioop
+        return audioop.ratecv(pcm_16k, 2, 1, 16000, 8000, None)[0]
+    except Exception:
+        out = bytearray()
+        for i in range(0, len(pcm_16k) - 3, 4):
+            out.extend(pcm_16k[i:i+2])
+        return bytes(out)
+
 def resample_wav_to_8k_pcm(wav_bytes: bytes) -> bytes:
     """Decodifica WAV de qualquer taxa de amostragem para PCM 16-bit 8000Hz Mono"""
     try:

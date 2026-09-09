@@ -10,7 +10,7 @@ import json
 import io
 import wave
 from typing import Dict, Any, List, Optional
-from rtp_media import resample_wav_to_8k_pcm
+from rtp_media import resample_wav_to_8k_pcm, resample_16k_to_8k_pcm
 
 logger = logging.getLogger("DialGO_Brain")
 
@@ -208,7 +208,7 @@ class AIVoiceBrain:
                     else:
                         logger.error(f"Erro OpenAI TTS: {r.status_code} - {r.text}")
 
-                # 2. ElevenLabs TTS
+                # 2. ElevenLabs TTS (Multilingual v2 & Turbo v2.5 com Custom Cloned Voices)
                 elif voice_provider == "elevenlabs":
                     api_key = api_keys.get("elevenlabs_api_key", "")
                     if not api_key:
@@ -216,10 +216,10 @@ class AIVoiceBrain:
                         return b''
 
                     eleven_voice = voice_id if voice_id and voice_id != "custom" else "21m00Tcm4TlvDq8ikWAM"
-                    url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_8000"
+                    url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_16000"
                     payload = {
                         "text": text,
-                        "model_id": "eleven_turbo_v2_5",
+                        "model_id": "eleven_multilingual_v2",
                         "voice_settings": {
                             "stability": 0.5,
                             "similarity_boost": 0.8
@@ -231,9 +231,17 @@ class AIVoiceBrain:
                     }
                     r = await client.post(url, json=payload, headers=headers)
                     if r.status_code == 200:
-                        return r.content
+                        logger.info(f"ElevenLabs TTS gerou com sucesso áudio para a voz '{eleven_voice}'")
+                        return resample_16k_to_8k_pcm(r.content)
                     else:
-                        logger.error(f"Erro ElevenLabs TTS: {r.status_code} - {r.text}")
+                        logger.error(f"Erro ElevenLabs TTS [{r.status_code}] na voz '{eleven_voice}': {r.text}")
+                        # Fallback suave caso o modelo eleven_multilingual_v2 não esteja liberado
+                        if r.status_code in [400, 422]:
+                            logger.info("Tentando ElevenLabs com modelo 'eleven_turbo_v2_5'...")
+                            payload["model_id"] = "eleven_turbo_v2_5"
+                            r_fb = await client.post(url, json=payload, headers=headers)
+                            if r_fb.status_code == 200:
+                                return resample_16k_to_8k_pcm(r_fb.content)
 
                 # 3. Cartesia Sonic
                 elif voice_provider == "cartesia":
