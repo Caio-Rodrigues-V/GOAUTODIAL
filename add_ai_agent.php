@@ -426,8 +426,8 @@ $defaultPrompt = "# PERSONA E OBJETIVO\n" .
             <input type="hidden" name="voice_stability" id="input_voice_stability" value="0.70" />
             <input type="hidden" name="voice_clarity" id="input_voice_clarity" value="0.60" />
             <input type="hidden" name="voice_style_exaggeration" id="input_voice_style_exaggeration" value="0.20" />
-            <input type="hidden" name="voice_optimize_latency" id="input_voice_optimize_latency" value="1" />
-            <input type="hidden" name="background_sound" id="input_background_sound" value="off" />
+            <input type="hidden" name="background_sound" id="input_background_sound" value="office" />
+            <input type="hidden" name="background_sound_volume" id="input_background_sound_volume" value="0.10" />
 
             <input type="hidden" name="tools_json" id="input_tools_json" value="<?=htmlspecialchars(json_encode($defaultTools))?>" />
             <input type="hidden" name="status" value="Y" />

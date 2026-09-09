@@ -46,6 +46,7 @@ $silence_timeout_ms = !empty($agent['silence_timeout_ms']) ? (int)$agent['silenc
 $intelligent_turn_taking = isset($agent['intelligent_turn_taking']) ? $agent['intelligent_turn_taking'] : 'Y';
 $background_denoising = isset($agent['background_denoising']) ? $agent['background_denoising'] : 'Y';
 $background_sound = !empty($agent['background_sound']) ? $agent['background_sound'] : 'off';
+$background_sound_volume = isset($agent['background_sound_volume']) ? (float)$agent['background_sound_volume'] : 0.10;
 $voice_speed = !empty($agent['voice_speed']) ? (float)$agent['voice_speed'] : 1.0;
 $voice_stability = !empty($agent['voice_stability']) ? (float)$agent['voice_stability'] : 0.7;
 $voice_clarity = !empty($agent['voice_clarity']) ? (float)$agent['voice_clarity'] : 0.6;
@@ -747,6 +748,7 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
             <input type="hidden" name="voice_style_exaggeration" id="input_voice_style_exaggeration" value="<?=$voice_style_exaggeration?>" />
             <input type="hidden" name="voice_optimize_latency" id="input_voice_optimize_latency" value="<?=$voice_optimize_latency?>" />
             <input type="hidden" name="background_sound" id="input_background_sound" value="<?=$background_sound?>" />
+            <input type="hidden" name="background_sound_volume" id="input_background_sound_volume" value="<?=$background_sound_volume?>" />
 
             <input type="hidden" name="tools_json" id="input_tools_json" value="<?=htmlspecialchars(json_encode($agentTools))?>" />
             <input type="hidden" name="status" id="input_status" value="<?=$agent['status']?>" />
@@ -1287,13 +1289,27 @@ $tool_strict_compatibility = isset($agent['tool_strict_compatibility']) ? $agent
         </div>
 
         <div class="vapi-form-group">
-            <label class="vapi-form-label"><i class="fa fa-music"></i> Background Sound</label>
-            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Background sound played in the call. Default for phone calls is 'office' and for web calls is 'off'.</div>
+            <label class="vapi-form-label"><i class="fa fa-volume-up"></i> Ruído de Fundo (Ambiente de Escritório / Call Center)</label>
+            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Simula um ambiente sonoro realista (call center, digitação, murmúrios distantes) para eliminar o silêncio robótico.</div>
             <div class="vapi-pill-group" id="bg_sound_pills">
-                <div class="vapi-pill-opt <?=($background_sound=='off'?'active':'')?>" data-bgsound="off">Off</div>
-                <div class="vapi-pill-opt <?=($background_sound=='office'?'active':'')?>" data-bgsound="office">Office</div>
-                <div class="vapi-pill-opt <?=($background_sound=='default'?'active':'')?>" data-bgsound="default">Default</div>
-                <div class="vapi-pill-opt <?=($background_sound=='custom'?'active':'')?>" data-bgsound="custom">Custom</div>
+                <div class="vapi-pill-opt <?=($background_sound=='off'?'active':'')?>" data-bgsound="off">Desativado</div>
+                <div class="vapi-pill-opt <?=($background_sound=='office'||$background_sound=='default'||$background_sound=='callcenter'?'active':'')?>" data-bgsound="office">Escritório / Call Center</div>
+                <div class="vapi-pill-opt <?=($background_sound=='typing'?'active':'')?>" data-bgsound="typing">Digitação no Teclado</div>
+                <div class="vapi-pill-opt <?=($background_sound=='room'?'active':'')?>" data-bgsound="room">Ruído de Sala (Conforto)</div>
+            </div>
+        </div>
+
+        <div class="vapi-form-group" id="bg_volume_group" style="<?=($background_sound=='off'?'display:none;':'')?>">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <label class="vapi-form-label"><i class="fa fa-sliders"></i> Volume do Som de Fundo</label>
+                <span id="modal_bg_vol_val" style="font-size:12px; color:#38bdf8; font-weight:700;"><?=intval($background_sound_volume * 100)?>%</span>
+            </div>
+            <div style="font-size:11px; color:#64748b; margin-bottom:8px;">Volume recomendado: 8% a 12% (muito natural).</div>
+            <input type="range" id="modal_bg_vol_slider" class="vapi-range-slider" min="0.02" max="0.30" step="0.01" value="<?=$background_sound_volume?>" />
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b; margin-top:4px;">
+                <span>Sutil (2%)</span>
+                <span>Médio (15%)</span>
+                <span>Forte (30%)</span>
             </div>
         </div>
 
@@ -1741,7 +1757,20 @@ $(document).ready(function() {
     $('#bg_sound_pills .vapi-pill-opt').click(function() {
         $('#bg_sound_pills .vapi-pill-opt').removeClass('active');
         $(this).addClass('active');
-        $('#input_background_sound').val($(this).data('bgsound'));
+        var bgsound = $(this).data('bgsound');
+        $('#input_background_sound').val(bgsound);
+        if (bgsound === 'off') {
+            $('#bg_volume_group').slideUp(150);
+        } else {
+            $('#bg_volume_group').slideDown(150);
+        }
+    });
+
+    $('#modal_bg_vol_slider').on('input', function() {
+        var vol = parseFloat($(this).val());
+        var pct = Math.round(vol * 100) + '%';
+        $('#modal_bg_vol_val').text(pct);
+        $('#input_background_sound_volume').val(vol.toFixed(2));
     });
 
     $('#tab_voice_library').click(function() {

@@ -420,8 +420,16 @@ class DirectSIPEngine:
             # Configurações do Agente de IA
             silence_timeout_ms = int(agent.get("silence_timeout_ms") or 500)
             silence_timeout_sec = max(0.2, min(5.0, silence_timeout_ms / 1000.0))
+            background_sound = agent.get("background_sound") or "off"
+            background_volume = float(agent.get("background_sound_volume") or 0.10)
             
-            call.rtp_session = RTPAudioSession(call.rtp_port, remote_ip, remote_port, codec=codec, silence_timeout=silence_timeout_sec)
+            call.rtp_session = RTPAudioSession(
+                call.rtp_port, remote_ip, remote_port,
+                codec=codec,
+                silence_timeout=silence_timeout_sec,
+                background_sound=background_sound,
+                background_volume=background_volume
+            )
             call.rtp_session.start_socket()
 
             first_message_mode = agent.get("first_message_mode") or "assistant_speaks_first"

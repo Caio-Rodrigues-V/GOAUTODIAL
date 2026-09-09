@@ -97,6 +97,7 @@ class AIAgentHandler {
                 'voice_speaker_boost' => "ENUM('Y','N') NOT NULL DEFAULT 'N'",
                 'voice_caching' => "ENUM('Y','N') NOT NULL DEFAULT 'Y'",
                 'background_sound' => "VARCHAR(50) NOT NULL DEFAULT 'off'",
+                'background_sound_volume' => "DECIMAL(3,2) NOT NULL DEFAULT '0.10'",
                 'intelligent_turn_taking' => "ENUM('Y','N') NOT NULL DEFAULT 'Y'",
                 'background_denoising' => "ENUM('Y','N') NOT NULL DEFAULT 'Y'",
                 'silence_timeout_ms' => "INT(11) NOT NULL DEFAULT '500'",
