@@ -33,7 +33,9 @@ WHISPER_HALLUCINATIONS = {
     "obrigado por assistir", "legendas pela comunidade amara.org", "subtitles by the amara.org community",
     "inscreva-se no canal", "deixe seu like", "curta e compartilhe", "transcrição por", "assista ao vídeo",
     ".", "..", "...", "....", "bye thanks for watching", "thanks for watching", "todos os direitos reservados",
-    "subtitles", "legendas", "transcrição", "amara.org"
+    "subtitles", "legendas", "transcrição", "amara.org", "apenas a voz do cliente no primeiro plano",
+    "apenas a voz do cliente", "transcrição telefônica estrita", "desconsidere ruídos de fundo",
+    "transcrição telefônica", "ruídos de fundo", "conversas paralelas"
 }
 
 def is_hallucination(text: str) -> bool:
@@ -73,7 +75,7 @@ class AIVoiceBrain:
 
         stt_provider = (stt_provider or "deepgram").lower()
         wav_data = create_wav_from_pcm(pcm_bytes, 8000)
-        whisper_pt_prompt = "Transcrição telefônica estrita. Apenas a voz do cliente no primeiro plano. Desconsidere ruídos de fundo, conversas paralelas distantes e chiados."
+        whisper_pt_prompt = "Alô, sim, pois não, bom dia, boa tarde, gostaria de falar."
 
         async with httpx.AsyncClient(timeout=6.0) as client:
             try:
