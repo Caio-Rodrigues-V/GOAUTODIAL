@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
+$handler = \creamy\AIAgentHandler::getInstance();
+
 $rawInput = file_get_contents('php://input');
 $rawPayload = json_decode($rawInput, true);
 if (!is_array($rawPayload)) {
