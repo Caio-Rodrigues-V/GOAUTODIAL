@@ -206,18 +206,46 @@ class AIVoiceBrain:
 
         return ""
 
+# Cache global de áudio sintetizado em memória e disco (elimina custos repetidos de TTS para saudações)
+_tts_memory_cache: Dict[str, bytes] = {}
+
     @staticmethod
-    async def synthesize(text: str, voice_provider: str, voice_id: str, api_keys: Dict[str, str], voice_settings: Optional[Dict[str, Any]] = None) -> bytes:
+    async def synthesize(text: str, voice_provider: str, voice_id: str, api_keys: Dict[str, str], voice_settings: Optional[Dict[str, Any]] = None, return_cached_flag: bool = False) -> Any:
         """
         Sintetiza texto em áudio PCM 16-bit 8000Hz Mono para streaming de telefonia.
+        Inclui Cache Inteligente de Áudio em Disco/RAM (Zero custo de API em saudações repetidas).
         """
         text = clean_text_for_tts(text)
         if not text:
-            return b''
+            return (b'', True) if return_cached_flag else b''
 
         voice_provider = (voice_provider or "openai").lower()
-        logger.info(f"Sintetizando voz: Provedor={voice_provider}, Voz={voice_id}, Texto='{text[:60]}...'")
+        
+        # 0. Verificação de Cache de Áudio (Memória e Disco)
+        import hashlib
+        cache_key = hashlib.sha256(f"{voice_provider}_{voice_id}_{text}".encode('utf-8')).hexdigest()
+        
+        if cache_key in _tts_memory_cache:
+            logger.info(f"⚡ [TTS Cache Hit]: Áudio recuperado da memória (Custo TTS = R$ 0,00) para voz '{voice_id}'")
+            cached_audio = _tts_memory_cache[cache_key]
+            return (cached_audio, True) if return_cached_flag else cached_audio
 
+        cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audio_cache")
+        cache_file = os.path.join(cache_dir, f"{cache_key}.pcm")
+        if os.path.exists(cache_file):
+            try:
+                with open(cache_file, "rb") as f:
+                    cached_audio = f.read()
+                if cached_audio and len(cached_audio) > 0:
+                    _tts_memory_cache[cache_key] = cached_audio
+                    logger.info(f"⚡ [TTS Cache Disco]: Áudio carregado do disco (Custo TTS = R$ 0,00) para voz '{voice_id}'")
+                    return (cached_audio, True) if return_cached_flag else cached_audio
+            except Exception:
+                pass
+
+        logger.info(f"Sintetizando voz na API: Provedor={voice_provider}, Voz={voice_id}, Texto='{text[:60]}...'")
+
+        audio_result = b''
         async with httpx.AsyncClient(timeout=15.0) as client:
             try:
                 # 1. OpenAI TTS
@@ -225,7 +253,7 @@ class AIVoiceBrain:
                     api_key = api_keys.get("openai_api_key", "")
                     if not api_key:
                         logger.error("Chave da OpenAI não configurada para TTS")
-                        return b''
+                        return (b'', False) if return_cached_flag else b''
 
                     voice = voice_id if voice_id in ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] else "nova"
                     payload = {
@@ -240,7 +268,7 @@ class AIVoiceBrain:
                     }
                     r = await client.post("https://api.openai.com/v1/audio/speech", json=payload, headers=headers)
                     if r.status_code == 200:
-                        return resample_wav_to_8k_pcm(r.content)
+                        audio_result = resample_wav_to_8k_pcm(r.content)
                     else:
                         logger.error(f"Erro OpenAI TTS: {r.status_code} - {r.text}")
 
@@ -282,30 +310,28 @@ class AIVoiceBrain:
                     }
                     r = await client.post(url, json=payload, headers=headers)
                     if r.status_code == 200:
-                        logger.info(f"ElevenLabs TTS gerou áudio nativo 8kHz (pcm_8000) com máxima fidelidade para voz '{eleven_voice}'")
-                        return r.content
+                        audio_result = r.content
                     else:
                         logger.error(f"Erro ElevenLabs TTS [{r.status_code}] na voz '{eleven_voice}': {r.text}")
                         # Fallback 1: Tenta modelo turbo v2.5 com pcm_8000
                         payload["model_id"] = "eleven_turbo_v2_5"
                         r_fb = await client.post(url, json=payload, headers=headers)
                         if r_fb.status_code == 200:
-                            return r_fb.content
-
-                        # Fallback 2: OpenAI TTS de segurança (nunca deixa a chamada muda)
-                        if api_keys.get("openai_api_key"):
+                            audio_result = r_fb.content
+                        elif api_keys.get("openai_api_key"):
+                            # Fallback 2: OpenAI TTS de segurança (nunca deixa a chamada muda)
                             logger.info("Acionando Fallback OpenAI TTS para não deixar a chamada muda...")
                             fb_payload = {"model": "tts-1", "voice": "nova", "input": text, "response_format": "wav"}
                             r_oai = await client.post("https://api.openai.com/v1/audio/speech", json=fb_payload, headers={"Authorization": f"Bearer {api_keys['openai_api_key']}"})
                             if r_oai.status_code == 200:
-                                return resample_wav_to_8k_pcm(r_oai.content)
+                                audio_result = resample_wav_to_8k_pcm(r_oai.content)
 
                 # 3. Cartesia Sonic
                 elif voice_provider == "cartesia":
                     api_key = api_keys.get("cartesia_api_key", "")
                     if not api_key:
                         logger.error("Chave da Cartesia não configurada")
-                        return b''
+                        return (b'', False) if return_cached_flag else b''
 
                     cartesia_voice = voice_id if voice_id and voice_id != "custom" else "a0e99841-438c-4a64-b679-ae501e7d6091"
                     payload = {
@@ -329,7 +355,7 @@ class AIVoiceBrain:
                     }
                     r = await client.post("https://api.cartesia.ai/tts/bytes", json=payload, headers=headers)
                     if r.status_code == 200:
-                        return r.content
+                        audio_result = r.content
                     else:
                         logger.error(f"Erro Cartesia TTS: {r.status_code} - {r.text}")
 
@@ -339,7 +365,7 @@ class AIVoiceBrain:
                     region = api_keys.get("azure_speech_region", "eastus")
                     if not api_key:
                         logger.error("Chave da Azure Speech não configurada")
-                        return b''
+                        return (b'', False) if return_cached_flag else b''
 
                     azure_voice = voice_id if voice_id and voice_id != "custom" else "pt-BR-FranciscaNeural"
                     url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
@@ -352,14 +378,25 @@ class AIVoiceBrain:
                     }
                     r = await client.post(url, content=ssml.encode('utf-8'), headers=headers)
                     if r.status_code == 200:
-                        return r.content
+                        audio_result = r.content
                     else:
                         logger.error(f"Erro Azure TTS [{r.status_code}]: {r.text}")
 
             except Exception as e:
                 logger.error(f"Exceção durante síntese de áudio: {e}")
 
-        return b''
+        # Salva no Cache para reutilização instantânea com Custo Zero
+        if audio_result and len(audio_result) > 0:
+            _tts_memory_cache[cache_key] = audio_result
+            try:
+                os.makedirs(cache_dir, exist_ok=True)
+                with open(cache_file, "wb") as f:
+                    f.write(audio_result)
+            except Exception:
+                pass
+            return (audio_result, False) if return_cached_flag else audio_result
+
+        return (b'', False) if return_cached_flag else b''
 
     @staticmethod
     async def chat_completion(messages: List[Dict[str, str]], llm_provider: str, llm_model: str, temperature: float, api_keys: Dict[str, str]) -> str:

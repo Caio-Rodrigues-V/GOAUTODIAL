@@ -618,8 +618,9 @@ class DirectSIPEngine:
                         clean_reply = ai_reply.replace("[END_CALL]", "").strip()
 
                         # 3. Text-to-Speech (TTS)
-                        call.tts_characters += len(clean_reply)
-                        pcm_reply = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys, agent)
+                        pcm_reply, was_cached = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys, agent, return_cached_flag=True)
+                        if not was_cached:
+                            call.tts_characters += len(clean_reply)
                         if pcm_reply and len(pcm_reply) > 0:
                             # 4. Transmitir áudio da resposta para o telefone
                             await call.rtp_session.stream_pcm_audio(pcm_reply)
@@ -658,8 +659,9 @@ class DirectSIPEngine:
                 # Se a operadora já estiver falando (áudio detectado no primeiro instante), não fala a saudação por cima!
                 if not call.rtp_session.is_collecting_speech:
                     logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
-                    call.tts_characters += len(greeting)
-                    pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent)
+                    pcm_audio, was_cached = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent, return_cached_flag=True)
+                    if not was_cached:
+                        call.tts_characters += len(greeting)
                     
                     if pcm_audio and len(pcm_audio) > 0:
                         await call.rtp_session.stream_pcm_audio(pcm_audio)
