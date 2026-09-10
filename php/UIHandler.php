@@ -1998,136 +1998,41 @@ error_reporting(E_ERROR | E_PARSE);
 	 * @param $userid the id of the user.
 	 */
 	public function getSidebar($userid, $username, $userrole, $avatar, $usergroup = NULL) {
-		$numMessages = $this->db->getUnreadMessagesNumber($userid);
-		$numTasks = $this->db->getUnfinishedTasksNumber($userid);
-		$numNotifications = $this->db->getNumberOfTodayNotifications($userid) + $this->db->getNumberOfTodayEvents($userid);
-		$mh = \creamy\ModuleHandler::getInstance();
-		$smtp_status = $this->API_getSMTPActivation(); // smtp_status
-		$gopackage = $this->api->API_getGOPackage(); // smtp_status
-		$agent_chat_status = $this->API_getAgentChatActivation(); //agent_chat_status
-		$whatsapp_status = $this->API_getWhatsappActivation(); //whatsapp_status
 		$usergroup = (!isset($usergroup) ? $_SESSION['usergroup'] : $usergroup);
-		$perms = $this->api->goGetPermissions('sidebar', $usergroup);
-		$perms = json_decode(stripslashes($perms->data->permissions));
 
-		$adminArea = "";
-		$telephonyArea = "";
-		$settings = "";
-		$callreports = "";
-		$loadleads = "";
-		$crm = "";
-		$eventsArea = "";
-		if ($userrole != CRM_DEFAULTS_USER_ROLE_AGENT) {
+		// 1. Voice AI Agents Hub
+		$aiVoiceArea = '<li class="treeview active"><a href="#"><i class="fa fa-magic text-purple"></i> <span>Agentes de IA</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
+		$aiVoiceArea .= $this->getSidebarItem("./ai_agents.php", "users", "Meus Agentes");
+		$aiVoiceArea .= $this->getSidebarItem("./add_ai_agent.php", "plus-circle", "Criar Agente");
+		$aiVoiceArea .= $this->getSidebarItem("./ai_call_logs.php", "phone", "Histórico & Transcrições");
+		$aiVoiceArea .= $this->getSidebarItem("./ai_settings.php", "key", "Configurações & Chaves API");
+		$aiVoiceArea .= '</ul></li>';
 
-			$modulesWithSettings = $mh->modulesWithSettings();
-			$adminArea = '<li class="treeview"><a href="#"><i class="fa fa-dashboard"></i> <span>'.$this->lh->translationFor("administration").'</span><i class="fa fa-angle-left pull-right"></i></a>
-			<ul class="treeview-menu">';
+		// 2. Call Logs & Recordings
+		$callreports = '<li class="treeview"><a href="#"><i class="fa fa-bar-chart text-aqua"></i> <span>Relatórios & Áudios</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
+		$callreports .= $this->getSidebarItem("./ai_call_logs.php", "list-alt", "Transcrições em Tempo Real");
+		$callreports .= $this->getSidebarItem("./callreports.php", "bar-chart", "Relatórios Gerais");
+		$callreports .= $this->getSidebarItem("./callrecordings.php", "file-audio-o", "Gravações das Chamadas");
+		$callreports .= '</ul></li>';
 
-			//if ($_SESSION['user'] === "goautodial" || $_SESSION['user'] === "goAPI")
-			$adminArea .= $this->getSidebarItem("./adminsettings.php", "gears", $this->lh->translationFor("settings")); // admin settings
+		// 3. Telephony & SIP Trunks
+		$telephonyArea = '<li class="treeview"><a href="#"><i class="fa fa-phone text-green"></i> <span>Telefonia & SIP</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
+		$telephonyArea .= $this->getSidebarItem("./settingscarriers.php", "signal", "Troncos SIP (Oktor)");
+		$telephonyArea .= $this->getSidebarItem("./telephonyinbound.php", "hashtag", "Números DIDs / Inbound");
+		$telephonyArea .= $this->getSidebarItem("./audiofiles.php", "music", "Áudios & Ruídos de Fundo");
+		$telephonyArea .= '</ul></li>';
 
-			//$adminArea .= $this->getSidebarItem("./telephonyusers.php", "user", $this->lh->translationFor("users")); // admin settings
-			$adminArea .= $this->getSidebarItem("./adminmodules.php", "archive", $this->lh->translationFor("modules")); // admin settings
-			//$adminArea .= $this->getSidebarItem("./admincustomers.php", "users", $this->lh->translationFor("customers")); // admin settings
-			foreach ($modulesWithSettings as $k => $m) { $adminArea .= $this->getSidebarItem("./modulesettings.php?module_name=".urlencode($k), $m->mainPageViewIcon(), $m->mainPageViewTitle()); }
-			if ($smtp_status == 1) {  // module is enabled.
-				$adminArea .= $this->getSidebarItem("./settingssmtp.php", "envelope-square", $this->lh->translationFor("smtp_settings")); // smtp settings
-			}
-			/*if ($whatsapp_status == 1) { // module is enabled.
-				$adminArea .= $this->getSidebarItem("./settingswhatsapp.php", "envelope-square", $this->lh->translationFor("whatsapp_settings")); // whatsapp settings
-			}*/
+		// 4. Wallet & Billing
+		$creditsArea = $this->getSidebarItem("./credits.php", "credit-card", "Créditos & Faturamento");
 
-			$adminArea .= '</ul></li>';
-			$telephonyArea = '<li class="treeview"><a href="#"><i class="fa fa-phone"></i> <span>'.$this->lh->translationFor("telephony").'</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-			if (isset($perms->user->user_read) && $perms->user->user_read == 'R' || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN"))
-				$telephonyArea .= $this-> getSidebarItem("./telephonyusers.php", "users", $this->lh->translationFor("users"));
-			if (isset($perms->campaign->campaign_read) && $perms->campaign->campaign_read == 'R' || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN"))
-				$telephonyArea .= $this-> getSidebarItem("./telephonycampaigns.php", "fa fa-dashboard", $this->lh->translationFor("campaigns"));
-			if ((isset($perms->list->list_read) && $perms->list->list_read == 'R') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN")) {
-				$telephonyArea .= $this-> getSidebarItem("./telephonylist.php", "list", $this->lh->translationFor("lists"));
-				$telephonyArea .= $this-> getSidebarItem("./telephonyfilters.php", "filter", $this->lh->translationFor("filters"));
-			}
-			if (isset($perms->script->script_read) && $perms->script->script_read == 'R' || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN"))
-				$telephonyArea .= $this-> getSidebarItem("./telephonyscripts.php", "comment", $this->lh->translationFor("scripts"));
-			if ( (isset($perms->inbound->inbound_read) && $perms->inbound->inbound_read == 'R') || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN") || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN )
-				$telephonyArea .= $this-> getSidebarItem("./telephonyinbound.php", "phone", $this->lh->translationFor("inbound"));
-			if ((isset($perms->voicefiles->voicefiles_upload) && $perms->voicefiles->voicefiles_upload == 'C') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN")) {
-				$telephonyArea .= $this-> getSidebarItem("./audiofiles.php", "music", $this->lh->translationFor("audiofiles"));
-			}
-			$telephonyArea .= '</ul></li>';
+		// 5. Settings / Administration
+		$settings = '<li class="treeview"><a href="#"><i class="fa fa-gear text-yellow"></i> <span>Configurações</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
+		$settings .= $this->getSidebarItem("./ai_settings.php", "sliders", "Provedores de IA (API)");
+		$settings .= $this->getSidebarItem("./telephonyusers.php", "user", "Usuários do Painel");
+		$settings .= $this->getSidebarItem("./settingsservers.php", "server", "Servidores & Rede");
+		$settings .= $this->getSidebarItem("./adminsettings.php", "wrench", "Sistema Geral");
+		$settings .= '</ul></li>';
 
-			$aiVoiceArea = '<li class="treeview"><a href="#"><i class="fa fa-magic"></i> <span>Agentes de IA</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-			$aiVoiceArea .= $this->getSidebarItem("./ai_agents.php", "users", "Meus Agentes");
-			$aiVoiceArea .= $this->getSidebarItem("./add_ai_agent.php", "plus", "Criar Agente");
-			$aiVoiceArea .= $this->getSidebarItem("./ai_call_logs.php", "phone", "Histórico & Transcrições");
-			$aiVoiceArea .= $this->getSidebarItem("./ai_settings.php", "key", "Configurações IA");
-			$aiVoiceArea .= '</ul></li>';
-
-			$rocketchatAnalytics = "";
-			if(ROCKETCHAT_ENABLE === 'y'){
-				$rocketchatAnalytics .= '<li class="treeview"><a href="#"><i class="fa fa-headphones"></i> <span>'.$this->lh->translationFor("livechat").'</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-				$rocketchatAnalytics .= $this-> getSidebarItem("./livechat.php?current_chats", "users", $this->lh->translationFor("current_chats"));
-				$rocketchatAnalytics .= $this-> getSidebarItem("./livechat.php?analytics", "users", $this->lh->translationFor("analytics"));
-				$rocketchatAnalytics .= $this-> getSidebarItem("./livechat.php?realtime_monitoring", "users", $this->lh->translationFor("realtime_monitoring"));
-				$rocketchatAnalytics .= '</ul></li>';
-			}
-
-			if ($userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN")) {
-				$settings = '<li class="treeview"><a href="#"><i class="fa fa-gear"></i> <span>'.$this->lh->translationFor("settings").'</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-				$settings .= $this-> getSidebarItem("./settingscalltimes.php", "list-ol", $this->lh->translationFor("call_times"));
-				$settings .= $this-> getSidebarItem("./settingsvoicemails.php", "envelope", $this->lh->translationFor("voice_mails"));
-				$settings .= $this-> getSidebarItem("./settingsusergroups.php", "users", $this->lh->translationFor("user_groups"));
-
-				if ((isset($perms->carriers->carriers_read) && $perms->carriers->carriers_read == 'R') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN"))
-					$settings .= $this-> getSidebarItem("./settingscarriers.php", "signal", $this->lh->translationFor("carriers"));
-
-				if ((isset($perms->servers->servers_read) && $perms->servers->servers_read == 'R') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN"))
-					$settings .= $this-> getSidebarItem("./settingsservers.php", "server", $this->lh->translationFor("servers"));
-
-				$settings .= $this-> getSidebarItem("./settingsadminlogs.php", "book", $this->lh->translationFor("admin_logs"));
-
-				$settings .= '</ul></li>';
-			}
-
-			$callreports = '<li class="treeview"><a href="#"><i class="fa fa-bar-chart-o"></i> <span>'.$this->lh->translationFor("call_reports").'</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-			$callreports .= $this-> getSidebarItem("./callreports.php", "bar-chart", $this->lh->translationFor("reports_and_go_analytics"));
-
-			if ((isset($perms->recordings->recordings_display) && $perms->recordings->recordings_display == 'Y') || $userrole == CRM_DEFAULTS_USER_ROLE_ADMIN || (isset($_SESSION['usergroup']) && $_SESSION['usergroup'] === "ADMIN")) {
-				$callreports .= $this-> getSidebarItem("./callrecordings.php", "phone-square", $this->lh->translationFor("call_recordings"));
-			}
-
-			$callreports .= '</ul></li>';
-
-			// WhatsApp Settings
-   $whatsapp_status = 0; // permanently disabled -- chris
-			if ($whatsapp_status == 1) { // module is enabled.
-				$whatsapp = '<li class="treeview"><a href="#"><i class="fa fa-gear"></i> <span>'.$this->lh->translationFor("WhatsApp").'</span><i class=
-"fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-                                $whatsapp .= $this->getSidebarItem("./settingswhatsapp.php", "envelope-square", $this->lh->translationFor("whatsapp_settings"));
-				$whatsapp .= $this->getSidebarItem("./settingswhatsappdispo.php", "call-square", $this->lh->translationFor("whatsapp_dispo_settings"));
-				$whatsapp .= $this->getSidebarItem("./settingswhatsappreports.php", "call-square", $this->lh->translationFor("whatsapp_reports"));
-				$whatsapp .= '</ul></li>';
-                        }
-
-			$eventsArea .= $this->getSidebarItem("events.php", "calendar-o", $this->lh->translationFor("events"));
-
-			$crm .= $this->getSidebarItem("crm.php", "group", $this->lh->translationFor("contacts"));
-		}
-
-		$agentmenu = NULL;
-		if ($userrole == CRM_DEFAULTS_USER_ROLE_AGENT) {
-			//$agentmenu .= $this-> getSidebarItem("", "book", $this->lh->translationFor("scripts"));
-			//$agentmenu .= $this-> getSidebarItem("", "tasks", $this->lh->translationFor("Custom Form"));
-			//$agentmenu .= $this->getSidebarItem("customerslist.php", "users", $this->lh->translationFor("contacts"));
-			//$agentmenu .= $this->getSidebarItem("callbackslist.php", "calendar", $this->lh->translationFor("callbacks"), "0", "blue");
-			//$agentmenu .= $this->getChat();
-		}
-
-		// get customer types
-		$customerTypes = $this->db->getCustomerTypes();
-
-		// prefix: structure and home link
-		// old img element : <img src="'.$avatar.'" class="img-circle" alt="User Image" />
 		$avatarElement = $this->getVueAvatar($username, $avatar, 40);
 		$result = '<aside class="main-sidebar sidebar-offcanvas"><section class="sidebar">
 	            <div class="user-panel hidden">
@@ -2139,66 +2044,17 @@ error_reporting(E_ERROR | E_PARSE);
 	                    <a href="edituser.php"><i class="fa fa-circle text-success"></i> '.$this->lh->translationFor("online").'</a>
 	                </div>
 	            </div>
-	            <ul class="sidebar-menu"><li class="header">'.strtoupper($this->lh->translationFor("menu")).'</li>';
-	    // body: home and customer menus
-	    if ($userrole != CRM_DEFAULTS_USER_ROLE_AGENT) {
-			if ($perms->dashboard->dashboard_display === 'Y') {
-				$result .= $this->getSidebarItem("./index.php", "dashboard", $this->lh->translationFor("Dashboard"));
-			}
-	    }
-	    if ($userrole == CRM_DEFAULTS_USER_ROLE_AGENT) {
-	    	$result .= $this->getSidebarItem("./agent.php", "dashboard", $this->lh->translationFor("Home"));
-	    }
+	            <ul class="sidebar-menu"><li class="header">DIAL GO VOICE AI</li>';
 
-	    // menu for admin
-		if ($perms->user->user_read == 'N' && $perms->campaign->campaign_read == 'N' && $perms->list->list_read == 'N'
-			 && $perms->script->script_read == 'N' && $perms->inbound->inbound_read == 'N' && $perms->voicefiles->voicefiles_upload == 'N') {
-			$telephonyArea = '';
-		}
-		$result .= $telephonyArea;
+		// Dashboard
+		$result .= $this->getSidebarItem("./index.php", "dashboard", "Dashboard");
+
+		// Core Voice AI sections
 		$result .= $aiVoiceArea;
-		$result .= $rocketchatAnalytics;
-		if ($userrole != CRM_DEFAULTS_USER_ROLE_AGENT) {
-			$result .= $settings;
-		}
 		$result .= $callreports;
-		if ($userrole == CRM_DEFAULTS_USER_ROLE_ADMIN) {
-			$result .= $adminArea;
-		}
-		if ($whatsapp_status == 1) { // module is enabled.
-			$result .= $whatsapp;
-		}
-		$result .= $crm;
-		$result .= $eventsArea;
-
-        // ending: contacts, messages, notifications, tasks, events.
-
-        //$result .= $this->getSidebarItem("customerslist.php", "users", $this->lh->translationFor("contacts"));
-
-		// menu for agents
-		$result .= $agentmenu;
-		if ($userrole != CRM_DEFAULTS_USER_ROLE_AGENT) {
-	//$result .= $this->getSidebarItem("messages.php", "envelope", $this->lh->translationFor("messages"), $numMessages);
-	if(ROCKETCHAT_ENABLE === 'y'){
-        //Rocketchat
-		//$result .= $this->getSidebarItem("rocketchat.php", "rocket", $this->lh->translationFor("Rocket Chat"), NULL);
-		//$result .= $this->getSidebarItem("calls.php", "phone", "Calls");
-	}
-        $result .= $this->getSidebarItem("notifications.php", "exclamation", $this->lh->translationFor("notifications"), $numNotifications, "orange");
-        $result .= $this->getSidebarItem("tasks.php", "tasks", $this->lh->translationFor("tasks"), $numTasks, "red");
-		}
-
-        // suffix: modules
-        $activeModules = $mh->activeModulesInstances();
-        foreach ($activeModules as $shortName => $module) {
-			if ($module->mainPageViewTitle() != null && $module->needsSidebarDisplay()) {
-				$result .= $this->getSidebarItem($mh->pageLinkForModule($shortName, null), $module->mainPageViewIcon(), $module->mainPageViewTitle(), $module->sidebarBadgeNumber());
-			}
-        }
-
-  if($userrole != CRM_DEFAULTS_USER_ROLE_AGENT){
-        $result .= $this->getSidebarItem("credits.php", "list-alt", $this->lh->translationFor("Credits"));
-  }
+		$result .= $telephonyArea;
+		$result .= $creditsArea;
+		$result .= $settings;
 
 		$result .= '</ul></section></aside>';
 
