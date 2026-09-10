@@ -36,8 +36,9 @@ WHISPER_HALLUCINATIONS = {
 def is_hallucination(text: str) -> bool:
     if not text:
         return True
-    cleaned = text.strip().lower().rstrip(".,!?;:")
-    if cleaned in WHISPER_HALLUCINATIONS:
+    cleaned = text.strip().lower()
+    cleaned = re.sub(r'[\.\,\!\?\;\:\-\_]', '', cleaned).strip()
+    if cleaned in WHISPER_HALLUCINATIONS or cleaned in ("tchau tchau", "tchau tchau tchau", "obrigado obrigado", "subtitles", "legendas"):
         return True
     if len(cleaned) <= 1:
         return True
@@ -69,7 +70,7 @@ class AIVoiceBrain:
 
         stt_provider = (stt_provider or "deepgram").lower()
         wav_data = create_wav_from_pcm(pcm_bytes, 8000)
-        whisper_pt_prompt = "Transcrição em português do Brasil em chamada telefônica. Entenda com precisão: sim, não, alô, quem fala, tá bom, olá, pode falar, não quero, tenho interesse."
+        whisper_pt_prompt = "Transcrição telefônica estrita. Apenas a voz do cliente no primeiro plano. Desconsidere ruídos de fundo, conversas paralelas distantes e chiados."
 
         async with httpx.AsyncClient(timeout=6.0) as client:
             try:
