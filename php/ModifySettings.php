@@ -72,23 +72,24 @@ if ($validated == 1) {
 	$db = new \creamy\DbHandler();
 
 	// check permissions
-	if (!$user->userHasAdminPermission()) {
-		$this->lh->translateText("you_dont_have_permission");
+	if (!$user || !$user->userHasAdminPermission()) {
+		$lh->translateText("you_dont_have_permission");
 		return;
 	}
 	
 	// build data for setting.	
-	$timezone = $_POST["timezone"];
-	$locale = $_POST["locale"];
+	$timezone = isset($_POST["timezone"]) ? $_POST["timezone"] : "America/Sao_Paulo";
+	$locale = isset($_POST["locale"]) ? $_POST["locale"] : "pt_BR";
 	$confirmationEmail = isset($_POST["confirmationEmail"]) ? true : false;
 	$eventEmail = isset($_POST["eventEmail"]) ? true : false;
-	$theme = $_POST["theme"];
-	$baseURL = htmlentities($_POST["base_url"]);
-	$minFreq = $_POST["jobScheduling"];
+	$theme = isset($_POST["theme"]) ? $_POST["theme"] : "black";
+	$baseURL = isset($_POST["base_url"]) ? htmlentities($_POST["base_url"]) : "";
+	$minFreq = isset($_POST["jobScheduling"]) ? $_POST["jobScheduling"] : 0;
 	$customCompanyName = isset($_POST["company_name"]) ? htmlentities($_POST["company_name"]) : null;
-	$googleAPIKey = htmlentities($_POST["google_api_key"]);
-	$slave_db_ip = htmlentities($_POST["slave_db_ip"]);
-	$voicemail_greeting = $_POST["voicemail_greeting"];
+	$googleAPIKey = isset($_POST["google_api_key"]) ? htmlentities($_POST["google_api_key"]) : "";
+	$slave_db_ip = isset($_POST["slave_db_ip"]) ? htmlentities($_POST["slave_db_ip"]) : "";
+	$voicemail_greeting = isset($_POST["voicemail_greeting"]) ? $_POST["voicemail_greeting"] : "Disabled";
+	
 	// generate settings array
 	$data = array(
 		CRM_SETTING_CONFIRMATION_EMAIL => $confirmationEmail, 
@@ -103,25 +104,35 @@ if ($validated == 1) {
 	);
 	if (!empty($baseURL)) { $data[CRM_SETTING_CRM_BASE_URL] = $baseURL; }
 	
-	// if we have a company custom logo, try to generate if first.
+	// if we have a company custom logo, try to generate it first.
 	if (isset($customLogoOrigin)) {
-		$ih = new \creamy\ImageHandler();
-		$customLogoURL = $ih->generateCustomCompanyLogoAndReturnURL($customLogoOrigin, $imageFileType);
-		if (isset($customLogoURL)) { $data[CRM_SETTING_COMPANY_LOGO] = $customLogoURL; }
+		try {
+			$ih = new \creamy\ImageHandler();
+			$customLogoURL = $ih->generateCustomCompanyLogoAndReturnURL($customLogoOrigin, $imageFileType);
+			if (isset($customLogoURL)) { $data[CRM_SETTING_COMPANY_LOGO] = $customLogoURL; }
+		} catch (\Throwable $te) {}
 	}
 	
 	// set settings
 	$result = $db->setSettings($data);
 
-	// allow voicemail greeting
-	$result2 = $api->API_editSystemSetting($voicemail_greeting);	
+	// allow voicemail greeting if API is available
+	try {
+		if ($voicemail_greeting) {
+			$api->API_editSystemSetting($voicemail_greeting);
+		}
+	} catch (\Throwable $te) {}
 
 	// return results.
-	if ($result === true && $result2->result === 'success') {
-		ob_clean();
+	if ($result === true || $result == 1) {
+		@ob_clean();
 		print CRM_DEFAULT_SUCCESS_RESPONSE;
 	} else {
-		ob_clean(); $lh->translateText("error_accessing_database"); 
+		@ob_clean(); 
+		$lh->translateText("error_accessing_database"); 
 	}	
-} else { ob_clean(); $lh->translateText("some_fields_missing"); }
+} else { 
+	@ob_clean(); 
+	$lh->translateText("some_fields_missing"); 
+}
 ?>
