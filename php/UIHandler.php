@@ -2008,12 +2008,8 @@ error_reporting(E_ERROR | E_PARSE);
 		$aiVoiceArea .= $this->getSidebarItem("./ai_settings.php", "key", "Configurações & Chaves API");
 		$aiVoiceArea .= '</ul></li>';
 
-		// 2. Call Logs & Recordings
-		$callreports = '<li class="treeview"><a href="#"><i class="fa fa-bar-chart text-aqua"></i> <span>Relatórios & Áudios</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-		$callreports .= $this->getSidebarItem("./ai_call_logs.php", "list-alt", "Transcrições em Tempo Real");
-		$callreports .= $this->getSidebarItem("./callreports.php", "bar-chart", "Relatórios Gerais");
-		$callreports .= $this->getSidebarItem("./callrecordings.php", "file-audio-o", "Gravações das Chamadas");
-		$callreports .= '</ul></li>';
+		// 2. Call Logs & Analytics
+		$callreports = $this->getSidebarItem("./ai_call_logs.php", "file-audio-o text-aqua", "Histórico & Gravações");
 
 		// 3. Telephony & SIP Trunks
 		$telephonyArea = '<li class="treeview"><a href="#"><i class="fa fa-phone text-green"></i> <span>Telefonia & SIP</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
