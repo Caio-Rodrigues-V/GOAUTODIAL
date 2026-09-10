@@ -419,35 +419,43 @@ class RTPAudioSession:
                 if len(self.pre_speech_ring_buffer) > 3200:
                     self.pre_speech_ring_buffer = self.pre_speech_ring_buffer[-3200:]
 
-                # 1. Detecção de Fala / Interrupção (Barge-in) Full-Duplex
-                if rms > self.vad_threshold:
-                    if self.is_transmitting:
-                        logger.info("🎙️ [Barge-in / Áudio na linha detectado]: Interrompendo fala da IA para processar áudio da linha...")
-                        self.cancel_playback = True
-                        if self.on_barge_in:
-                            self.on_barge_in()
-
-                    self.vad_consecutive_hits += 1
-                    if self.vad_consecutive_hits >= 2:  # Confirmação de 2 frames (>40ms)
-                        if not self.is_collecting_speech:
-                            self.is_collecting_speech = True
-                            # Recupera o início da palavra/frase do pre-buffer
-                            self.speech_buffer = bytearray(self.pre_speech_ring_buffer)
-                            logger.info("🎙️ [Áudio da Linha/Cliente Detectado]: Capturando com pre-buffer...")
-
-                        self.speech_buffer.extend(pcm_chunk)
-                        self.full_recorded_pcm.extend(pcm_chunk)
-                        self.last_speech_time = now
+                # 1. Detecção de Fala / Interrupção (Barge-in) Full-Duplex com Resistência a Eco Acústico
+                if self.is_transmitting:
+                    # Durante transmissão da IA, usamos threshold mais alto e 4 frames de confirmação (80ms) para não cancelar por eco da linha
+                    if rms > 1850.0:
+                        barge_in_hits += 1
+                        if barge_in_hits >= 4:
+                            logger.info("🎙️ [Barge-in Real Confirmado]: Cliente falou por cima da IA. Interrompendo áudio...")
+                            self.cancel_playback = True
+                            barge_in_hits = 0
+                            if self.on_barge_in:
+                                self.on_barge_in()
+                    else:
+                        barge_in_hits = max(0, barge_in_hits - 1)
                 else:
-                    self.vad_consecutive_hits = 0
-                    if self.is_collecting_speech:
-                        self.speech_buffer.extend(pcm_chunk)
-                        self.full_recorded_pcm.extend(pcm_chunk)
+                    barge_in_hits = 0
+                    if rms > self.vad_threshold:
+                        self.vad_consecutive_hits += 1
+                        if self.vad_consecutive_hits >= 2:  # Confirmação de 2 frames (>40ms)
+                            if not self.is_collecting_speech:
+                                self.is_collecting_speech = True
+                                # Recupera o início da palavra/frase do pre-buffer
+                                self.speech_buffer = bytearray(self.pre_speech_ring_buffer)
+                                logger.info("🎙️ [Áudio do Cliente Detectado]: Capturando com pre-buffer...")
 
-                        # Detecção de fim de fala (silêncio atingiu timeout)
-                        if now - self.last_speech_time > self.silence_timeout:
-                            self.is_collecting_speech = False
-                            audio_len = len(self.speech_buffer)
+                            self.speech_buffer.extend(pcm_chunk)
+                            self.full_recorded_pcm.extend(pcm_chunk)
+                            self.last_speech_time = now
+                    else:
+                        self.vad_consecutive_hits = 0
+                        if self.is_collecting_speech:
+                            self.speech_buffer.extend(pcm_chunk)
+                            self.full_recorded_pcm.extend(pcm_chunk)
+
+                            # Detecção de fim de fala (silêncio atingiu timeout)
+                            if now - self.last_speech_time > self.silence_timeout:
+                                self.is_collecting_speech = False
+                                audio_len = len(self.speech_buffer)
                             logger.info(f"🤫 [Silêncio detectado]: Fim de bloco de áudio ({audio_len} bytes PCM).")
                             
                             # Dispara callback se o áudio capturado tiver pelo menos 150ms
