@@ -1859,7 +1859,7 @@ $(document).ready(function() {
                 phone_number: phone.trim()
             }, function(res) {
                 $(self).prop('disabled', false).html('<i class="fa fa-phone"></i> Testar Chamada');
-                if (res.status === 'ringing' || res.status === 1 || res.status === 'ok') {
+                if (res.status === 'success' || res.status === 'ringing' || res.status === 1 || res.status === 'ok') {
                     alert("📞 Ligação disparada com sucesso para " + phone + "! O telefone tocará em instantes.");
                 } else {
                     alert(res.message || 'Erro ao discar: ' + JSON.stringify(res));
