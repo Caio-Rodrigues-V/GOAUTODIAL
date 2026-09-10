@@ -2012,10 +2012,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$callreports = $this->getSidebarItem("./ai_call_logs.php", "file-audio-o text-aqua", "Histórico & Gravações");
 
 		// 3. Telephony & SIP Trunks
-		$telephonyArea = '<li class="treeview"><a href="#"><i class="fa fa-phone text-green"></i> <span>Telefonia & SIP</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-		$telephonyArea .= $this->getSidebarItem("./settingscarriers.php", "signal", "Troncos SIP (Oktor)");
-		$telephonyArea .= $this->getSidebarItem("./audiofiles.php", "music", "Áudios & Ruídos de Fundo");
-		$telephonyArea .= '</ul></li>';
+		$telephonyArea = $this->getSidebarItem("./settingscarriers.php", "phone text-green", "Troncos SIP (Oktor)");
 
 		// 4. Wallet & Billing
 		$creditsArea = $this->getSidebarItem("./credits.php", "credit-card", "Créditos & Faturamento");
