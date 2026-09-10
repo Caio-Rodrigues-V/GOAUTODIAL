@@ -110,6 +110,31 @@ switch ($action) {
         $callbackUrl = $protocol . '://' . $host . ($scriptDir ? $scriptDir : '') . '/php/SaveAICallLog.php';
         $agent['callback_url'] = $callbackUrl;
 
+        // Suporte a Webhook por chamada
+        if (!empty($payload['webhook_url'])) {
+            $agent['webhook_url'] = $payload['webhook_url'];
+        }
+
+        // Suporte a personalização de variáveis no prompt/saudação
+        $customerName = isset($payload['name']) ? $payload['name'] : (isset($payload['customer_name']) ? $payload['customer_name'] : '');
+        $customVars = isset($payload['variables']) ? $payload['variables'] : (isset($payload['custom_data']) ? $payload['custom_data'] : array());
+        if ($customerName || !empty($customVars)) {
+            $greeting = isset($agent['greeting_message']) ? $agent['greeting_message'] : '';
+            $systemP = isset($agent['system_prompt']) ? $agent['system_prompt'] : '';
+            if ($customerName) {
+                $greeting = str_replace(array('{nome}', '{name}'), $customerName, $greeting);
+                $systemP = str_replace(array('{nome}', '{name}'), $customerName, $systemP);
+            }
+            if (is_array($customVars)) {
+                foreach ($customVars as $k => $v) {
+                    $greeting = str_replace("{{$k}}", (string)$v, $greeting);
+                    $systemP = str_replace("{{$k}}", (string)$v, $systemP);
+                }
+            }
+            $agent['greeting_message'] = $greeting;
+            $agent['system_prompt'] = $systemP;
+        }
+
         $ch = curl_init($dialEndpoint);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -130,14 +155,86 @@ switch ($action) {
         } else {
             echo json_encode(array(
                 'status' => 'error',
-                'message' => 'O Motor de Voz (ai_engine) não está rodando no servidor na porta 8765. No terminal do servidor, execute: cd ai_engine && bash setup_service.sh (ou python3 server.py)'
+                'message' => 'O Motor de Voz (ai_engine) não está rodando no servidor na porta 8765. No terminal do servidor, execute: cd ai_engine && python3 server.py'
+            ));
+        }
+        break;
+
+    case 'batch':
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true) ?: $_POST;
+
+        $agentId = isset($payload['agent_id']) ? (int)$payload['agent_id'] : 0;
+        $contacts = isset($payload['contacts']) ? $payload['contacts'] : array();
+        $concurrency = isset($payload['concurrency']) ? (int)$payload['concurrency'] : 5;
+        $delayMs = isset($payload['delay_ms']) ? (int)$payload['delay_ms'] : 250;
+
+        if (!$agentId || empty($contacts)) {
+            http_response_code(400);
+            echo json_encode(array('status' => 'error', 'message' => 'agent_id and contacts array are required'));
+            exit;
+        }
+
+        $agent = $handler->getAgentById($agentId);
+        if (!$agent) {
+            http_response_code(404);
+            echo json_encode(array('status' => 'error', 'message' => 'Agent not found'));
+            exit;
+        }
+
+        if (!empty($payload['webhook_url'])) {
+            $agent['webhook_url'] = $payload['webhook_url'];
+        }
+
+        $apiKeys = array(
+            'openai_api_key' => $handler->getSetting('openai_api_key', ''),
+            'groq_api_key' => $handler->getSetting('groq_api_key', ''),
+            'elevenlabs_api_key' => $handler->getSetting('elevenlabs_api_key', ''),
+            'cartesia_api_key' => $handler->getSetting('cartesia_api_key', ''),
+            'deepgram_api_key' => $handler->getSetting('deepgram_api_key', ''),
+            'gemini_api_key' => $handler->getSetting('gemini_api_key', ''),
+            'anthropic_api_key' => $handler->getSetting('anthropic_api_key', ''),
+            'deepseek_api_key' => $handler->getSetting('deepseek_api_key', '')
+        );
+
+        $aiServerUrl = $handler->getSetting('ai_server_url', 'http://127.0.0.1:8765');
+        $batchEndpoint = rtrim($aiServerUrl, '/') . '/api/dial/batch';
+
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '129.121.42.250';
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+        $agent['callback_url'] = $protocol . '://' . $host . ($scriptDir ? $scriptDir : '') . '/php/SaveAICallLog.php';
+
+        $ch = curl_init($batchEndpoint);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array(
+            'agent_id' => $agentId,
+            'contacts' => $contacts,
+            'concurrency' => $concurrency,
+            'delay_ms' => $delayMs,
+            'agent_config' => $agent,
+            'api_keys' => $apiKeys
+        )));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $response) {
+            echo $response;
+        } else {
+            echo json_encode(array(
+                'status' => 'error',
+                'message' => 'Falha ao conectar com o motor de voz na porta 8765.'
             ));
         }
         break;
 
     default:
         http_response_code(400);
-        echo json_encode(array('status' => 'error', 'message' => 'Invalid action'));
+        echo json_encode(array('status' => 'error', 'message' => 'Invalid action. Supported: dial, batch, list, get, stats'));
         break;
 }
 ?>

@@ -89,6 +89,53 @@ $logData = array(
 
 $res = $handler->saveCallLog($logData);
 
+// -------------------------------------------------------------
+// Disparo Automático de Webhook para Sistemas Externos (n8n, CRM, Zapier, Webhook.site)
+// -------------------------------------------------------------
+$webhookUrl = !empty($data['webhook_url']) ? $data['webhook_url'] : '';
+if (empty($webhookUrl) && !empty($logData['agent_id'])) {
+    $agentObj = $handler->getAgentById($logData['agent_id']);
+    if ($agentObj && !empty($agentObj['webhook_url'])) {
+        $webhookUrl = $agentObj['webhook_url'];
+    }
+}
+
+if (!empty($webhookUrl)) {
+    $serverHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '129.121.42.250';
+    $fullRecordingUrl = !empty($recordingUrl) ? "http://{$serverHost}/" . ltrim($recordingUrl, '/') : '';
+
+    $webhookPayload = array(
+        'event' => 'call.completed',
+        'call_id' => $logData['call_id'],
+        'agent_id' => $logData['agent_id'],
+        'agent_name' => $logData['agent_name'],
+        'phone_number' => $logData['phone_number'],
+        'status' => $logData['status'],
+        'duration_seconds' => $logData['duration_seconds'],
+        'tabulation' => $logData['tabulation'],
+        'tabulation_code' => $logData['tabulation_code'],
+        'call_summary' => $logData['call_summary'],
+        'sentiment' => $logData['sentiment'],
+        'cost_estimate_brl' => $logData['cost_estimate'],
+        'recording_url' => $fullRecordingUrl,
+        'transcript' => json_decode($logData['transcript_json'], true) ?: array(),
+        'created_at' => $logData['created_at'],
+        'ended_at' => $logData['ended_at']
+    );
+
+    try {
+        $ch = curl_init($webhookUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'User-Agent: DIAL-GO-VoiceAI-Webhook/1.0'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($webhookPayload));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_exec($ch);
+        curl_close($ch);
+    } catch (\Throwable $t) {}
+}
+
 if ($res) {
     echo json_encode(array('status' => 1, 'message' => 'Log e transcrição gravados com sucesso!', 'id' => $res, 'recording_url' => $recordingUrl));
 } else {
