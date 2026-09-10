@@ -661,11 +661,11 @@ class DirectSIPEngine:
                 else:
                     logger.warning("Nenhum áudio gerado para a saudação inicial.")
                 
-                # Inicia guardião de 3.5 segundos logo após a saudação para desligar rápido se mudo/rejeitado
-                guard_task = asyncio.create_task(run_silence_guard(3.5))
+                # Inicia guardião de 8.0 segundos logo após a saudação para dar tempo hábil de resposta humana
+                guard_task = asyncio.create_task(run_silence_guard(8.0))
             else:
                 logger.info("⏳ [Modo User Speaks First]: Aguardando cliente iniciar a conversa na linha...")
-                guard_task = asyncio.create_task(run_silence_guard(4.5))
+                guard_task = asyncio.create_task(run_silence_guard(7.0))
 
         except Exception as e:
             logger.error(f"Erro ao iniciar diálogo de voz da IA: {e}")

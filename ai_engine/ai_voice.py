@@ -28,21 +28,22 @@ def create_wav_from_pcm(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
         wav.writeframes(pcm_bytes)
     return buf.getvalue()
 
-# Lista de alucinações comuns do Whisper em silêncio ou estalos de linha telefônica
+# Lista de alucinações genuínas do Whisper (resquícios de legendas do YouTube em áudios silenciosos)
 WHISPER_HALLUCINATIONS = {
-    "você", "obrigado por assistir", "legendas pela comunidade amara.org", "subtitles by the amara.org community",
+    "obrigado por assistir", "legendas pela comunidade amara.org", "subtitles by the amara.org community",
     "inscreva-se no canal", "deixe seu like", "curta e compartilhe", "transcrição por", "assista ao vídeo",
-    ".", "..", "...", "bye", "thank you", "thanks for watching", "tchau", "até a próxima", "todos os direitos reservados"
+    ".", "..", "...", "....", "bye thanks for watching", "thanks for watching", "todos os direitos reservados",
+    "subtitles", "legendas", "transcrição", "amara.org"
 }
 
 def is_hallucination(text: str) -> bool:
     if not text:
         return True
     cleaned = text.strip().lower()
-    cleaned = re.sub(r'[\.\,\!\?\;\:\-\_]', '', cleaned).strip()
-    if cleaned in WHISPER_HALLUCINATIONS or cleaned in ("tchau tchau", "tchau tchau tchau", "obrigado obrigado", "subtitles", "legendas"):
+    cleaned = re.sub(r'[\.\,\!\?\;\:\-\_\(\)\[\]]', '', cleaned).strip()
+    if not cleaned:
         return True
-    if len(cleaned) <= 1:
+    if cleaned in WHISPER_HALLUCINATIONS:
         return True
     return False
 

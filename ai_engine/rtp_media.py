@@ -328,10 +328,10 @@ class RTPAudioSession:
         self.is_collecting_speech = False
         self.last_speech_time = 0.0
         self.last_transmit_end_time = 0.0
-        self.vad_threshold = 1250.0  # Threshold calibrado anti-chiado e ruído de fundo (1250 RMS)
-        self.vad_consecutive_hits = 0  # Confirmação de 3 frames para evitar falsos positivos por estalos
-        self.min_speech_bytes = 2400   # ~150ms de áudio real (permite palavras rápidas como "Alô", "Oi", "Sim")
-        self.silence_timeout = max(0.25, min(2.0, float(silence_timeout or 0.38)))  # Tempo de silêncio ágil para encerramento de turno (380ms)
+        self.vad_threshold = 650.0   # Sensibilidade calibrada para telefonia móvel/fixa (650 RMS)
+        self.vad_consecutive_hits = 0  # Confirmação de 2 frames (40ms) ágil para iniciar captura
+        self.min_speech_bytes = 1600   # ~100ms de áudio real (captura 'Alô', 'Oi', 'Sim', 'Pois não')
+        self.silence_timeout = max(0.25, min(2.0, float(silence_timeout or 0.38)))  # 380ms para encerramento de turno
         self._rx_task: Optional[asyncio.Task] = None
 
     def start_socket(self):
@@ -436,7 +436,7 @@ class RTPAudioSession:
                     barge_in_hits = 0
                     if rms > self.vad_threshold:
                         self.vad_consecutive_hits += 1
-                        if self.vad_consecutive_hits >= 3:  # Confirmação de 3 frames (>60ms) anti-ruído
+                        if self.vad_consecutive_hits >= 2:  # Confirmação de 2 frames (40ms) ágil anti-ruído
                             if not self.is_collecting_speech:
                                 self.is_collecting_speech = True
                                 # Recupera o início da palavra/frase do pre-buffer
