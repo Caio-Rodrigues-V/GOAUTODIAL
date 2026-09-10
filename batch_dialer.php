@@ -361,22 +361,24 @@ $('#batchDialForm').on('submit', function(e) {
         success: function(resp) {
             $('#btnStartBatch').prop('disabled', false).html('<i class="fa fa-play"></i> Iniciar Disparo em Lote');
 
-            if (resp.status === 'success' && resp.batch_id) {
+            let isSuccess = (resp.status === 'success' || resp.status == 1 || resp.batch_id);
+            if (isSuccess && resp.batch_id) {
                 currentBatchId = resp.batch_id;
                 $('#batchStatusBadge').removeClass().addClass('label label-primary pulse-active').text('Disparando Chamadas...');
                 $('#btnPauseBatch, #btnCancelBatch').show();
                 $('#btnResumeBatch').hide();
 
-                // Iniciar Polling de Atualização em Tempo Real (a cada 800ms)
+                // Dispara primeira consulta imediatamente e agenda polling
+                pollBatchStatus();
                 if (pollTimer) clearInterval(pollTimer);
                 pollTimer = setInterval(pollBatchStatus, 800);
             } else {
-                alert('Erro ao iniciar lote: ' + (resp.message || 'Falha na resposta do servidor'));
+                alert('Aviso: ' + (resp.message || 'Não foi possível iniciar o disparo. Verifique se o servidor de voz está ativo.'));
             }
         },
-        error: function(xhr) {
+        error: function(xhr, status, err) {
             $('#btnStartBatch').prop('disabled', false).html('<i class="fa fa-play"></i> Iniciar Disparo em Lote');
-            alert('Erro de comunicação com o servidor de voz na porta 8765.');
+            alert('Erro de comunicação (HTTP ' + xhr.status + '): ' + (xhr.responseText || 'Servidor indisponível na porta 8765.'));
         }
     });
 });
