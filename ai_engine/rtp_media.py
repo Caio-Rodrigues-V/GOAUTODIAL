@@ -16,6 +16,7 @@ import math
 import random
 import os
 from typing import Optional
+from amd_detector import AnsweringMachineDetector
 
 logger = logging.getLogger("DialGO_RTP")
 
@@ -317,6 +318,11 @@ class RTPAudioSession:
         # Callbacks de conversa
         self.on_speech_ready = None
         self.on_barge_in = None
+        self.on_voicemail_detected = None
+        
+        # Detector de Caixa Postal AMD por Espectrograma e Cadência
+        self.amd_detector = AnsweringMachineDetector(f"{remote_ip}:{remote_port}")
+        self.amd_detector.start(time.time())
         
         # Buffer de Gravação Geral da Chamada (IA + Cliente)
         self.full_recorded_pcm = bytearray()
@@ -413,6 +419,14 @@ class RTPAudioSession:
                 g711_payload = data[12:]
                 pcm_chunk = alaw_to_linear(g711_payload) if self.payload_type == 8 else ulaw_to_linear(g711_payload)
                 rms = calculate_rms(pcm_chunk)
+
+                # 0. Análise AMD em tempo real (Detecção de Beeps e Fala Contínua de Caixa Postal)
+                is_speech_frame = (rms > self.vad_threshold)
+                is_vm, vm_reason = self.amd_detector.feed_audio_chunk(pcm_chunk, 20.0, is_speech_frame)
+                if is_vm and self.on_voicemail_detected:
+                    self.cancel_playback = True
+                    asyncio.create_task(self.on_voicemail_detected(vm_reason))
+                    break
 
                 # Mantém sempre o buffer circular dos últimos 200ms atualizado (3200 bytes)
                 self.pre_speech_ring_buffer.extend(pcm_chunk)

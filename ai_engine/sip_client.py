@@ -348,13 +348,22 @@ class DirectSIPEngine:
             duration = int(time.time() - call.answered_time) if call.answered_time > 0 else 0
             agent = call.agent_config or {}
             
-            # Análise Inteligente de Tabulação, Resumo e Sentimento via OpenAI / Groq
-            analysis = await AIVoiceBrain.analyze_call(call.conversation_history, call.api_keys, duration)
-            tabulation_code = analysis.get("tabulation_code", "HUMAN_COMPLETED")
-            qualification = analysis.get("tabulation", "Conversa Concluída")
-            call_summary = analysis.get("summary", "")
-            sentiment = analysis.get("sentiment", "Neutro")
-            action_needed = analysis.get("action", "")
+            # Se a chamada foi cortada pelo AMD (Caixa Postal / Beep de Operadora)
+            has_amd_voicemail = any("[VOICEMAIL_DETECTED]" in str(m.get("content", "")) for m in call.conversation_history)
+            if has_amd_voicemail:
+                tabulation_code = "VOICEMAIL"
+                qualification = "Caixa Postal (Detectada por AMD)"
+                call_summary = "Caixa postal / secretária eletrônica detectada pelo motor AMD (<2s) economizando custo de IA."
+                sentiment = "Neutro"
+                action_needed = "Rediscar em horário posterior ou acionar via WhatsApp"
+            else:
+                # Análise Inteligente de Tabulação, Resumo e Sentimento via OpenAI / Groq
+                analysis = await AIVoiceBrain.analyze_call(call.conversation_history, call.api_keys, duration)
+                tabulation_code = analysis.get("tabulation_code", "HUMAN_COMPLETED")
+                qualification = analysis.get("tabulation", "Conversa Concluída")
+                call_summary = analysis.get("summary", "")
+                sentiment = analysis.get("sentiment", "Neutro")
+                action_needed = analysis.get("action", "")
 
             # Refina o status técnico para não marcar 'completed/Atendida' quando for Mudo ou Caixa Postal
             real_status = status
@@ -590,16 +599,11 @@ class DirectSIPEngine:
                         logger.info(f"🗣️ [Cliente Disse]: \"{transcript}\"")
                         call.conversation_history.append({"role": "user", "content": transcript})
 
-                        # Detecção de Caixa Postal / Secretária Eletrônica da Operadora (Voicemail Tool)
-                        lower_text = transcript.lower()
-                        vm_keywords = [
-                            "deixe seu recado", "após o sinal", "caixa postal", "deixe recado", 
-                            "não pode atender", "chamada encaminhada", "mensagem após", "grave seu recado",
-                            "horário de atendimento", "não está disponível", "correio de voz", "sua chamada está",
-                            "atendimento eletrônico", "número chamado", "sua ligação está", "recado após", "bipe"
-                        ]
-                        if hangup_on_vm and any(k in lower_text for k in vm_keywords):
-                            logger.info(f"🛑 [Voicemail Tool]: Caixa postal / operadora detectada ('{transcript}'). Encerrando chamada imediatamente...")
+                        # Detecção de Caixa Postal via Classificador Semântico AMD
+                        is_vm, vm_reason = call.rtp_session.amd_detector.check_transcript(transcript)
+                        if hangup_on_vm and is_vm:
+                            logger.info(f"🛑 [AMD Semantic Filter]: Caixa Postal / Mensagem de Operadora detectada ('{transcript}' -> {vm_reason}). Encerrando chamada...")
+                            call.conversation_history.append({"role": "system", "content": f"[VOICEMAIL_DETECTED]: {vm_reason}"})
                             await self.send_bye(call.call_id)
                             return
 
@@ -637,9 +641,17 @@ class DirectSIPEngine:
                     except Exception as ex:
                         logger.error(f"Erro no ciclo de conversa: {ex}")
 
+            # Callback para detecção de Caixa Postal via AMD (Espectrograma / Beeps de Operadora)
+            async def handle_amd_voicemail(reason: str):
+                if call.call_id in self.active_calls:
+                    logger.info(f"🛑 [AMD Fast Termination]: Caixa Postal detectada ({reason}). Desligando canal SIP imediatamente...")
+                    call.conversation_history.append({"role": "system", "content": f"[VOICEMAIL_DETECTED]: {reason}"})
+                    await self.send_bye(call.call_id)
+
             # Vincular callbacks na sessão RTP
             call.rtp_session.on_speech_ready = handle_user_speech
             call.rtp_session.on_barge_in = lambda: logger.info("Barge-in acionado: IA parou de falar para escutar o cliente.")
+            call.rtp_session.on_voicemail_detected = handle_amd_voicemail
 
             # Guardião Anti-Mudo / Anti-Caixa Postal
             async def run_silence_guard(delay_sec: float = 5.0):
