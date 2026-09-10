@@ -53,6 +53,9 @@ def clean_text_for_tts(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
+# Cache global de áudio sintetizado em memória e disco (elimina custos repetidos de TTS para saudações)
+_tts_memory_cache: Dict[str, bytes] = {}
+
 class AIVoiceBrain:
     @staticmethod
     async def transcribe(pcm_bytes: bytes, stt_provider: str, api_keys: Dict[str, str]) -> str:
@@ -205,9 +208,6 @@ class AIVoiceBrain:
                 logger.error(f"Erro no reconhecimento de fala (STT): {e}")
 
         return ""
-
-# Cache global de áudio sintetizado em memória e disco (elimina custos repetidos de TTS para saudações)
-_tts_memory_cache: Dict[str, bytes] = {}
 
     @staticmethod
     async def synthesize(text: str, voice_provider: str, voice_id: str, api_keys: Dict[str, str], voice_settings: Optional[Dict[str, Any]] = None, return_cached_flag: bool = False) -> Any:
