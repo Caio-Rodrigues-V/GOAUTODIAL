@@ -5,6 +5,9 @@
  * @copyright   (c) Dial GO Voice AI Engine
  */
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once('php/CRMDefaults.php');
 require_once('php/AIAgentHandler.php');
 
