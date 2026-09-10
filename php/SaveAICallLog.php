@@ -107,6 +107,9 @@ if (!empty($webhookUrl)) {
     $webhookPayload = array(
         'event' => 'call.completed',
         'call_id' => $logData['call_id'],
+        'contactId' => isset($data['contact_id']) && $data['contact_id'] !== '' ? $data['contact_id'] : (isset($data['metadata']['contactId']) ? $data['metadata']['contactId'] : null),
+        'campaignContactId' => isset($data['campaign_contact_id']) && $data['campaign_contact_id'] !== '' ? $data['campaign_contact_id'] : (isset($data['metadata']['campaignContactId']) ? $data['metadata']['campaignContactId'] : null),
+        'campaignId' => isset($data['campaign_id']) && $data['campaign_id'] !== '' ? $data['campaign_id'] : (isset($data['metadata']['campaignId']) ? $data['metadata']['campaignId'] : null),
         'agent_id' => $logData['agent_id'],
         'agent_name' => $logData['agent_name'],
         'phone_number' => $logData['phone_number'],
@@ -116,9 +119,11 @@ if (!empty($webhookUrl)) {
         'tabulation_code' => $logData['tabulation_code'],
         'call_summary' => $logData['call_summary'],
         'sentiment' => $logData['sentiment'],
+        'action_needed' => $logData['action_needed'],
         'cost_estimate_brl' => $logData['cost_estimate'],
         'recording_url' => $fullRecordingUrl,
         'transcript' => json_decode($logData['transcript_json'], true) ?: array(),
+        'metadata' => isset($data['metadata']) ? $data['metadata'] : array(),
         'created_at' => $logData['created_at'],
         'ended_at' => $logData['ended_at']
     );

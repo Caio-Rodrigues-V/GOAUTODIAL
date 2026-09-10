@@ -471,7 +471,12 @@ class DirectSIPEngine:
                 "call_summary": call_summary,
                 "sentiment": sentiment,
                 "action_needed": action_needed,
-                "cost_estimate": cost_estimate
+                "cost_estimate": cost_estimate,
+                "webhook_url": agent.get("webhook_url", ""),
+                "metadata": agent.get("metadata", {}),
+                "contact_id": agent.get("contact_id", ""),
+                "campaign_contact_id": agent.get("campaign_contact_id", ""),
+                "campaign_id": agent.get("campaign_id", "")
             }
 
             # Candidatos de endpoint PHP do CRM
