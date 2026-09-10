@@ -5,6 +5,8 @@ e raciocínio conversacional de alta fidelidade (Groq Llama 3.3 70B, OpenAI GPT-
 """
 
 import os
+import re
+import time
 import hashlib
 import httpx
 import logging
