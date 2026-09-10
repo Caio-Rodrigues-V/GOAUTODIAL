@@ -27,8 +27,22 @@ $handler = \creamy\AIAgentHandler::getInstance();
 $callId = isset($data['call_id']) ? $data['call_id'] : uniqid('call_');
 $recordingUrl = isset($data['recording_url']) ? $data['recording_url'] : '';
 
-// Process audio_base64 if provided
-if (!empty($data['audio_base64'])) {
+$tabCode = isset($data['tabulation_code']) ? $data['tabulation_code'] : 'HUMAN_COMPLETED';
+$callStatus = isset($data['status']) ? $data['status'] : 'completed';
+if ($tabCode == 'MUTE_SILENCE' || $tabCode == 'NO_ANSWER') {
+    $callStatus = 'no_answer';
+} elseif ($tabCode == 'VOICEMAIL') {
+    $callStatus = 'voicemail';
+} elseif ($tabCode == 'CALL_DROPPED') {
+    $callStatus = 'dropped';
+} elseif ($tabCode == 'BUSY') {
+    $callStatus = 'busy';
+}
+
+$isUnanswered = ($callStatus == 'no_answer' || $callStatus == 'busy' || $callStatus == 'invalid_number' || $tabCode == 'MUTE_SILENCE' || $tabCode == 'NO_ANSWER' || $tabCode == 'BUSY' || $tabCode == 'INVALID_NUMBER');
+
+// Process audio_base64 only for answered calls with dialogue
+if (!$isUnanswered && !empty($data['audio_base64'])) {
     try {
         $cleanId = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $callId);
         $recordingsDir = __DIR__ . '/../recordings';
@@ -44,16 +58,8 @@ if (!empty($data['audio_base64'])) {
     } catch (\Throwable $t) {}
 }
 
-$tabCode = isset($data['tabulation_code']) ? $data['tabulation_code'] : 'HUMAN_COMPLETED';
-$callStatus = isset($data['status']) ? $data['status'] : 'completed';
-if ($tabCode == 'MUTE_SILENCE' || $tabCode == 'NO_ANSWER') {
-    $callStatus = 'no_answer';
-} elseif ($tabCode == 'VOICEMAIL') {
-    $callStatus = 'voicemail';
-} elseif ($tabCode == 'CALL_DROPPED') {
-    $callStatus = 'dropped';
-} elseif ($tabCode == 'BUSY') {
-    $callStatus = 'busy';
+if ($isUnanswered) {
+    $recordingUrl = '';
 }
 
 $logData = array(

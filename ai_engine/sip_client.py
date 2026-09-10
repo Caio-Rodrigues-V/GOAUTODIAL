@@ -348,13 +348,36 @@ class DirectSIPEngine:
             duration = int(time.time() - call.answered_time) if call.answered_time > 0 else 0
             agent = call.agent_config or {}
             
-            # Obter áudio gravado da sessão RTP se disponível
+            # Análise Inteligente de Tabulação, Resumo e Sentimento via OpenAI / Groq
+            analysis = await AIVoiceBrain.analyze_call(call.conversation_history, call.api_keys, duration)
+            tabulation_code = analysis.get("tabulation_code", "HUMAN_COMPLETED")
+            qualification = analysis.get("tabulation", "Conversa Concluída")
+            call_summary = analysis.get("summary", "")
+            sentiment = analysis.get("sentiment", "Neutro")
+            action_needed = analysis.get("action", "")
+
+            # Refina o status técnico para não marcar 'completed/Atendida' quando for Mudo ou Caixa Postal
+            real_status = status
+            if tabulation_code in ("MUTE_SILENCE", "NO_ANSWER"):
+                real_status = "no_answer"
+            elif tabulation_code == "VOICEMAIL":
+                real_status = "voicemail"
+            elif tabulation_code == "CALL_DROPPED":
+                real_status = "dropped"
+            elif tabulation_code == "BUSY":
+                real_status = "busy"
+            elif tabulation_code == "INVALID_NUMBER":
+                real_status = "invalid_number"
+            elif tabulation_code in ("HUMAN_COMPLETED", "BUSY_LATER", "REFUSED", "WRONG_NUMBER", "TRANSFERRED"):
+                real_status = "completed"
+
+            # Obter áudio gravado da sessão RTP SOMENTE para chamadas atendidas com diálogo (evita gastar disco com mudo/não atendidas)
             audio_b64 = ""
             clean_call_id = re.sub(r'[^a-zA-Z0-9_-]', '_', call.call_id)
             recording_filename = f"ai_call_{clean_call_id}.wav"
-            recording_rel_path = f"recordings/{recording_filename}"
             
-            if call.rtp_session:
+            is_unanswered = real_status in ("no_answer", "busy", "invalid_number") or tabulation_code in ("MUTE_SILENCE", "NO_ANSWER", "BUSY", "INVALID_NUMBER")
+            if call.rtp_session and not is_unanswered:
                 try:
                     wav_bytes = call.rtp_session.get_recorded_wav()
                     if wav_bytes and len(wav_bytes) > 44:
@@ -379,14 +402,6 @@ class DirectSIPEngine:
                                 pass
                 except Exception as ex:
                     logger.warning(f"Erro ao empacotar gravação de áudio: {ex}")
-
-            # Análise Inteligente de Tabulação, Resumo e Sentimento via OpenAI / Groq
-            analysis = await AIVoiceBrain.analyze_call(call.conversation_history, call.api_keys, duration)
-            tabulation_code = analysis.get("tabulation_code", "HUMAN_COMPLETED")
-            qualification = analysis.get("tabulation", "Conversa Concluída")
-            call_summary = analysis.get("summary", "")
-            sentiment = analysis.get("sentiment", "Neutro")
-            action_needed = analysis.get("action", "")
 
             # -------------------------------------------------------------
             # Cálculo Real e Preciso de Custo por Ligação (STT + LLM + TTS + Telefonia)
@@ -431,22 +446,9 @@ class DirectSIPEngine:
             total_ai_brl = total_ai_usd * usd_brl
             cost_estimate = round(max(0.0050, total_ai_brl + cost_telephony_brl), 4)
 
-            # Refina o status técnico para não marcar 'completed/Atendida' quando for Mudo ou Caixa Postal
-            real_status = status
-            if tabulation_code in ("MUTE_SILENCE", "NO_ANSWER"):
-                real_status = "no_answer"
-            elif tabulation_code == "VOICEMAIL":
-                real_status = "voicemail"
-            elif tabulation_code == "CALL_DROPPED":
-                real_status = "dropped"
-            elif tabulation_code == "BUSY":
-                real_status = "busy"
-            elif tabulation_code == "INVALID_NUMBER":
-                real_status = "invalid_number"
-            elif tabulation_code in ("HUMAN_COMPLETED", "BUSY_LATER", "REFUSED", "WRONG_NUMBER", "TRANSFERRED"):
-                real_status = "completed"
-
             logger.info(f"📊 [Custo Real da Chamada]: Total=R$ {cost_estimate:.4f} (STT: R$ {cost_stt_usd*usd_brl:.4f}, LLM: R$ {cost_llm_usd*usd_brl:.4f}, TTS: R$ {cost_tts_usd*usd_brl:.4f}, Tel: R$ {cost_telephony_brl:.4f}) | Tabulação=[{tabulation_code}] '{qualification}' ({sentiment}) | Status='{real_status}'")
+
+            recording_rel_path = f"recordings/{recording_filename}"
 
             payload = {
                 "call_id": call.call_id,

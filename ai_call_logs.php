@@ -310,19 +310,25 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($callLogs as $c): 
-                                    $recUrl = !empty($c['recording_url']) ? $c['recording_url'] : '';
-                                    if (empty($recUrl) && !empty($c['call_id'])) {
-                                        $cleanId = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $c['call_id']);
-                                        $possible = 'recordings/ai_call_' . $cleanId . '.wav';
-                                        if (file_exists(__DIR__ . '/' . $possible)) {
-                                            $recUrl = $possible;
-                                        }
-                                    }
-                                    $costVal = isset($c['cost_estimate']) ? (float)$c['cost_estimate'] : 0.00;
                                     $tabCode = !empty($c['tabulation_code']) ? $c['tabulation_code'] : '';
                                     $tabulation = !empty($c['tabulation']) ? $c['tabulation'] : (!empty($c['qualification']) ? $c['qualification'] : 'Conversa Concluída');
                                     $sentiment = !empty($c['sentiment']) ? $c['sentiment'] : 'Neutro';
                                     $st = !empty($c['status']) ? strtolower($c['status']) : 'completed';
+                                    
+                                    $isUnanswered = ($st == 'no_answer' || $st == 'busy' || $st == 'invalid_number' || $tabCode == 'MUTE_SILENCE' || $tabCode == 'NO_ANSWER' || $tabCode == 'BUSY' || $tabCode == 'INVALID_NUMBER');
+
+                                    $recUrl = '';
+                                    if (!$isUnanswered) {
+                                        $recUrl = !empty($c['recording_url']) ? $c['recording_url'] : '';
+                                        if (empty($recUrl) && !empty($c['call_id'])) {
+                                            $cleanId = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $c['call_id']);
+                                            $possible = 'recordings/ai_call_' . $cleanId . '.wav';
+                                            if (file_exists(__DIR__ . '/' . $possible)) {
+                                                $recUrl = $possible;
+                                            }
+                                        }
+                                    }
+                                    $costVal = isset($c['cost_estimate']) ? (float)$c['cost_estimate'] : 0.00;
                                 ?>
                                     <tr>
                                         <td><span class="ddm-badge ddm-badge-id">#<?php echo $c['id']; ?></span></td>
