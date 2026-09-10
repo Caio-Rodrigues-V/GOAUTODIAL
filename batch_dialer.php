@@ -305,9 +305,13 @@ let currentBatchId = null;
 let pollTimer = null;
 
 // Contador automático de linhas do Textarea
-$('#batch_contacts_text').on('input', function() {
-    let lines = $(this).val().split('\n').filter(l => l.trim().length > 0);
-    $('#contactCountBadge').text(lines.length + ' contatos detectados');
+function updateContactCounter() {
+    let raw = $('#batch_contacts_text').val() || '';
+    let lines = raw.split('\n').filter(l => l.trim().length > 0);
+    $('#contactCountBadge').text(lines.length + (lines.length === 1 ? ' contato detectado' : ' contatos detectados'));
+}
+$('#batch_contacts_text').on('input change keyup paste', function() {
+    setTimeout(updateContactCounter, 50);
 });
 
 // Leitor de arquivo CSV
