@@ -618,9 +618,8 @@ class DirectSIPEngine:
                         clean_reply = ai_reply.replace("[END_CALL]", "").strip()
 
                         # 3. Text-to-Speech (TTS)
-                        pcm_reply, was_cached = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys, agent, return_cached_flag=True)
-                        if not was_cached:
-                            call.tts_characters += len(clean_reply)
+                        call.tts_characters += len(clean_reply)
+                        pcm_reply = await AIVoiceBrain.synthesize(clean_reply, voice_provider, voice_id, call.api_keys, agent)
                         if pcm_reply and len(pcm_reply) > 0:
                             # 4. Transmitir áudio da resposta para o telefone
                             await call.rtp_session.stream_pcm_audio(pcm_reply)
@@ -653,22 +652,14 @@ class DirectSIPEngine:
 
             # 1. Saudação Inicial do Agente (se configurado para falar primeiro)
             if first_message_mode == "assistant_speaks_first":
-                # Janela de amostragem acústica inicial de 350ms para verificar se a operadora já está transmitindo áudio de caixa postal
-                await asyncio.sleep(0.35)
+                logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
+                call.tts_characters += len(greeting)
+                pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent)
                 
-                # Se a operadora já estiver falando (áudio detectado no primeiro instante), não fala a saudação por cima!
-                if not call.rtp_session.is_collecting_speech:
-                    logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
-                    pcm_audio, was_cached = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent, return_cached_flag=True)
-                    if not was_cached:
-                        call.tts_characters += len(greeting)
-                    
-                    if pcm_audio and len(pcm_audio) > 0:
-                        await call.rtp_session.stream_pcm_audio(pcm_audio)
-                    else:
-                        logger.warning("Nenhum áudio gerado para a saudação inicial.")
+                if pcm_audio and len(pcm_audio) > 0:
+                    await call.rtp_session.stream_pcm_audio(pcm_audio)
                 else:
-                    logger.info("🎙️ [Áudio inicial da operadora detectado]: Aguardando transcrição antes de falar...")
+                    logger.warning("Nenhum áudio gerado para a saudação inicial.")
                 
                 # Inicia guardião de 3.5 segundos logo após a saudação para desligar rápido se mudo/rejeitado
                 guard_task = asyncio.create_task(run_silence_guard(3.5))

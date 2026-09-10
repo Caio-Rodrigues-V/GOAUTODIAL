@@ -210,14 +210,14 @@ class AIVoiceBrain:
         return ""
 
     @staticmethod
-    async def synthesize(text: str, voice_provider: str, voice_id: str, api_keys: Dict[str, str], voice_settings: Optional[Dict[str, Any]] = None, return_cached_flag: bool = False) -> Any:
+    async def synthesize(text: str, voice_provider: str, voice_id: str, api_keys: Dict[str, str], voice_settings: Optional[Dict[str, Any]] = None) -> bytes:
         """
         Sintetiza texto em áudio PCM 16-bit 8000Hz Mono para streaming de telefonia.
         Inclui Cache Inteligente de Áudio em Disco/RAM (Zero custo de API em saudações repetidas).
         """
         text = clean_text_for_tts(text)
         if not text:
-            return (b'', True) if return_cached_flag else b''
+            return b''
 
         voice_provider = (voice_provider or "openai").lower()
         
@@ -227,8 +227,7 @@ class AIVoiceBrain:
         
         if cache_key in _tts_memory_cache:
             logger.info(f"⚡ [TTS Cache Hit]: Áudio recuperado da memória (Custo TTS = R$ 0,00) para voz '{voice_id}'")
-            cached_audio = _tts_memory_cache[cache_key]
-            return (cached_audio, True) if return_cached_flag else cached_audio
+            return _tts_memory_cache[cache_key]
 
         cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audio_cache")
         cache_file = os.path.join(cache_dir, f"{cache_key}.pcm")
@@ -239,7 +238,7 @@ class AIVoiceBrain:
                 if cached_audio and len(cached_audio) > 0:
                     _tts_memory_cache[cache_key] = cached_audio
                     logger.info(f"⚡ [TTS Cache Disco]: Áudio carregado do disco (Custo TTS = R$ 0,00) para voz '{voice_id}'")
-                    return (cached_audio, True) if return_cached_flag else cached_audio
+                    return cached_audio
             except Exception:
                 pass
 
@@ -253,7 +252,7 @@ class AIVoiceBrain:
                     api_key = api_keys.get("openai_api_key", "")
                     if not api_key:
                         logger.error("Chave da OpenAI não configurada para TTS")
-                        return (b'', False) if return_cached_flag else b''
+                        return b''
 
                     voice = voice_id if voice_id in ["alloy", "echo", "fable", "onyx", "nova", "shimmer"] else "nova"
                     payload = {
@@ -331,7 +330,7 @@ class AIVoiceBrain:
                     api_key = api_keys.get("cartesia_api_key", "")
                     if not api_key:
                         logger.error("Chave da Cartesia não configurada")
-                        return (b'', False) if return_cached_flag else b''
+                        return b''
 
                     cartesia_voice = voice_id if voice_id and voice_id != "custom" else "a0e99841-438c-4a64-b679-ae501e7d6091"
                     payload = {
@@ -365,7 +364,7 @@ class AIVoiceBrain:
                     region = api_keys.get("azure_speech_region", "eastus")
                     if not api_key:
                         logger.error("Chave da Azure Speech não configurada")
-                        return (b'', False) if return_cached_flag else b''
+                        return b''
 
                     azure_voice = voice_id if voice_id and voice_id != "custom" else "pt-BR-FranciscaNeural"
                     url = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
@@ -394,9 +393,9 @@ class AIVoiceBrain:
                     f.write(audio_result)
             except Exception:
                 pass
-            return (audio_result, False) if return_cached_flag else audio_result
+            return audio_result
 
-        return (b'', False) if return_cached_flag else b''
+        return b''
 
     @staticmethod
     async def chat_completion(messages: List[Dict[str, str]], llm_provider: str, llm_model: str, temperature: float, api_keys: Dict[str, str]) -> str:
