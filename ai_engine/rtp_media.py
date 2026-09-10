@@ -328,10 +328,10 @@ class RTPAudioSession:
         self.is_collecting_speech = False
         self.last_speech_time = 0.0
         self.last_transmit_end_time = 0.0
-        self.vad_threshold = 850.0  # Threshold calibrado anti-chiado (850 RMS)
-        self.vad_consecutive_hits = 0  # Confirmação de 2 frames para evitar falsos positivos por estalos
+        self.vad_threshold = 1250.0  # Threshold calibrado anti-chiado e ruído de fundo (1250 RMS)
+        self.vad_consecutive_hits = 0  # Confirmação de 3 frames para evitar falsos positivos por estalos
         self.min_speech_bytes = 2400   # ~150ms de áudio real (permite palavras rápidas como "Alô", "Oi", "Sim")
-        self.silence_timeout = max(0.35, min(3.0, float(silence_timeout or 0.55)))  # Tempo de silêncio para encerramento de turno
+        self.silence_timeout = max(0.40, min(3.0, float(silence_timeout or 0.60)))  # Tempo de silêncio para encerramento de turno
         self._rx_task: Optional[asyncio.Task] = None
 
     def start_socket(self):
@@ -405,8 +405,8 @@ class RTPAudioSession:
 
                 now = time.time()
 
-                # Ignora estalos de sinalização nos primeiros 400ms da chamada
-                if now - self.created_at < 0.40:
+                # Ignora estalos de sinalização nos primeiros 400ms da chamada ou 250ms pós-fala da IA (eco residual)
+                if (now - self.created_at < 0.40) or (now - self.last_transmit_end_time < 0.25):
                     continue
 
                 # Extrai payload G.711 e converte para Linear PCM 16-bit
@@ -419,13 +419,13 @@ class RTPAudioSession:
                 if len(self.pre_speech_ring_buffer) > 3200:
                     self.pre_speech_ring_buffer = self.pre_speech_ring_buffer[-3200:]
 
-                # 1. Detecção de Fala / Interrupção (Barge-in) Full-Duplex com Resistência a Eco Acústico
+                # 1. Detecção de Fala / Interrupção (Barge-in) Full-Duplex com Alta Resistência a Eco
                 if self.is_transmitting:
-                    # Durante transmissão da IA, usamos threshold mais alto e 4 frames de confirmação (80ms) para não cancelar por eco da linha
-                    if rms > 1850.0:
+                    # Durante fala da IA, exige energia firme (>2800 RMS) por 6 frames (120ms) para não cortar por viva-voz/eco
+                    if rms > 2800.0:
                         barge_in_hits += 1
-                        if barge_in_hits >= 4:
-                            logger.info("🎙️ [Barge-in Real Confirmado]: Cliente falou por cima da IA. Interrompendo áudio...")
+                        if barge_in_hits >= 6:
+                            logger.info("🎙️ [Barge-in Real Confirmado]: Cliente falou por cima da IA com firmeza. Interrompendo áudio...")
                             self.cancel_playback = True
                             barge_in_hits = 0
                             if self.on_barge_in:
@@ -436,7 +436,7 @@ class RTPAudioSession:
                     barge_in_hits = 0
                     if rms > self.vad_threshold:
                         self.vad_consecutive_hits += 1
-                        if self.vad_consecutive_hits >= 2:  # Confirmação de 2 frames (>40ms)
+                        if self.vad_consecutive_hits >= 3:  # Confirmação de 3 frames (>60ms) anti-ruído
                             if not self.is_collecting_speech:
                                 self.is_collecting_speech = True
                                 # Recupera o início da palavra/frase do pre-buffer
