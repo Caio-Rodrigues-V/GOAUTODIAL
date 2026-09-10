@@ -555,51 +555,68 @@ class AIVoiceBrain:
         return "Entendi perfeitamente. Como posso te ajudar?"
 
     @staticmethod
-    async def analyze_call(conversation_history: List[Dict[str, str]], api_keys: Dict[str, str]) -> Dict[str, Any]:
+    async def analyze_call(conversation_history: List[Dict[str, str]], api_keys: Dict[str, str], duration_seconds: int = 0) -> Dict[str, Any]:
         """
         Analisa a transcrição completa da chamada usando OpenAI (GPT-4o Mini) ou Groq para gerar:
-        - tabulation: (Venda Concluída, Interessado, Dúvida Esclarecida, Sem Interesse, Caixa Postal, Retornar Mais Tarde, Engano/Número Incorreto, Atendida)
+        - tabulation_code: HUMAN_COMPLETED | BUSY_LATER | REFUSED | WRONG_NUMBER | CALL_DROPPED | MUTE_SILENCE | VOICEMAIL | TRANSFERRED
+        - tabulation: Nome amigável em português
         - summary: Resumo executivo em 1 a 2 frases
         - sentiment: Positivo, Neutro ou Negativo
-        - action: Próximo passo recomendado para o CRM
+        - action: Próximo passo recomendado para o discador/telefonia
         """
         default_res = {
-            "tabulation": "Atendida",
-            "summary": "Chamada atendida e finalizada.",
+            "tabulation_code": "HUMAN_COMPLETED",
+            "tabulation": "Conversa Concluída",
+            "summary": "Chamada atendida e finalizada com diálogo completo.",
             "sentiment": "Neutro",
-            "action": "Nenhuma ação necessária"
+            "action": "FINALIZADO"
         }
 
         # Filtra apenas o diálogo real entre cliente e IA
         dialogue = [m for m in conversation_history if m.get("role") in ("user", "assistant")]
         user_msgs = [m for m in dialogue if m.get("role") == "user"]
 
+        # Se ninguém falou ou só silêncio
         if len(user_msgs) == 0:
             return {
-                "tabulation": "Sem Resposta",
-                "summary": "Chamada conectada, mas o cliente não respondeu.",
+                "tabulation_code": "MUTE_SILENCE",
+                "tabulation": "Mudo / Sem Áudio",
+                "summary": "Chamada conectada, mas não houve fala humana detectada.",
                 "sentiment": "Neutro",
-                "action": "Tentar novamente mais tarde"
+                "action": "RETRY"
             }
 
+        # Se o usuário falou apenas 1 vez e a chamada durou menos de 6 segundos
+        if len(user_msgs) == 1 and duration_seconds > 0 and duration_seconds < 7:
+            user_text = user_msgs[0].get("content", "").strip().lower()
+            if any(greeting in user_text for greeting in ["alô", "alo", "oi", "ola", "olá", "pronto"]):
+                return {
+                    "tabulation_code": "CALL_DROPPED",
+                    "tabulation": "Desligou no Início (< 5s)",
+                    "summary": "Cliente atendeu, mas desligou imediatamente nos primeiros segundos.",
+                    "sentiment": "Neutro",
+                    "action": "RETRY_DIFFERENT_TIME"
+                }
+
         prompt = (
-            "Você é um supervisor de qualidade de Contact Center e IA. "
-            "Analise a transcrição da chamada telefônica abaixo e gere uma tabulação/classificação e resumo executivo em JSON estrito.\n\n"
-            "Escolha exatamente UMA das opções abaixo para o campo 'tabulation':\n"
-            "- 'Venda Concluída' (Cliente comprou, aceitou proposta ou fechou negócio)\n"
-            "- 'Interessado' (Cliente demonstrou interesse, pediu informações, cotação ou valores)\n"
-            "- 'Dúvida Esclarecida' (Cliente ligou para tirar dúvida sobre conta, fatura, serviço ou produto e foi atendido)\n"
-            "- 'Retornar Mais Tarde' (Cliente pediu para ligar em outro horário/dia)\n"
-            "- 'Sem Interesse' (Cliente recusou a oferta ou não quer ser contatado)\n"
-            "- 'Caixa Postal / Secretária' (Caiu em secretária eletrônica ou mensagem de operadora)\n"
-            "- 'Engano / Número Incorreto' (Não é a pessoa procurada ou número errado)\n"
-            "- 'Atendida' (Conversa geral sem outra classificação específica)\n\n"
-            "Retorne APENAS um objeto JSON válido no formato:\n"
+            "Você é um supervisor especialista de Contact Center e Telefonia com Inteligência Artificial.\n"
+            "Analise rigorosamente a transcrição da chamada telefônica abaixo e classifique o desfecho estritamente em uma das categorias padronizadas.\n\n"
+            "Escolha exatamente UM dos pares [tabulation_code, tabulation] abaixo:\n"
+            "1. 'HUMAN_COMPLETED' - 'Conversa Concluída' (Humano atendeu e a conversa fluiu normalmente até o fim)\n"
+            "2. 'BUSY_LATER' - 'Ocupado / Pediu Retorno' (Humano atendeu mas pediu para ligar mais tarde, estava ocupado, dirigindo ou em reunião)\n"
+            "3. 'REFUSED' - 'Recusa / Não Quer Falar' (Humano ouviu a abordagem e recusou expressamente continuar ou não quis falar)\n"
+            "4. 'WRONG_NUMBER' - 'Número Errado / Engano' (Quem atendeu informou categoricamente que não é a pessoa procurada ou mudou de dono)\n"
+            "5. 'CALL_DROPPED' - 'Desligou no Início (< 5s)' (Humano atendeu e desligou logo no início sem dar chance de diálogo)\n"
+            "6. 'VOICEMAIL' - 'Caixa Postal / Secretária' (Mensagem gravada de correio de voz, operadora ou secretária eletrônica)\n"
+            "7. 'MUTE_SILENCE' - 'Mudo / Sem Áudio' (Linha conectou mas ninguém falou ou ficou mudo)\n"
+            "8. 'TRANSFERRED' - 'Transferida para Atendente' (Chamada foi transferida para um operador humano ou fila)\n\n"
+            "Retorne APENAS um objeto JSON estrito no formato:\n"
             "{\n"
-            "  \"tabulation\": \"<uma das opções acima>\",\n"
-            "  \"summary\": \"<resumo objetivo em português de 1 a 2 frases do que o cliente queria e do desfecho>\",\n"
+            "  \"tabulation_code\": \"<HUMAN_COMPLETED|BUSY_LATER|REFUSED|WRONG_NUMBER|CALL_DROPPED|VOICEMAIL|MUTE_SILENCE|TRANSFERRED>\",\n"
+            "  \"tabulation\": \"<Nome da tabulação correspondente>\",\n"
+            "  \"summary\": \"<resumo objetivo em português de 1 a 2 frases do que aconteceu na ligação>\",\n"
             "  \"sentiment\": \"<Positivo|Neutro|Negativo>\",\n"
-            "  \"action\": \"<ação prática recomendada, ex: Enviar segunda via / Agendar retorno / Arquivar>\"\n"
+            "  \"action\": \"<ação prática para o discador: FINALIZADO | RETRY | RETRY_DIFFERENT_TIME | INVALIDATE_NUMBER | DNC>\"\n"
             "}\n\n"
             "Transcrição da Chamada:\n"
         )
@@ -616,12 +633,16 @@ class AIVoiceBrain:
                         "model": "gpt-4o-mini",
                         "messages": [{"role": "user", "content": prompt}],
                         "response_format": {"type": "json_object"},
-                        "temperature": 0.2
+                        "temperature": 0.1
                     }
                     r = await client.post("https://api.openai.com/v1/chat/completions", json=payload, headers={"Authorization": f"Bearer {api_key}"})
                     if r.status_code == 200:
                         parsed = json.loads(r.json()["choices"][0]["message"]["content"])
-                        logger.info(f"📋 [OpenAI Tabulação]: '{parsed.get('tabulation')}' | Sentimento: {parsed.get('sentiment')} | Resumo: '{parsed.get('summary')}'")
+                        if "tabulation_code" not in parsed:
+                            parsed["tabulation_code"] = "HUMAN_COMPLETED"
+                        if "tabulation" not in parsed:
+                            parsed["tabulation"] = parsed.get("tabulation_code", "Conversa Concluída")
+                        logger.info(f"📋 [OpenAI Tabulação]: [{parsed.get('tabulation_code')}] '{parsed.get('tabulation')}' | Sentimento: {parsed.get('sentiment')} | Resumo: '{parsed.get('summary')}'")
                         return parsed
                 except Exception as ex:
                     logger.warning(f"Erro na tabulação OpenAI: {ex}")
@@ -634,12 +655,16 @@ class AIVoiceBrain:
                         "model": "llama-3.3-70b-versatile",
                         "messages": [{"role": "user", "content": prompt}],
                         "response_format": {"type": "json_object"},
-                        "temperature": 0.2
+                        "temperature": 0.1
                     }
                     r = await client.post("https://api.groq.com/openai/v1/chat/completions", json=payload, headers={"Authorization": f"Bearer {api_key}"})
                     if r.status_code == 200:
                         parsed = json.loads(r.json()["choices"][0]["message"]["content"])
-                        logger.info(f"📋 [Groq Tabulação]: '{parsed.get('tabulation')}' | Sentimento: {parsed.get('sentiment')} | Resumo: '{parsed.get('summary')}'")
+                        if "tabulation_code" not in parsed:
+                            parsed["tabulation_code"] = "HUMAN_COMPLETED"
+                        if "tabulation" not in parsed:
+                            parsed["tabulation"] = parsed.get("tabulation_code", "Conversa Concluída")
+                        logger.info(f"📋 [Groq Tabulação]: [{parsed.get('tabulation_code')}] '{parsed.get('tabulation')}' | Sentimento: {parsed.get('sentiment')} | Resumo: '{parsed.get('summary')}'")
                         return parsed
                 except Exception as ex:
                     logger.warning(f"Erro na tabulação Groq: {ex}")

@@ -162,8 +162,9 @@ class AIAgentHandler {
                 `stt_provider` varchar(50) DEFAULT '',
                 `transcript_json` longtext,
                 `recording_url` varchar(255) DEFAULT '',
-                `qualification` varchar(100) DEFAULT 'Atendida',
-                `tabulation` varchar(100) DEFAULT 'Atendida',
+                `tabulation_code` varchar(50) DEFAULT 'HUMAN_COMPLETED',
+                `qualification` varchar(100) DEFAULT 'Conversa Concluída',
+                `tabulation` varchar(100) DEFAULT 'Conversa Concluída',
                 `call_summary` text,
                 `sentiment` varchar(50) DEFAULT 'Neutro',
                 `action_needed` varchar(255) DEFAULT '',
@@ -174,6 +175,7 @@ class AIAgentHandler {
                 KEY `idx_call_id` (`call_id`),
                 KEY `idx_agent_id` (`agent_id`),
                 KEY `idx_phone_number` (`phone_number`),
+                KEY `idx_tabulation_code` (`tabulation_code`),
                 KEY `idx_tabulation` (`tabulation`),
                 KEY `idx_created_at` (`created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
@@ -181,8 +183,9 @@ class AIAgentHandler {
             // Auto-migrate missing columns for existing tables
             $checkCols = array(
                 'recording_url' => 'varchar(255) DEFAULT ""',
-                'qualification' => 'varchar(100) DEFAULT "Atendida"',
-                'tabulation' => 'varchar(100) DEFAULT "Atendida"',
+                'tabulation_code' => 'varchar(50) DEFAULT "HUMAN_COMPLETED"',
+                'qualification' => 'varchar(100) DEFAULT "Conversa Concluída"',
+                'tabulation' => 'varchar(100) DEFAULT "Conversa Concluída"',
                 'call_summary' => 'text',
                 'sentiment' => 'varchar(50) DEFAULT "Neutro"',
                 'action_needed' => 'varchar(255) DEFAULT ""',

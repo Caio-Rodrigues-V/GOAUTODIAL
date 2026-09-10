@@ -3,3 +3,7 @@ php/goCRMAPISettings.php
 .gitignore
 astguiclient.conf
 goautodial.conf
+__pycache__/
+*.pyc
+ai_engine/__pycache__/
+recordings/

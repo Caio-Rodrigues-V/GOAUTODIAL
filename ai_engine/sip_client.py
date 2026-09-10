@@ -369,8 +369,9 @@ class DirectSIPEngine:
                     logger.warning(f"Erro ao empacotar gravação de áudio: {ex}")
 
             # Análise Inteligente de Tabulação, Resumo e Sentimento via OpenAI / Groq
-            analysis = await AIVoiceBrain.analyze_call(call.conversation_history, call.api_keys)
-            qualification = analysis.get("tabulation", "Atendida")
+            analysis = await AIVoiceBrain.analyze_call(call.conversation_history, call.api_keys, duration)
+            tabulation_code = analysis.get("tabulation_code", "HUMAN_COMPLETED")
+            qualification = analysis.get("tabulation", "Conversa Concluída")
             call_summary = analysis.get("summary", "")
             sentiment = analysis.get("sentiment", "Neutro")
             action_needed = analysis.get("action", "")
@@ -418,7 +419,7 @@ class DirectSIPEngine:
             total_ai_brl = total_ai_usd * usd_brl
             cost_estimate = round(max(0.0050, total_ai_brl + cost_telephony_brl), 4)
 
-            logger.info(f"📊 [Custo Real da Chamada]: Total=R$ {cost_estimate:.4f} (STT: R$ {cost_stt_usd*usd_brl:.4f}, LLM: R$ {cost_llm_usd*usd_brl:.4f}, TTS: R$ {cost_tts_usd*usd_brl:.4f}, Tel: R$ {cost_telephony_brl:.4f}) | Tabulação='{qualification}' ({sentiment})")
+            logger.info(f"📊 [Custo Real da Chamada]: Total=R$ {cost_estimate:.4f} (STT: R$ {cost_stt_usd*usd_brl:.4f}, LLM: R$ {cost_llm_usd*usd_brl:.4f}, TTS: R$ {cost_tts_usd*usd_brl:.4f}, Tel: R$ {cost_telephony_brl:.4f}) | Tabulação=[{tabulation_code}] '{qualification}' ({sentiment})")
 
             payload = {
                 "call_id": call.call_id,
@@ -435,6 +436,7 @@ class DirectSIPEngine:
                 "transcript_json": call.conversation_history,
                 "recording_url": recording_rel_path if audio_b64 else "",
                 "audio_base64": audio_b64,
+                "tabulation_code": tabulation_code,
                 "qualification": qualification,
                 "tabulation": qualification,
                 "call_summary": call_summary,

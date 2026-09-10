@@ -247,17 +247,20 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                             <input type="text" name="phone" class="ddm-input" placeholder="Buscar Telefone..." value="<?php echo htmlspecialchars($phoneFilter ?: ''); ?>">
                         </div>
 
-                        <div style="min-width: 170px;">
+                        <div style="min-width: 190px;">
                             <select name="tabulation" class="ddm-select">
                                 <option value="">Todas as Tabulações</option>
-                                <option value="Venda Concluída" <?php echo ($tabulationFilter == 'Venda Concluída') ? 'selected' : ''; ?>>✅ Venda Concluída</option>
-                                <option value="Interessado" <?php echo ($tabulationFilter == 'Interessado') ? 'selected' : ''; ?>>⭐ Interessado</option>
-                                <option value="Dúvida Esclarecida" <?php echo ($tabulationFilter == 'Dúvida Esclarecida') ? 'selected' : ''; ?>>ℹ️ Dúvida Esclarecida</option>
-                                <option value="Retornar Mais Tarde" <?php echo ($tabulationFilter == 'Retornar Mais Tarde') ? 'selected' : ''; ?>>⏰ Retornar Mais Tarde</option>
-                                <option value="Sem Interesse" <?php echo ($tabulationFilter == 'Sem Interesse') ? 'selected' : ''; ?>>❌ Sem Interesse</option>
-                                <option value="Caixa Postal" <?php echo ($tabulationFilter == 'Caixa Postal') ? 'selected' : ''; ?>>📵 Caixa Postal</option>
-                                <option value="Número Inválido" <?php echo ($tabulationFilter == 'Número Inválido') ? 'selected' : ''; ?>>🚫 Número Inválido</option>
-                                <option value="Atendida" <?php echo ($tabulationFilter == 'Atendida') ? 'selected' : ''; ?>>📞 Atendida (Geral)</option>
+                                <option value="HUMAN_COMPLETED" <?php echo ($tabulationFilter == 'HUMAN_COMPLETED' || $tabulationFilter == 'Conversa Concluída') ? 'selected' : ''; ?>>✅ Conversa Concluída</option>
+                                <option value="BUSY_LATER" <?php echo ($tabulationFilter == 'BUSY_LATER' || $tabulationFilter == 'Ocupado / Pediu Retorno') ? 'selected' : ''; ?>>⏰ Ocupado / Pediu Retorno</option>
+                                <option value="REFUSED" <?php echo ($tabulationFilter == 'REFUSED' || $tabulationFilter == 'Recusa / Não Quer Falar') ? 'selected' : ''; ?>>🛑 Recusa / Não Quer Falar</option>
+                                <option value="WRONG_NUMBER" <?php echo ($tabulationFilter == 'WRONG_NUMBER' || $tabulationFilter == 'Número Errado / Engano') ? 'selected' : ''; ?>>❌ Número Errado / Engano</option>
+                                <option value="CALL_DROPPED" <?php echo ($tabulationFilter == 'CALL_DROPPED' || $tabulationFilter == 'Desligou no Início (< 5s)') ? 'selected' : ''; ?>>⚡ Desligou no Início (< 5s)</option>
+                                <option value="MUTE_SILENCE" <?php echo ($tabulationFilter == 'MUTE_SILENCE' || $tabulationFilter == 'Mudo / Sem Áudio') ? 'selected' : ''; ?>>🔇 Mudo / Sem Áudio</option>
+                                <option value="VOICEMAIL" <?php echo ($tabulationFilter == 'VOICEMAIL' || $tabulationFilter == 'Caixa Postal / Secretária') ? 'selected' : ''; ?>>📵 Caixa Postal / Secretária</option>
+                                <option value="NO_ANSWER" <?php echo ($tabulationFilter == 'NO_ANSWER' || $tabulationFilter == 'Não Atende') ? 'selected' : ''; ?>>⏳ Não Atende (Timeout)</option>
+                                <option value="BUSY" <?php echo ($tabulationFilter == 'BUSY' || $tabulationFilter == 'Ocupado') ? 'selected' : ''; ?>>🔴 Linha Ocupada</option>
+                                <option value="INVALID_NUMBER" <?php echo ($tabulationFilter == 'INVALID_NUMBER' || $tabulationFilter == 'Número Inválido') ? 'selected' : ''; ?>>🚫 Número Inválido</option>
+                                <option value="TRANSFERRED" <?php echo ($tabulationFilter == 'TRANSFERRED' || $tabulationFilter == 'Transferida') ? 'selected' : ''; ?>>↪️ Transferida</option>
                             </select>
                         </div>
 
@@ -266,6 +269,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                 <option value="">Todos os Status</option>
                                 <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>Completada / Atendida</option>
                                 <option value="busy" <?php echo ($statusFilter == 'busy') ? 'selected' : ''; ?>>Ocupada / Rejeitada</option>
+                                <option value="no_answer" <?php echo ($statusFilter == 'no_answer') ? 'selected' : ''; ?>>Não Atende</option>
                                 <option value="ringing" <?php echo ($statusFilter == 'ringing') ? 'selected' : ''; ?>>Chamando</option>
                             </select>
                         </div>
@@ -312,7 +316,8 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                         }
                                     }
                                     $costVal = isset($c['cost_estimate']) ? (float)$c['cost_estimate'] : 0.00;
-                                    $tabulation = !empty($c['tabulation']) ? $c['tabulation'] : (!empty($c['qualification']) ? $c['qualification'] : 'Atendida');
+                                    $tabCode = !empty($c['tabulation_code']) ? $c['tabulation_code'] : '';
+                                    $tabulation = !empty($c['tabulation']) ? $c['tabulation'] : (!empty($c['qualification']) ? $c['qualification'] : 'Conversa Concluída');
                                     $sentiment = !empty($c['sentiment']) ? $c['sentiment'] : 'Neutro';
                                 ?>
                                     <tr>
@@ -342,18 +347,24 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             <span class="ddm-badge ddm-badge-orange"><i class="fa fa-volume-up"></i> <?php echo htmlspecialchars($c['voice_provider'] ?: 'cartesia'); ?></span>
                                         </td>
                                         <td>
-                                            <?php if (stripos($tabulation, 'Venda') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-active"><i class="fa fa-check-circle text-green"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif (stripos($tabulation, 'Interessado') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-active"><i class="fa fa-star text-green"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif (stripos($tabulation, 'Dúvida') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-id"><i class="fa fa-info-circle"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif (stripos($tabulation, 'Retornar') !== false || stripos($tabulation, 'Agendamento') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-orange"><i class="fa fa-clock-o"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif (stripos($tabulation, 'Sem Interesse') !== false || stripos($tabulation, 'Recusa') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-inactive"><i class="fa fa-times-circle"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif (stripos($tabulation, 'Caixa') !== false || stripos($tabulation, 'Ocupado') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-inactive"><i class="fa fa-microphone-slash"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php if ($tabCode == 'HUMAN_COMPLETED' || stripos($tabulation, 'Concluída') !== false || stripos($tabulation, 'Venda') !== false || stripos($tabulation, 'Interessado') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-active" title="[HUMAN_COMPLETED] Conversa com diálogo completo"><i class="fa fa-check-circle text-green"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'BUSY_LATER' || stripos($tabulation, 'Retornar') !== false || stripos($tabulation, 'Ocupado') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-orange" title="[BUSY_LATER] Cliente pediu retorno"><i class="fa fa-clock-o"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'REFUSED' || stripos($tabulation, 'Recusa') !== false || stripos($tabulation, 'Sem Interesse') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-inactive" title="[REFUSED] Cliente recusou"><i class="fa fa-hand-stop-o"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'WRONG_NUMBER' || stripos($tabulation, 'Errado') !== false || stripos($tabulation, 'Engano') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-inactive" title="[WRONG_NUMBER] Número errado"><i class="fa fa-user-times"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'CALL_DROPPED' || stripos($tabulation, 'Início') !== false || stripos($tabulation, 'Drop') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-orange" title="[CALL_DROPPED] Desligou no início"><i class="fa fa-phone"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'MUTE_SILENCE' || stripos($tabulation, 'Mudo') !== false): ?>
+                                                <span class="ddm-badge" style="background:#f1f5f9; color:#475569;" title="[MUTE_SILENCE] Sem áudio / mudo"><i class="fa fa-volume-off"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'VOICEMAIL' || stripos($tabulation, 'Caixa') !== false): ?>
+                                                <span class="ddm-badge" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe;" title="[VOICEMAIL] Caixa Postal"><i class="fa fa-microphone-slash"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'TRANSFERRED' || stripos($tabulation, 'Transferida') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-id" title="[TRANSFERRED] Transferida"><i class="fa fa-exchange"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                            <?php elseif ($tabCode == 'INVALID_NUMBER' || stripos($tabulation, 'Inválido') !== false): ?>
+                                                <span class="ddm-badge ddm-badge-inactive" title="[INVALID_NUMBER] Número Inválido"><i class="fa fa-ban"></i> <?php echo htmlspecialchars($tabulation); ?></span>
                                             <?php else: ?>
                                                 <span class="ddm-badge"><?php echo htmlspecialchars($tabulation); ?></span>
                                             <?php endif; ?>
