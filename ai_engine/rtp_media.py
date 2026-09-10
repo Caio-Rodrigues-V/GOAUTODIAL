@@ -419,34 +419,21 @@ class RTPAudioSession:
                 if len(self.pre_speech_ring_buffer) > 3200:
                     self.pre_speech_ring_buffer = self.pre_speech_ring_buffer[-3200:]
 
-                # 1. Detecção de Interrupção / Barge-in enquanto a IA fala
-                if self.is_transmitting:
-                    if rms > 1500.0:  # Usuário falou por cima da IA com voz firme
-                        barge_in_hits += 1
-                        if barge_in_hits >= 3:  # ~60ms sustentados
-                            logger.info("🎙️ [Barge-in detectado]: Usuário começou a falar. Interrompendo fala da IA...")
-                            self.cancel_playback = True
-                            if self.on_barge_in:
-                                self.on_barge_in()
-                    else:
-                        barge_in_hits = 0
-                    continue
-                else:
-                    barge_in_hits = 0
-
-                # 2. Supressão de Eco Residual pós-transmissão (Janela de 150ms)
-                if now - self.last_transmit_end_time < 0.15:
-                    continue
-
-                # 3. Classificação VAD de Fala
+                # 1. Detecção de Fala / Interrupção (Barge-in) Full-Duplex
                 if rms > self.vad_threshold:
+                    if self.is_transmitting:
+                        logger.info("🎙️ [Barge-in / Áudio na linha detectado]: Interrompendo fala da IA para processar áudio da linha...")
+                        self.cancel_playback = True
+                        if self.on_barge_in:
+                            self.on_barge_in()
+
                     self.vad_consecutive_hits += 1
                     if self.vad_consecutive_hits >= 2:  # Confirmação de 2 frames (>40ms)
                         if not self.is_collecting_speech:
                             self.is_collecting_speech = True
-                            # Recupera o início da palavra ("Alô", "Sim") do pre-buffer
+                            # Recupera o início da palavra/frase do pre-buffer
                             self.speech_buffer = bytearray(self.pre_speech_ring_buffer)
-                            logger.info("🎙️ [Cliente Falando...] Capturando áudio com pre-buffer...")
+                            logger.info("🎙️ [Áudio da Linha/Cliente Detectado]: Capturando com pre-buffer...")
 
                         self.speech_buffer.extend(pcm_chunk)
                         self.full_recorded_pcm.extend(pcm_chunk)
@@ -461,7 +448,7 @@ class RTPAudioSession:
                         if now - self.last_speech_time > self.silence_timeout:
                             self.is_collecting_speech = False
                             audio_len = len(self.speech_buffer)
-                            logger.info(f"🤫 [Silêncio detectado]: Fim de fala ({audio_len} bytes PCM).")
+                            logger.info(f"🤫 [Silêncio detectado]: Fim de bloco de áudio ({audio_len} bytes PCM).")
                             
                             # Dispara callback se o áudio capturado tiver pelo menos 150ms
                             if self.on_speech_ready and audio_len >= self.min_speech_bytes:

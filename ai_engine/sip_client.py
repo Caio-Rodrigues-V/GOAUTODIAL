@@ -623,20 +623,27 @@ class DirectSIPEngine:
 
             # 1. Saudação Inicial do Agente (se configurado para falar primeiro)
             if first_message_mode == "assistant_speaks_first":
-                logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
-                call.tts_characters += len(greeting)
-                pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent)
+                # Janela de amostragem acústica inicial de 350ms para verificar se a operadora já está transmitindo áudio de caixa postal
+                await asyncio.sleep(0.35)
                 
-                if pcm_audio and len(pcm_audio) > 0:
-                    await call.rtp_session.stream_pcm_audio(pcm_audio)
+                # Se a operadora já estiver falando (áudio detectado no primeiro instante), não fala a saudação por cima!
+                if not call.rtp_session.is_collecting_speech:
+                    logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
+                    call.tts_characters += len(greeting)
+                    pcm_audio = await AIVoiceBrain.synthesize(greeting, voice_provider, voice_id, call.api_keys, agent)
+                    
+                    if pcm_audio and len(pcm_audio) > 0:
+                        await call.rtp_session.stream_pcm_audio(pcm_audio)
+                    else:
+                        logger.warning("Nenhum áudio gerado para a saudação inicial.")
                 else:
-                    logger.warning("Nenhum áudio gerado para a saudação inicial.")
+                    logger.info("🎙️ [Áudio inicial da operadora detectado]: Aguardando transcrição antes de falar...")
                 
-                # Inicia guardião de 5 segundos logo após a saudação
-                guard_task = asyncio.create_task(run_silence_guard(5.0))
+                # Inicia guardião de 3.5 segundos logo após a saudação para desligar rápido se mudo/rejeitado
+                guard_task = asyncio.create_task(run_silence_guard(3.5))
             else:
                 logger.info("⏳ [Modo User Speaks First]: Aguardando cliente iniciar a conversa na linha...")
-                guard_task = asyncio.create_task(run_silence_guard(6.0))
+                guard_task = asyncio.create_task(run_silence_guard(4.5))
 
         except Exception as e:
             logger.error(f"Erro ao iniciar diálogo de voz da IA: {e}")
