@@ -24,6 +24,11 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
 }
 
 $agents = $aiHandler->getAllAgents();
+
+// Pre-fill se veio por GET ou se vazio preenche com exemplo padrão
+$prefilledContacts = isset($_REQUEST['contacts']) ? trim($_REQUEST['contacts']) : "21984354821, Caio Vicente\n21966491519";
+$prefilledAgentId = isset($_REQUEST['agent_id']) ? (int)$_REQUEST['agent_id'] : 0;
+$prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concurrency'] : 5;
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -111,6 +116,26 @@ $agents = $aiHandler->getAllAgents();
             100% { opacity: 1; transform: scale(1); }
         }
     </style>
+
+    <script>
+    // Funções globais no HEAD
+    function fillSampleNumbers() {
+        var el = document.getElementById('batch_contacts_text');
+        if (el) {
+            el.value = "21984354821, Caio Vicente\n21966491519";
+            updateContactCounter();
+        }
+    }
+
+    function updateContactCounter() {
+        var el = document.getElementById('batch_contacts_text');
+        var badge = document.getElementById('contactCountBadge');
+        if (!el || !badge) return;
+        var raw = el.value || '';
+        var lines = raw.split('\n').filter(function(l) { return l.trim().length > 0; });
+        badge.innerText = lines.length + (lines.length === 1 ? ' contato detectado' : ' contatos detectados');
+    }
+    </script>
 </head>
 
 <?php print $ui->creamyBody(); ?>
@@ -156,15 +181,16 @@ $agents = $aiHandler->getAllAgents();
                         <i class="fa fa-sliders text-purple"></i> Configuração da Campanha
                     </h3>
 
-                    <form id="batchDialForm">
+                    <form id="batchDialForm" action="javascript:void(0);" method="POST">
                         <div class="form-group" style="margin-bottom: 18px;">
                             <label class="ddm-form-label" for="batch_agent_id">Selecione o Agente de IA</label>
                             <select id="batch_agent_id" name="agent_id" class="form-control" style="background: rgba(0,0,0,0.2); border: 1px solid var(--ddm-border); color: #fff; height: 42px; border-radius: 8px;" required>
                                 <?php if (!empty($agents)): ?>
                                     <?php foreach ($agents as $ag): 
-                                        $agId = !empty($ag['agent_id']) ? $ag['agent_id'] : ($ag['id'] ?? 0);
+                                        $agId = !empty($ag['agent_id']) ? (int)$ag['agent_id'] : ((int)$ag['id'] ?? 0);
+                                        $isSelected = ($prefilledAgentId > 0 && $agId == $prefilledAgentId) || ($prefilledAgentId == 0);
                                     ?>
-                                        <option value="<?=$agId?>">
+                                        <option value="<?=$agId?>" <?=$isSelected ? 'selected' : ''?>>
                                             Agente #<?=$agId?> - <?=htmlspecialchars($ag['agent_name'])?> (<?=htmlspecialchars($ag['voice_provider'])?> / <?=htmlspecialchars($ag['voice_id'])?>)
                                         </option>
                                     <?php endforeach; ?>
@@ -177,9 +203,9 @@ $agents = $aiHandler->getAllAgents();
                         <div class="row" style="margin-bottom: 18px;">
                             <div class="col-xs-6">
                                 <label class="ddm-form-label" for="batch_concurrency">
-                                    Canais Simultâneos: <span id="concurrency_val" style="color: #a855f7; font-weight: bold;">5</span>
+                                    Canais Simultâneos: <span id="concurrency_val" style="color: #a855f7; font-weight: bold;"><?=$prefilledConcurrency?></span>
                                 </label>
-                                <input type="range" id="batch_concurrency" name="concurrency" min="1" max="30" value="5" class="form-control" style="padding: 0; background: transparent;" oninput="$('#concurrency_val').text(this.value);" />
+                                <input type="range" id="batch_concurrency" name="concurrency" min="1" max="30" value="<?=$prefilledConcurrency?>" class="form-control" style="padding: 0; background: transparent;" oninput="document.getElementById('concurrency_val').innerText = this.value;" />
                                 <small style="color: var(--ddm-text-muted); font-size: 11px;">Máx. de ligações ao mesmo tempo</small>
                             </div>
                             <div class="col-xs-6">
@@ -197,14 +223,14 @@ $agents = $aiHandler->getAllAgents();
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <label class="ddm-form-label" style="margin-bottom: 0;">Lista de Telefones (ou CSV)</label>
                                 <div>
-                                    <button type="button" class="btn btn-xs btn-default" onclick="fillSampleNumbers()" style="margin-right: 6px; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid var(--ddm-border); color: #a855f7;">
+                                    <button type="button" class="btn btn-xs btn-default" id="btn_fill_sample" onclick="fillSampleNumbers()" style="margin-right: 6px; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid var(--ddm-border); color: #a855f7;">
                                         <i class="fa fa-plus"></i> Preencher Exemplo
                                     </button>
-                                    <span id="contactCountBadge" class="label label-info" style="font-size: 11px;">0 contatos detectados</span>
+                                    <span id="contactCountBadge" class="label label-info" style="font-size: 11px;">2 contatos detectados</span>
                                 </div>
                             </div>
                             
-                            <textarea id="batch_contacts_text" name="contacts" rows="7" class="form-control" placeholder="Clique aqui e cole os telefones (1 por linha) ou com nome:&#10;21984354821, Caio Vicente&#10;21966491519" style="background: #111827 !important; border: 1px solid #374151 !important; color: #ffffff !important; font-family: monospace; font-size: 13px; border-radius: 8px; padding: 12px;" required></textarea>
+                            <textarea id="batch_contacts_text" name="contacts" rows="7" class="form-control" placeholder="Clique aqui e cole os telefones (1 por linha) ou com nome:&#10;21984354821, Caio Vicente&#10;21966491519" style="background: #111827 !important; border: 1px solid #374151 !important; color: #ffffff !important; font-family: monospace; font-size: 13px; border-radius: 8px; padding: 12px;" oninput="updateContactCounter()" onkeyup="updateContactCounter()" required><?=htmlspecialchars($prefilledContacts)?></textarea>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 24px;">
@@ -212,7 +238,7 @@ $agents = $aiHandler->getAllAgents();
                             <input type="file" id="csv_file_input" accept=".csv, .txt" class="form-control" style="background: transparent; border: 1px dashed var(--ddm-border); color: #fff; border-radius: 6px; padding: 6px;" />
                         </div>
 
-                        <button type="submit" id="btnStartBatch" class="ddm-btn ddm-btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; font-weight: 600;">
+                        <button type="button" id="btnStartBatch" onclick="startBatchDial()" class="ddm-btn ddm-btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; font-weight: 600;">
                             <i class="fa fa-play"></i> Iniciar Disparo em Lote
                         </button>
                     </form>
@@ -308,53 +334,37 @@ $agents = $aiHandler->getAllAgents();
 ?>
 
 <script>
-let currentBatchId = null;
-let pollTimer = null;
-
-function fillSampleNumbers() {
-    $('#batch_contacts_text').val("21984354821, Caio Vicente\n21966491519");
-    updateContactCounter();
-}
-
-// Contador automático de linhas do Textarea
-function updateContactCounter() {
-    let raw = $('#batch_contacts_text').val() || '';
-    let lines = raw.split('\n').filter(l => l.trim().length > 0);
-    $('#contactCountBadge').text(lines.length + (lines.length === 1 ? ' contato detectado' : ' contatos detectados'));
-}
-$('#batch_contacts_text').on('input change keyup paste', function() {
-    setTimeout(updateContactCounter, 50);
-});
-$(document).ready(function() {
-    updateContactCounter();
-});
+var currentBatchId = null;
+var pollTimer = null;
 
 // Leitor de arquivo CSV
 $('#csv_file_input').on('change', function(e) {
-    let file = e.target.files[0];
+    var file = e.target.files[0];
     if (!file) return;
 
-    let reader = new FileReader();
+    var reader = new FileReader();
     reader.onload = function(e) {
-        let content = e.target.result;
+        var content = e.target.result;
         $('#batch_contacts_text').val(content);
-        let lines = content.split('\n').filter(l => l.trim().length > 0);
-        $('#contactCountBadge').text(lines.length + ' contatos importados do CSV');
+        updateContactCounter();
     };
     reader.readAsText(file);
 });
 
-// Iniciar Disparo em Lote
-$('#batchDialForm').on('submit', function(e) {
-    e.preventDefault();
-
-    let agentId = $('#batch_agent_id').val();
-    let contacts = $('#batch_contacts_text').val().trim();
-    let concurrency = $('#batch_concurrency').val();
-    let delayMs = $('#batch_delay').val();
+// Disparador principal
+function startBatchDial() {
+    var agentId = $('#batch_agent_id').val();
+    var contacts = $('#batch_contacts_text').val().trim();
+    var concurrency = $('#batch_concurrency').val();
+    var delayMs = $('#batch_delay').val();
 
     if (!contacts) {
         alert('Por favor, informe ao menos um número de telefone para disparo.');
+        return;
+    }
+
+    if (!agentId || agentId == '0') {
+        alert('Por favor, selecione um Agente de IA válido.');
         return;
     }
 
@@ -374,14 +384,14 @@ $('#batchDialForm').on('submit', function(e) {
         success: function(resp) {
             $('#btnStartBatch').prop('disabled', false).html('<i class="fa fa-play"></i> Iniciar Disparo em Lote');
 
-            let isSuccess = (resp.status === 'success' || resp.status == 1 || resp.batch_id);
+            var isSuccess = (resp.status === 'success' || resp.status == 1 || resp.batch_id);
             if (isSuccess && resp.batch_id) {
                 currentBatchId = resp.batch_id;
                 $('#batchStatusBadge').removeClass().addClass('label label-primary pulse-active').text('Disparando Chamadas...');
                 $('#btnPauseBatch, #btnCancelBatch').show();
                 $('#btnResumeBatch').hide();
 
-                // Dispara primeira consulta imediatamente e agenda polling
+                // Dispara primeira consulta imediatamente e agenda polling a cada 800ms
                 pollBatchStatus();
                 if (pollTimer) clearInterval(pollTimer);
                 pollTimer = setInterval(pollBatchStatus, 800);
@@ -394,7 +404,7 @@ $('#batchDialForm').on('submit', function(e) {
             alert('Erro de comunicação (HTTP ' + xhr.status + '): ' + (xhr.responseText || 'Servidor indisponível na porta 8765.'));
         }
     });
-});
+}
 
 // Polling de Status do Lote
 function pollBatchStatus() {
@@ -407,13 +417,13 @@ function pollBatchStatus() {
         dataType: 'json',
         success: function(resp) {
             if (resp.status === 'success' && resp.batch) {
-                let b = resp.batch;
+                var b = resp.batch;
                 $('#stat_total').text(b.total);
                 $('#stat_in_progress').text(b.in_progress);
                 $('#stat_completed').text(b.completed);
                 $('#stat_failed').text(b.failed);
 
-                let percent = b.total > 0 ? Math.round(((b.completed + b.failed) / b.total) * 100) : 0;
+                var percent = b.total > 0 ? Math.round(((b.completed + b.failed) / b.total) * 100) : 0;
                 $('#progressBarFill').css('width', percent + '%');
                 $('#progress_percent_text').text(percent + '% (' + (b.completed + b.failed) + '/' + b.total + ')');
 
@@ -434,9 +444,9 @@ function pollBatchStatus() {
                 }
 
                 // Renderizar tabela de contatos
-                let html = '';
+                var html = '';
                 b.contacts.forEach(function(c, i) {
-                    let stBadge = '<span class="label label-default">Na Fila</span>';
+                    var stBadge = '<span class="label label-default">Na Fila</span>';
                     if (c.status === 'dialing') {
                         stBadge = '<span class="label label-warning pulse-active"><i class="fa fa-phone"></i> Discando...</span>';
                     } else if (c.status === 'completed') {
@@ -481,6 +491,10 @@ function controlBatch(action) {
         }
     });
 }
+
+$(document).ready(function() {
+    updateContactCounter();
+});
 </script>
 </body>
 </html>
