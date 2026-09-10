@@ -557,10 +557,10 @@ class AIVoiceBrain:
                     
                     if is_reasoning:
                         # Modelos de raciocínio da OpenAI não aceitam o parâmetro 'temperature'
-                        payload["max_completion_tokens"] = 250
+                        payload["max_completion_tokens"] = 120
                     else:
                         payload["temperature"] = float(temperature) if temperature is not None else 0.7
-                        payload["max_tokens"] = 150
+                        payload["max_tokens"] = 65
 
                     headers = {
                         "Authorization": f"Bearer {api_key}",
@@ -578,7 +578,7 @@ class AIVoiceBrain:
                             payload["model"] = "gpt-4o-mini"
                             payload.pop("max_completion_tokens", None)
                             payload["temperature"] = 0.7
-                            payload["max_tokens"] = 150
+                            payload["max_tokens"] = 65
                             r_fb = await client.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers)
                             if r_fb.status_code == 200:
                                 data = r_fb.json()
