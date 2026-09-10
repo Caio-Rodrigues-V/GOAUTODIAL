@@ -456,14 +456,14 @@ class RTPAudioSession:
                             if now - self.last_speech_time > self.silence_timeout:
                                 self.is_collecting_speech = False
                                 audio_len = len(self.speech_buffer)
-                            logger.info(f"🤫 [Silêncio detectado]: Fim de bloco de áudio ({audio_len} bytes PCM).")
-                            
-                            # Dispara callback se o áudio capturado tiver pelo menos 150ms
-                            if self.on_speech_ready and audio_len >= self.min_speech_bytes:
-                                collected = bytes(self.speech_buffer)
-                                asyncio.create_task(self.on_speech_ready(collected))
-                            
-                            self.speech_buffer.clear()
+                                logger.info(f"🤫 [Silêncio detectado]: Fim de bloco de áudio ({audio_len} bytes PCM).")
+                                
+                                # Dispara callback se o áudio capturado tiver pelo menos 150ms
+                                if self.on_speech_ready and audio_len >= self.min_speech_bytes:
+                                    collected = bytes(self.speech_buffer)
+                                    asyncio.create_task(self.on_speech_ready(collected))
+                                
+                                self.speech_buffer.clear()
 
             except asyncio.CancelledError:
                 break
