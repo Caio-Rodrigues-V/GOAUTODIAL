@@ -161,9 +161,11 @@ $agents = $aiHandler->getAllAgents();
                             <label class="ddm-form-label" for="batch_agent_id">Selecione o Agente de IA</label>
                             <select id="batch_agent_id" name="agent_id" class="form-control" style="background: rgba(0,0,0,0.2); border: 1px solid var(--ddm-border); color: #fff; height: 42px; border-radius: 8px;" required>
                                 <?php if (!empty($agents)): ?>
-                                    <?php foreach ($agents as $ag): ?>
-                                        <option value="<?=$ag['id']?>">
-                                            Agente #<?=$ag['id']?> - <?=htmlspecialchars($ag['agent_name'])?> (<?=htmlspecialchars($ag['voice_provider'])?> / <?=htmlspecialchars($ag['voice_id'])?>)
+                                    <?php foreach ($agents as $ag): 
+                                        $agId = !empty($ag['agent_id']) ? $ag['agent_id'] : ($ag['id'] ?? 0);
+                                    ?>
+                                        <option value="<?=$agId?>">
+                                            Agente #<?=$agId?> - <?=htmlspecialchars($ag['agent_name'])?> (<?=htmlspecialchars($ag['voice_provider'])?> / <?=htmlspecialchars($ag['voice_id'])?>)
                                         </option>
                                     <?php endforeach; ?>
                                 <?php else: ?>
