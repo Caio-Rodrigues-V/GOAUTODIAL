@@ -532,9 +532,14 @@ class DirectSIPEngine:
 
             # Trava para garantir processamento de um turno por vez
             speech_lock = asyncio.Lock()
+            guard_task: Optional[asyncio.Task] = None
 
             # Callback quando o cliente termina de falar
             async def handle_user_speech(pcm_audio: bytes):
+                nonlocal guard_task
+                if guard_task and not guard_task.done():
+                    guard_task.cancel()
+
                 if speech_lock.locked():
                     return
                 
@@ -551,11 +556,16 @@ class DirectSIPEngine:
                         logger.info(f"🗣️ [Cliente Disse]: \"{transcript}\"")
                         call.conversation_history.append({"role": "user", "content": transcript})
 
-                        # Detecção de Caixa Postal / Secretária Eletrônica (Voicemail Tool)
+                        # Detecção de Caixa Postal / Secretária Eletrônica da Operadora (Voicemail Tool)
                         lower_text = transcript.lower()
-                        vm_keywords = ["deixe seu recado", "após o sinal", "caixa postal", "deixe recado", "não pode atender", "chamada encaminhada"]
+                        vm_keywords = [
+                            "deixe seu recado", "após o sinal", "caixa postal", "deixe recado", 
+                            "não pode atender", "chamada encaminhada", "mensagem após", "grave seu recado",
+                            "horário de atendimento", "não está disponível", "correio de voz", "sua chamada está",
+                            "atendimento eletrônico", "número chamado", "sua ligação está", "recado após", "bipe"
+                        ]
                         if hangup_on_vm and any(k in lower_text for k in vm_keywords):
-                            logger.info(f"🛑 [Voicemail Tool]: Caixa postal detectada ('{transcript}'). Encerrando chamada...")
+                            logger.info(f"🛑 [Voicemail Tool]: Caixa postal / operadora detectada ('{transcript}'). Encerrando chamada imediatamente...")
                             await self.send_bye(call.call_id)
                             return
 
@@ -597,6 +607,20 @@ class DirectSIPEngine:
             call.rtp_session.on_speech_ready = handle_user_speech
             call.rtp_session.on_barge_in = lambda: logger.info("Barge-in acionado: IA parou de falar para escutar o cliente.")
 
+            # Guardião Anti-Mudo / Anti-Caixa Postal
+            async def run_silence_guard(delay_sec: float = 5.0):
+                try:
+                    await asyncio.sleep(delay_sec)
+                    if call.call_id in self.active_calls:
+                        user_msgs = [m for m in call.conversation_history if m.get("role") == "user"]
+                        if len(user_msgs) == 0:
+                            logger.info(f"🛑 [Guardião Anti-Mudo/Caixa Postal]: Nenhum áudio humano respondido após {delay_sec}s da saudação. Encerrando chamada para economizar custos...")
+                            await self.send_bye(call.call_id)
+                except asyncio.CancelledError:
+                    pass
+                except Exception as ex:
+                    logger.debug(f"Erro no guardião de silêncio: {ex}")
+
             # 1. Saudação Inicial do Agente (se configurado para falar primeiro)
             if first_message_mode == "assistant_speaks_first":
                 logger.info(f"[IA Saudação Inicial]: '{greeting}' (Voz: {voice_provider}/{voice_id})")
@@ -607,8 +631,12 @@ class DirectSIPEngine:
                     await call.rtp_session.stream_pcm_audio(pcm_audio)
                 else:
                     logger.warning("Nenhum áudio gerado para a saudação inicial.")
+                
+                # Inicia guardião de 5 segundos logo após a saudação
+                guard_task = asyncio.create_task(run_silence_guard(5.0))
             else:
                 logger.info("⏳ [Modo User Speaks First]: Aguardando cliente iniciar a conversa na linha...")
+                guard_task = asyncio.create_task(run_silence_guard(6.0))
 
         except Exception as e:
             logger.error(f"Erro ao iniciar diálogo de voz da IA: {e}")
