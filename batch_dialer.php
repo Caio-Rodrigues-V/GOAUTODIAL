@@ -196,10 +196,15 @@ $agents = $aiHandler->getAllAgents();
                         <div class="form-group" style="margin-bottom: 18px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <label class="ddm-form-label" style="margin-bottom: 0;">Lista de Telefones (ou CSV)</label>
-                                <span id="contactCountBadge" class="label label-info" style="font-size: 11px;">0 contatos detectados</span>
+                                <div>
+                                    <button type="button" class="btn btn-xs btn-default" onclick="fillSampleNumbers()" style="margin-right: 6px; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid var(--ddm-border); color: #a855f7;">
+                                        <i class="fa fa-plus"></i> Preencher Exemplo
+                                    </button>
+                                    <span id="contactCountBadge" class="label label-info" style="font-size: 11px;">0 contatos detectados</span>
+                                </div>
                             </div>
                             
-                            <textarea id="batch_contacts_text" name="contacts" rows="7" class="form-control" placeholder="Cole aqui os telefones (1 por linha) ou com nome separado por vírgula:&#10;21984354821, Caio Vicente&#10;11987654321, Maria Silva&#10;31999998888, João Carlos" style="background: rgba(0,0,0,0.3); border: 1px solid var(--ddm-border); color: #fff; font-family: monospace; border-radius: 8px;" required></textarea>
+                            <textarea id="batch_contacts_text" name="contacts" rows="7" class="form-control" placeholder="Clique aqui e cole os telefones (1 por linha) ou com nome:&#10;21984354821, Caio Vicente&#10;21966491519" style="background: #111827 !important; border: 1px solid #374151 !important; color: #ffffff !important; font-family: monospace; font-size: 13px; border-radius: 8px; padding: 12px;" required></textarea>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 24px;">
@@ -306,6 +311,11 @@ $agents = $aiHandler->getAllAgents();
 let currentBatchId = null;
 let pollTimer = null;
 
+function fillSampleNumbers() {
+    $('#batch_contacts_text').val("21984354821, Caio Vicente\n21966491519");
+    updateContactCounter();
+}
+
 // Contador automático de linhas do Textarea
 function updateContactCounter() {
     let raw = $('#batch_contacts_text').val() || '';
@@ -314,6 +324,9 @@ function updateContactCounter() {
 }
 $('#batch_contacts_text').on('input change keyup paste', function() {
     setTimeout(updateContactCounter, 50);
+});
+$(document).ready(function() {
+    updateContactCounter();
 });
 
 // Leitor de arquivo CSV
