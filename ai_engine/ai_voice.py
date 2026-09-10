@@ -4,6 +4,8 @@ Síntese de voz em tempo real (OpenAI, ElevenLabs, Cartesia), Transcrição ultr
 e raciocínio conversacional de alta fidelidade (Groq Llama 3.3 70B, OpenAI GPT-4o Mini, Claude, DeepSeek).
 """
 
+import os
+import hashlib
 import httpx
 import logging
 import json
