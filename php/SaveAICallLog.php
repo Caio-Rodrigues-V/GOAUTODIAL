@@ -44,12 +44,24 @@ if (!empty($data['audio_base64'])) {
     } catch (\Throwable $t) {}
 }
 
+$tabCode = isset($data['tabulation_code']) ? $data['tabulation_code'] : 'HUMAN_COMPLETED';
+$callStatus = isset($data['status']) ? $data['status'] : 'completed';
+if ($tabCode == 'MUTE_SILENCE' || $tabCode == 'NO_ANSWER') {
+    $callStatus = 'no_answer';
+} elseif ($tabCode == 'VOICEMAIL') {
+    $callStatus = 'voicemail';
+} elseif ($tabCode == 'CALL_DROPPED') {
+    $callStatus = 'dropped';
+} elseif ($tabCode == 'BUSY') {
+    $callStatus = 'busy';
+}
+
 $logData = array(
     'call_id' => $callId,
     'agent_id' => isset($data['agent_id']) ? (int)$data['agent_id'] : null,
     'agent_name' => isset($data['agent_name']) ? $data['agent_name'] : 'Agente IA',
     'phone_number' => $data['phone_number'],
-    'status' => isset($data['status']) ? $data['status'] : 'completed',
+    'status' => $callStatus,
     'duration_seconds' => isset($data['duration_seconds']) ? (int)$data['duration_seconds'] : 0,
     'llm_provider' => isset($data['llm_provider']) ? $data['llm_provider'] : '',
     'llm_model' => isset($data['llm_model']) ? $data['llm_model'] : '',

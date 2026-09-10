@@ -295,12 +295,24 @@ class DirectSIPEngine:
             # Iniciar Streaming RTP da IA
             asyncio.create_task(self.start_ai_conversation(call, remote_media_ip, remote_media_port, codec))
 
-        elif " 486 Busy" in first_line or " 603 Decline" in first_line or " 487 Request Terminated" in first_line:
-            call.status = "busy"
-            logger.info(f"Chamada {call.dial_string} foi rejeitada ou ocupada.")
+        elif re.search(r'SIP/2\.0\s+[456]\d\d\b', first_line):
+            code_match = re.search(r'SIP/2\.0\s+(\d+)\s*(.*)', first_line)
+            sip_code = int(code_match.group(1)) if code_match else 486
+            reason = code_match.group(2).strip() if code_match else "Status Operadora"
+            
+            if sip_code in (486, 600, 603):
+                call.status = "busy"
+            elif sip_code in (408, 480, 487, 604):
+                call.status = "no_answer"
+            elif sip_code in (404, 410, 484, 488):
+                call.status = "invalid_number"
+            else:
+                call.status = "failed"
+            
+            logger.info(f"Chamada {call.dial_string} finalizada pela operadora com código SIP {sip_code} ({reason}). Status={call.status}")
             if call.rtp_session:
                 call.rtp_session.stop()
-            asyncio.create_task(self.save_call_to_crm(call, "busy"))
+            asyncio.create_task(self.save_call_to_crm(call, call.status))
             self.active_calls.pop(call_id, None)
 
         elif "BYE " in first_line:
@@ -419,14 +431,29 @@ class DirectSIPEngine:
             total_ai_brl = total_ai_usd * usd_brl
             cost_estimate = round(max(0.0050, total_ai_brl + cost_telephony_brl), 4)
 
-            logger.info(f"📊 [Custo Real da Chamada]: Total=R$ {cost_estimate:.4f} (STT: R$ {cost_stt_usd*usd_brl:.4f}, LLM: R$ {cost_llm_usd*usd_brl:.4f}, TTS: R$ {cost_tts_usd*usd_brl:.4f}, Tel: R$ {cost_telephony_brl:.4f}) | Tabulação=[{tabulation_code}] '{qualification}' ({sentiment})")
+            # Refina o status técnico para não marcar 'completed/Atendida' quando for Mudo ou Caixa Postal
+            real_status = status
+            if tabulation_code in ("MUTE_SILENCE", "NO_ANSWER"):
+                real_status = "no_answer"
+            elif tabulation_code == "VOICEMAIL":
+                real_status = "voicemail"
+            elif tabulation_code == "CALL_DROPPED":
+                real_status = "dropped"
+            elif tabulation_code == "BUSY":
+                real_status = "busy"
+            elif tabulation_code == "INVALID_NUMBER":
+                real_status = "invalid_number"
+            elif tabulation_code in ("HUMAN_COMPLETED", "BUSY_LATER", "REFUSED", "WRONG_NUMBER", "TRANSFERRED"):
+                real_status = "completed"
+
+            logger.info(f"📊 [Custo Real da Chamada]: Total=R$ {cost_estimate:.4f} (STT: R$ {cost_stt_usd*usd_brl:.4f}, LLM: R$ {cost_llm_usd*usd_brl:.4f}, TTS: R$ {cost_tts_usd*usd_brl:.4f}, Tel: R$ {cost_telephony_brl:.4f}) | Tabulação=[{tabulation_code}] '{qualification}' ({sentiment}) | Status='{real_status}'")
 
             payload = {
                 "call_id": call.call_id,
                 "agent_id": call.agent_id,
                 "agent_name": agent.get("agent_name", "Agente IA"),
                 "phone_number": call.phone_number,
-                "status": status,
+                "status": real_status,
                 "duration_seconds": duration,
                 "llm_provider": agent.get("llm_provider", "groq"),
                 "llm_model": agent.get("llm_model", "llama-3.3-70b-versatile"),
