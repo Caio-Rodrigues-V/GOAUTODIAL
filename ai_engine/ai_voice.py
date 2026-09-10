@@ -285,14 +285,11 @@ class AIVoiceBrain:
 
                     eleven_voice = voice_id if voice_id and voice_id != "custom" else "PznTnBc8X6pvixs9UkQm"
 
-                    # Suporte a optimize_streaming_latency (0 a 4) igual na Vapi
-                    opt_lat = int(voice_settings.get("voice_optimize_latency", 0)) if voice_settings and voice_settings.get("voice_optimize_latency") is not None else 0
-                    if opt_lat > 0:
-                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_8000&optimize_streaming_latency={opt_lat}"
-                    else:
-                        url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_8000"
+                    # Suporte a optimize_streaming_latency (0 a 4) com padrão 3 para velocidade ultrarrápida (<250ms)
+                    opt_lat = int(voice_settings.get("voice_optimize_latency", 3)) if voice_settings and voice_settings.get("voice_optimize_latency") is not None else 3
+                    url = f"https://api.elevenlabs.io/v1/text-to-speech/{eleven_voice}?output_format=pcm_8000&optimize_streaming_latency={opt_lat}"
                     
-                    # Parâmetros padrão idênticos ao player do site ElevenLabs para 100% de fidelidade
+                    # Parâmetros padrão calibrados para ElevenLabs Turbo v2.5 com altíssima velocidade e fidelidade
                     stability = float(voice_settings.get("voice_stability", 0.50)) if voice_settings else 0.50
                     similarity = float(voice_settings.get("voice_clarity", 0.80)) if voice_settings else 0.80
                     style = float(voice_settings.get("voice_style_exaggeration", 0.0)) if voice_settings else 0.0
@@ -300,7 +297,7 @@ class AIVoiceBrain:
 
                     payload = {
                         "text": text,
-                        "model_id": "eleven_multilingual_v2",  # Modelo oficial de alta fidelidade
+                        "model_id": "eleven_turbo_v2_5",  # Modelo turbo de baixa latência (<250ms) com suporte nativo a PT-BR
                         "voice_settings": {
                             "stability": stability,
                             "similarity_boost": similarity,
