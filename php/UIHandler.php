@@ -2004,6 +2004,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$aiVoiceArea = '<li class="treeview active"><a href="#"><i class="fa fa-magic text-purple"></i> <span>Agentes de IA</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
 		$aiVoiceArea .= $this->getSidebarItem("./ai_agents.php", "users", "Meus Agentes");
 		$aiVoiceArea .= $this->getSidebarItem("./add_ai_agent.php", "plus-circle", "Criar Agente");
+		$aiVoiceArea .= $this->getSidebarItem("./batch_dialer.php", "rocket", "Disparo em Lote (Batch)");
 		$aiVoiceArea .= $this->getSidebarItem("./ai_call_logs.php", "phone", "Histórico & Transcrições");
 		$aiVoiceArea .= $this->getSidebarItem("./ai_settings.php", "key", "Configurações & Chaves API");
 		$aiVoiceArea .= '</ul></li>';
