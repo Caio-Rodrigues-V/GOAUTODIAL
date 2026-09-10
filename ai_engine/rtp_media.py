@@ -68,25 +68,23 @@ def linear_to_ulaw(pcm_bytes: bytes) -> bytes:
 
 def apply_telephony_filter(pcm_bytes: bytes, sample_rate: int = 8000) -> bytes:
     """
-    Filtro de Telephony Broadcast ITU-T G.712 de Alta Fidelidade:
-    Aplica headroom gain suave (-1.1dB / 0.88) para eliminar saturação e ruído de quantização no codec G.711.
+    Pass-through transparente de alta fidelidade:
+    Mantém 100% da dinâmica e presença original da voz gerada pela ElevenLabs/OpenAI,
+    com limitador suave apenas para proteger contra clipping digital acima de 32700.
     """
     if not pcm_bytes or len(pcm_bytes) < 2:
         return pcm_bytes
-
-    try:
-        import audioop
-        return audioop.mul(pcm_bytes, 2, 0.88)
-    except Exception:
-        pass
 
     num_samples = len(pcm_bytes) // 2
     out = bytearray(len(pcm_bytes))
     for i in range(num_samples):
         x = int.from_bytes(pcm_bytes[i*2:(i+1)*2], byteorder='little', signed=True)
-        s_out = int(x * 0.88)
-        s_out = max(-32767, min(32767, s_out))
-        struct.pack_into('<h', out, i * 2, s_out)
+        # Soft limiter transparente apenas se passar do limite seguro
+        if x > 32700:
+            x = 32700
+        elif x < -32700:
+            x = -32700
+        struct.pack_into('<h', out, i * 2, x)
 
     return bytes(out)
 
