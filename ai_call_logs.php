@@ -264,13 +264,16 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                             </select>
                         </div>
 
-                        <div style="min-width: 150px;">
+                        <div style="min-width: 170px;">
                             <select name="status" class="ddm-select">
                                 <option value="">Todos os Status</option>
-                                <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>Completada / Atendida</option>
-                                <option value="busy" <?php echo ($statusFilter == 'busy') ? 'selected' : ''; ?>>Ocupada / Rejeitada</option>
-                                <option value="no_answer" <?php echo ($statusFilter == 'no_answer') ? 'selected' : ''; ?>>Não Atende</option>
-                                <option value="ringing" <?php echo ($statusFilter == 'ringing') ? 'selected' : ''; ?>>Chamando</option>
+                                <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>✅ Atendida (Humano)</option>
+                                <option value="no_answer" <?php echo ($statusFilter == 'no_answer') ? 'selected' : ''; ?>>⏳ Não Atendeu / Mudo</option>
+                                <option value="voicemail" <?php echo ($statusFilter == 'voicemail') ? 'selected' : ''; ?>>📵 Caixa Postal</option>
+                                <option value="busy" <?php echo ($statusFilter == 'busy') ? 'selected' : ''; ?>>🔴 Ocupada / Rejeitada</option>
+                                <option value="dropped" <?php echo ($statusFilter == 'dropped') ? 'selected' : ''; ?>>⚡ Queda de Ligação</option>
+                                <option value="invalid_number" <?php echo ($statusFilter == 'invalid_number') ? 'selected' : ''; ?>>🚫 Número Inválido</option>
+                                <option value="ringing" <?php echo ($statusFilter == 'ringing') ? 'selected' : ''; ?>>📞 Chamando</option>
                             </select>
                         </div>
 
@@ -319,6 +322,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                     $tabCode = !empty($c['tabulation_code']) ? $c['tabulation_code'] : '';
                                     $tabulation = !empty($c['tabulation']) ? $c['tabulation'] : (!empty($c['qualification']) ? $c['qualification'] : 'Conversa Concluída');
                                     $sentiment = !empty($c['sentiment']) ? $c['sentiment'] : 'Neutro';
+                                    $st = !empty($c['status']) ? strtolower($c['status']) : 'completed';
                                 ?>
                                     <tr>
                                         <td><span class="ddm-badge ddm-badge-id">#<?php echo $c['id']; ?></span></td>
@@ -379,12 +383,22 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <?php if ($c['status'] == 'completed'): ?>
-                                                <span class="ddm-badge ddm-badge-active"><span class="ddm-dot-indicator ddm-dot-active"></span> Atendida</span>
-                                            <?php elseif ($c['status'] == 'busy'): ?>
-                                                <span class="ddm-badge ddm-badge-inactive"><span class="ddm-dot-indicator ddm-dot-inactive"></span> Ocupada</span>
+                                            <?php if ($st == 'completed'): ?>
+                                                <span class="ddm-badge ddm-badge-active" title="Chamada atendida por humano com diálogo"><span class="ddm-dot-indicator ddm-dot-active"></span> Atendida</span>
+                                            <?php elseif ($st == 'no_answer'): ?>
+                                                <span class="ddm-badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;" title="Não atendeu / Linha mudo"><i class="fa fa-phone-slash"></i> Não Atendeu</span>
+                                            <?php elseif ($st == 'voicemail'): ?>
+                                                <span class="ddm-badge" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe;" title="Caixa Postal da operadora"><i class="fa fa-microphone-slash"></i> Caixa Postal</span>
+                                            <?php elseif ($st == 'busy'): ?>
+                                                <span class="ddm-badge ddm-badge-inactive" title="Linha ocupada ou rejeitada"><span class="ddm-dot-indicator ddm-dot-inactive"></span> Ocupada / Rejeitada</span>
+                                            <?php elseif ($st == 'dropped'): ?>
+                                                <span class="ddm-badge ddm-badge-orange" title="Queda rápida no início"><i class="fa fa-phone"></i> Queda</span>
+                                            <?php elseif ($st == 'invalid_number'): ?>
+                                                <span class="ddm-badge ddm-badge-inactive" title="Número inválido ou inexistente"><i class="fa fa-ban"></i> Inválido</span>
+                                            <?php elseif ($st == 'ringing'): ?>
+                                                <span class="ddm-badge ddm-badge-id" title="Chamando no aparelho"><i class="fa fa-bell-o"></i> Chamando...</span>
                                             <?php else: ?>
-                                                <span class="ddm-badge"><i class="fa fa-phone"></i> <?php echo htmlspecialchars($c['status']); ?></span>
+                                                <span class="ddm-badge"><i class="fa fa-phone"></i> <?php echo htmlspecialchars($st); ?></span>
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align:center; white-space:nowrap;">
