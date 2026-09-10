@@ -2018,7 +2018,6 @@ error_reporting(E_ERROR | E_PARSE);
 		// 3. Telephony & SIP Trunks
 		$telephonyArea = '<li class="treeview"><a href="#"><i class="fa fa-phone text-green"></i> <span>Telefonia & SIP</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
 		$telephonyArea .= $this->getSidebarItem("./settingscarriers.php", "signal", "Troncos SIP (Oktor)");
-		$telephonyArea .= $this->getSidebarItem("./telephonyinbound.php", "hashtag", "Números DIDs / Inbound");
 		$telephonyArea .= $this->getSidebarItem("./audiofiles.php", "music", "Áudios & Ruídos de Fundo");
 		$telephonyArea .= '</ul></li>';
 
