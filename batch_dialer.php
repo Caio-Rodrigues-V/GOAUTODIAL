@@ -40,7 +40,6 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
     <?php 
         print $ui->standardizedThemeCSS(); 
         print $ui->creamyThemeCSS();
-        print $ui->dataTablesTheme();
     ?>
     <link href="css/style.css" rel="stylesheet" type="text/css" />
     <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
@@ -57,11 +56,11 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
             }
         }
         .batch-card {
-            background: var(--ddm-surface);
-            border: 1px solid var(--ddm-border);
-            border-radius: var(--ddm-radius-lg);
+            background: var(--ddm-surface, #1e293b);
+            border: 1px solid var(--ddm-border, #334155);
+            border-radius: 12px;
             padding: 24px;
-            box-shadow: var(--ddm-shadow-xs);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         .batch-metric-box {
             display: grid;
@@ -71,7 +70,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
         }
         .batch-stat {
             background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--ddm-border);
+            border: 1px solid var(--ddm-border, #334155);
             border-radius: 8px;
             padding: 14px;
             text-align: center;
@@ -85,7 +84,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--ddm-text-muted);
+            color: var(--ddm-text-muted, #94a3b8);
         }
         .progress-bar-container {
             background: rgba(255, 255, 255, 0.08);
@@ -104,7 +103,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
         .batch-log-table {
             max-height: 400px;
             overflow-y: auto;
-            border: 1px solid var(--ddm-border);
+            border: 1px solid var(--ddm-border, #334155);
             border-radius: 8px;
         }
         .pulse-active {
@@ -118,7 +117,12 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
     </style>
 
     <script>
-    // Funções globais no HEAD
+    // -----------------------------------------------------------------
+    // Funções Vanilla JS (Executam direto sem depender de bibliotecas)
+    // -----------------------------------------------------------------
+    var currentBatchId = null;
+    var pollTimer = null;
+
     function fillSampleNumbers() {
         var el = document.getElementById('batch_contacts_text');
         if (el) {
@@ -135,6 +139,180 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
         var lines = raw.split('\n').filter(function(l) { return l.trim().length > 0; });
         badge.innerText = lines.length + (lines.length === 1 ? ' contato detectado' : ' contatos detectados');
     }
+
+    function startBatchDial() {
+        var agentEl = document.getElementById('batch_agent_id');
+        var contactsEl = document.getElementById('batch_contacts_text');
+        var concurrencyEl = document.getElementById('batch_concurrency');
+        var delayEl = document.getElementById('batch_delay');
+        var btn = document.getElementById('btnStartBatch');
+
+        var agentId = agentEl ? agentEl.value : '';
+        var contacts = contactsEl ? contactsEl.value.trim() : '';
+        var concurrency = concurrencyEl ? concurrencyEl.value : 5;
+        var delayMs = delayEl ? delayEl.value : 300;
+
+        if (!contacts) {
+            alert('Por favor, informe ao menos um número de telefone para disparo.');
+            return;
+        }
+
+        if (!agentId || agentId == '0') {
+            alert('Por favor, selecione um Agente de IA válido.');
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Iniciando Disparo...';
+        }
+
+        var formData = new FormData();
+        formData.append('action', 'start');
+        formData.append('agent_id', agentId);
+        formData.append('contacts', contacts);
+        formData.append('concurrency', concurrency);
+        formData.append('delay_ms', delayMs);
+
+        fetch('php/BatchDialProxy.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-play"></i> Iniciar Disparo em Lote';
+            }
+
+            var isSuccess = (resp.status === 'success' || resp.status == 1 || resp.batch_id);
+            if (isSuccess && resp.batch_id) {
+                currentBatchId = resp.batch_id;
+                var badge = document.getElementById('batchStatusBadge');
+                if (badge) {
+                    badge.className = 'label label-primary pulse-active';
+                    badge.innerText = 'Disparando Chamadas...';
+                }
+                document.getElementById('btnPauseBatch').style.display = 'inline-block';
+                document.getElementById('btnCancelBatch').style.display = 'inline-block';
+                document.getElementById('btnResumeBatch').style.display = 'none';
+
+                pollBatchStatus();
+                if (pollTimer) clearInterval(pollTimer);
+                pollTimer = setInterval(pollBatchStatus, 800);
+            } else {
+                alert('Aviso: ' + (resp.message || 'Não foi possível iniciar o disparo. Verifique se o servidor de voz está ativo.'));
+            }
+        })
+        .catch(function(err) {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-play"></i> Iniciar Disparo em Lote';
+            }
+            alert('Erro de comunicação: ' + err.message);
+        });
+    }
+
+    function pollBatchStatus() {
+        if (!currentBatchId) return;
+
+        fetch('php/BatchDialProxy.php?action=status&batch_id=' + encodeURIComponent(currentBatchId))
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.status === 'success' && resp.batch) {
+                var b = resp.batch;
+                document.getElementById('stat_total').innerText = b.total;
+                document.getElementById('stat_in_progress').innerText = b.in_progress;
+                document.getElementById('stat_completed').innerText = b.completed;
+                document.getElementById('stat_failed').innerText = b.failed;
+
+                var percent = b.total > 0 ? Math.round(((b.completed + b.failed) / b.total) * 100) : 0;
+                document.getElementById('progressBarFill').style.width = percent + '%';
+                document.getElementById('progress_percent_text').innerText = percent + '% (' + (b.completed + b.failed) + '/' + b.total + ')';
+
+                var badge = document.getElementById('batchStatusBadge');
+                if (badge) {
+                    if (b.status === 'running') {
+                        badge.className = 'label label-primary pulse-active';
+                        badge.innerText = 'Em Execução (' + b.in_progress + ' simultâneas)';
+                    } else if (b.status === 'paused') {
+                        badge.className = 'label label-warning';
+                        badge.innerText = 'Pausado';
+                        document.getElementById('btnPauseBatch').style.display = 'none';
+                        document.getElementById('btnResumeBatch').style.display = 'inline-block';
+                    } else if (b.status === 'completed') {
+                        badge.className = 'label label-success';
+                        badge.innerText = 'Concluído 100%';
+                        document.getElementById('btnPauseBatch').style.display = 'none';
+                        document.getElementById('btnResumeBatch').style.display = 'none';
+                        document.getElementById('btnCancelBatch').style.display = 'none';
+                        clearInterval(pollTimer);
+                    } else if (b.status === 'cancelled') {
+                        badge.className = 'label label-danger';
+                        badge.innerText = 'Cancelado';
+                        document.getElementById('btnPauseBatch').style.display = 'none';
+                        document.getElementById('btnResumeBatch').style.display = 'none';
+                        document.getElementById('btnCancelBatch').style.display = 'none';
+                        clearInterval(pollTimer);
+                    }
+                }
+
+                // Renderizar tabela de contatos
+                var html = '';
+                b.contacts.forEach(function(c, i) {
+                    var stBadge = '<span class="label label-default">Na Fila</span>';
+                    if (c.status === 'dialing') {
+                        stBadge = '<span class="label label-warning pulse-active"><i class="fa fa-phone"></i> Discando...</span>';
+                    } else if (c.status === 'completed') {
+                        stBadge = '<span class="label label-success"><i class="fa fa-check"></i> Concluída</span>';
+                    } else if (c.status === 'failed') {
+                        stBadge = '<span class="label label-danger"><i class="fa fa-times"></i> Falha</span>';
+                    }
+
+                    html += '<tr>' +
+                        '<td>' + (i + 1) + '</td>' +
+                        '<td style="font-weight:600;">' + c.phone_number + '</td>' +
+                        '<td>' + (c.name || '-') + '</td>' +
+                        '<td>' + stBadge + '</td>' +
+                    '</tr>';
+                });
+                document.getElementById('batchContactsTbody').innerHTML = html;
+            }
+        })
+        .catch(function(e) {});
+    }
+
+    function controlBatch(action) {
+        if (!currentBatchId) return;
+
+        var formData = new FormData();
+        formData.append('action', action);
+        formData.append('batch_id', currentBatchId);
+
+        fetch('php/BatchDialProxy.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (action === 'pause') {
+                document.getElementById('btnPauseBatch').style.display = 'none';
+                document.getElementById('btnResumeBatch').style.display = 'inline-block';
+            } else if (action === 'resume') {
+                document.getElementById('btnResumeBatch').style.display = 'none';
+                document.getElementById('btnPauseBatch').style.display = 'inline-block';
+            } else if (action === 'cancel') {
+                document.getElementById('btnPauseBatch').style.display = 'none';
+                document.getElementById('btnResumeBatch').style.display = 'none';
+                document.getElementById('btnCancelBatch').style.display = 'none';
+            }
+            pollBatchStatus();
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+        updateContactCounter();
+    });
     </script>
 </head>
 
@@ -184,7 +362,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
                     <form id="batchDialForm" action="javascript:void(0);" method="POST">
                         <div class="form-group" style="margin-bottom: 18px;">
                             <label class="ddm-form-label" for="batch_agent_id">Selecione o Agente de IA</label>
-                            <select id="batch_agent_id" name="agent_id" class="form-control" style="background: rgba(0,0,0,0.2); border: 1px solid var(--ddm-border); color: #fff; height: 42px; border-radius: 8px;" required>
+                            <select id="batch_agent_id" name="agent_id" class="form-control" style="background: rgba(0,0,0,0.2); border: 1px solid var(--ddm-border, #334155); color: #fff; height: 42px; border-radius: 8px;" required>
                                 <?php if (!empty($agents)): ?>
                                     <?php foreach ($agents as $ag): 
                                         $agId = !empty($ag['agent_id']) ? (int)$ag['agent_id'] : ((int)$ag['id'] ?? 0);
@@ -206,11 +384,11 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
                                     Canais Simultâneos: <span id="concurrency_val" style="color: #a855f7; font-weight: bold;"><?=$prefilledConcurrency?></span>
                                 </label>
                                 <input type="range" id="batch_concurrency" name="concurrency" min="1" max="30" value="<?=$prefilledConcurrency?>" class="form-control" style="padding: 0; background: transparent;" oninput="document.getElementById('concurrency_val').innerText = this.value;" />
-                                <small style="color: var(--ddm-text-muted); font-size: 11px;">Máx. de ligações ao mesmo tempo</small>
+                                <small style="color: var(--ddm-text-muted, #94a3b8); font-size: 11px;">Máx. de ligações ao mesmo tempo</small>
                             </div>
                             <div class="col-xs-6">
                                 <label class="ddm-form-label" for="batch_delay">Espaçamento entre Ligações</label>
-                                <select id="batch_delay" name="delay_ms" class="form-control" style="background: rgba(0,0,0,0.2); border: 1px solid var(--ddm-border); color: #fff; height: 36px; border-radius: 6px;">
+                                <select id="batch_delay" name="delay_ms" class="form-control" style="background: rgba(0,0,0,0.2); border: 1px solid var(--ddm-border, #334155); color: #fff; height: 36px; border-radius: 6px;">
                                     <option value="150">150ms (Ultrarrápido)</option>
                                     <option value="300" selected>300ms (Recomendado)</option>
                                     <option value="600">600ms (Suave)</option>
@@ -223,7 +401,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <label class="ddm-form-label" style="margin-bottom: 0;">Lista de Telefones (ou CSV)</label>
                                 <div>
-                                    <button type="button" class="btn btn-xs btn-default" id="btn_fill_sample" onclick="fillSampleNumbers()" style="margin-right: 6px; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid var(--ddm-border); color: #a855f7;">
+                                    <button type="button" class="btn btn-xs btn-default" id="btn_fill_sample" onclick="fillSampleNumbers()" style="margin-right: 6px; font-size: 11px; background: rgba(255,255,255,0.08); border: 1px solid var(--ddm-border, #334155); color: #a855f7;">
                                         <i class="fa fa-plus"></i> Preencher Exemplo
                                     </button>
                                     <span id="contactCountBadge" class="label label-info" style="font-size: 11px;">2 contatos detectados</span>
@@ -234,11 +412,11 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
                         </div>
 
                         <div class="form-group" style="margin-bottom: 24px;">
-                            <label class="ddm-form-label" style="font-size: 12px; color: var(--ddm-text-muted);">Ou importe um arquivo .CSV:</label>
-                            <input type="file" id="csv_file_input" accept=".csv, .txt" class="form-control" style="background: transparent; border: 1px dashed var(--ddm-border); color: #fff; border-radius: 6px; padding: 6px;" />
+                            <label class="ddm-form-label" style="font-size: 12px; color: var(--ddm-text-muted, #94a3b8);">Ou importe um arquivo .CSV:</label>
+                            <input type="file" id="csv_file_input" accept=".csv, .txt" class="form-control" style="background: transparent; border: 1px dashed var(--ddm-border, #334155); color: #fff; border-radius: 6px; padding: 6px;" onchange="var file = this.files[0]; if(file){ var r = new FileReader(); r.onload = function(e){ document.getElementById('batch_contacts_text').value = e.target.result; updateContactCounter(); }; r.readAsText(file); }" />
                         </div>
 
-                        <button type="button" id="btnStartBatch" onclick="startBatchDial()" class="ddm-btn ddm-btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; font-weight: 600;">
+                        <button type="button" id="btnStartBatch" onclick="startBatchDial()" class="ddm-btn ddm-btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer;">
                             <i class="fa fa-play"></i> Iniciar Disparo em Lote
                         </button>
                     </form>
@@ -275,7 +453,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
 
                     <!-- Barra de Progresso -->
                     <div>
-                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--ddm-text-muted);">
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--ddm-text-muted, #94a3b8);">
                             <span>Progresso do Lote</span>
                             <span id="progress_percent_text">0%</span>
                         </div>
@@ -298,13 +476,13 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
                     </div>
 
                     <!-- Tabela de Chamadas do Lote -->
-                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--ddm-text-muted);">
+                    <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--ddm-text-muted, #94a3b8);">
                         Lista de Chamadas do Lote
                     </h4>
                     <div class="batch-log-table">
                         <table class="table table-hover" style="margin-bottom: 0; font-size: 13px;">
                             <thead>
-                                <tr style="background: rgba(255,255,255,0.02); color: var(--ddm-text-muted);">
+                                <tr style="background: rgba(255,255,255,0.02); color: var(--ddm-text-muted, #94a3b8);">
                                     <th>#</th>
                                     <th>Telefone</th>
                                     <th>Nome / Dado</th>
@@ -313,7 +491,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
                             </thead>
                             <tbody id="batchContactsTbody">
                                 <tr>
-                                    <td colspan="4" class="text-center" style="padding: 24px; color: var(--ddm-text-muted);">
+                                    <td colspan="4" class="text-center" style="padding: 24px; color: var(--ddm-text-muted, #94a3b8);">
                                         Nenhum lote em execução. Configure os números e clique em "Iniciar Disparo".
                                     </td>
                                 </tr>
@@ -332,169 +510,5 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
     print $ui->standardizedThemeJS(); 
     print $ui->creamyThemeJS();
 ?>
-
-<script>
-var currentBatchId = null;
-var pollTimer = null;
-
-// Leitor de arquivo CSV
-$('#csv_file_input').on('change', function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        var content = e.target.result;
-        $('#batch_contacts_text').val(content);
-        updateContactCounter();
-    };
-    reader.readAsText(file);
-});
-
-// Disparador principal
-function startBatchDial() {
-    var agentId = $('#batch_agent_id').val();
-    var contacts = $('#batch_contacts_text').val().trim();
-    var concurrency = $('#batch_concurrency').val();
-    var delayMs = $('#batch_delay').val();
-
-    if (!contacts) {
-        alert('Por favor, informe ao menos um número de telefone para disparo.');
-        return;
-    }
-
-    if (!agentId || agentId == '0') {
-        alert('Por favor, selecione um Agente de IA válido.');
-        return;
-    }
-
-    $('#btnStartBatch').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Iniciando Disparo...');
-
-    $.ajax({
-        url: 'php/BatchDialProxy.php',
-        type: 'POST',
-        data: {
-            action: 'start',
-            agent_id: agentId,
-            contacts: contacts,
-            concurrency: concurrency,
-            delay_ms: delayMs
-        },
-        dataType: 'json',
-        success: function(resp) {
-            $('#btnStartBatch').prop('disabled', false).html('<i class="fa fa-play"></i> Iniciar Disparo em Lote');
-
-            var isSuccess = (resp.status === 'success' || resp.status == 1 || resp.batch_id);
-            if (isSuccess && resp.batch_id) {
-                currentBatchId = resp.batch_id;
-                $('#batchStatusBadge').removeClass().addClass('label label-primary pulse-active').text('Disparando Chamadas...');
-                $('#btnPauseBatch, #btnCancelBatch').show();
-                $('#btnResumeBatch').hide();
-
-                // Dispara primeira consulta imediatamente e agenda polling a cada 800ms
-                pollBatchStatus();
-                if (pollTimer) clearInterval(pollTimer);
-                pollTimer = setInterval(pollBatchStatus, 800);
-            } else {
-                alert('Aviso: ' + (resp.message || 'Não foi possível iniciar o disparo. Verifique se o servidor de voz está ativo.'));
-            }
-        },
-        error: function(xhr, status, err) {
-            $('#btnStartBatch').prop('disabled', false).html('<i class="fa fa-play"></i> Iniciar Disparo em Lote');
-            alert('Erro de comunicação (HTTP ' + xhr.status + '): ' + (xhr.responseText || 'Servidor indisponível na porta 8765.'));
-        }
-    });
-}
-
-// Polling de Status do Lote
-function pollBatchStatus() {
-    if (!currentBatchId) return;
-
-    $.ajax({
-        url: 'php/BatchDialProxy.php',
-        type: 'GET',
-        data: { action: 'status', batch_id: currentBatchId },
-        dataType: 'json',
-        success: function(resp) {
-            if (resp.status === 'success' && resp.batch) {
-                var b = resp.batch;
-                $('#stat_total').text(b.total);
-                $('#stat_in_progress').text(b.in_progress);
-                $('#stat_completed').text(b.completed);
-                $('#stat_failed').text(b.failed);
-
-                var percent = b.total > 0 ? Math.round(((b.completed + b.failed) / b.total) * 100) : 0;
-                $('#progressBarFill').css('width', percent + '%');
-                $('#progress_percent_text').text(percent + '% (' + (b.completed + b.failed) + '/' + b.total + ')');
-
-                if (b.status === 'running') {
-                    $('#batchStatusBadge').removeClass().addClass('label label-primary pulse-active').text('Em Execução (' + b.in_progress + ' simultâneas)');
-                } else if (b.status === 'paused') {
-                    $('#batchStatusBadge').removeClass().addClass('label label-warning').text('Pausado');
-                    $('#btnPauseBatch').hide();
-                    $('#btnResumeBatch').show();
-                } else if (b.status === 'completed') {
-                    $('#batchStatusBadge').removeClass().addClass('label label-success').text('Concluído 100%');
-                    $('#btnPauseBatch, #btnResumeBatch, #btnCancelBatch').hide();
-                    clearInterval(pollTimer);
-                } else if (b.status === 'cancelled') {
-                    $('#batchStatusBadge').removeClass().addClass('label label-danger').text('Cancelado');
-                    $('#btnPauseBatch, #btnResumeBatch, #btnCancelBatch').hide();
-                    clearInterval(pollTimer);
-                }
-
-                // Renderizar tabela de contatos
-                var html = '';
-                b.contacts.forEach(function(c, i) {
-                    var stBadge = '<span class="label label-default">Na Fila</span>';
-                    if (c.status === 'dialing') {
-                        stBadge = '<span class="label label-warning pulse-active"><i class="fa fa-phone"></i> Discando...</span>';
-                    } else if (c.status === 'completed') {
-                        stBadge = '<span class="label label-success"><i class="fa fa-check"></i> Concluída</span>';
-                    } else if (c.status === 'failed') {
-                        stBadge = '<span class="label label-danger"><i class="fa fa-times"></i> Falha</span>';
-                    }
-
-                    html += '<tr>' +
-                        '<td>' + (i + 1) + '</td>' +
-                        '<td style="font-weight:600;">' + c.phone_number + '</td>' +
-                        '<td>' + (c.name || '-') + '</td>' +
-                        '<td>' + stBadge + '</td>' +
-                    '</tr>';
-                });
-                $('#batchContactsTbody').html(html);
-            }
-        }
-    });
-}
-
-// Controle de Pausa/Retomada/Cancelamento
-function controlBatch(action) {
-    if (!currentBatchId) return;
-
-    $.ajax({
-        url: 'php/BatchDialProxy.php',
-        type: 'POST',
-        data: { action: action, batch_id: currentBatchId },
-        dataType: 'json',
-        success: function(resp) {
-            if (action === 'pause') {
-                $('#btnPauseBatch').hide();
-                $('#btnResumeBatch').show();
-            } else if (action === 'resume') {
-                $('#btnResumeBatch').hide();
-                $('#btnPauseBatch').show();
-            } else if (action === 'cancel') {
-                $('#btnPauseBatch, #btnResumeBatch, #btnCancelBatch').hide();
-            }
-            pollBatchStatus();
-        }
-    });
-}
-
-$(document).ready(function() {
-    updateContactCounter();
-});
-</script>
 </body>
 </html>
