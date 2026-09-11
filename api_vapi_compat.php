@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        api_vapi_compat.php
  * @brief       Dialog DDM - Vapi Compatible REST API Gateway (Drop-in Replacement for Vapi)

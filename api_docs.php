@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        api_docs.php
  * @brief       Dialog DDM - Vapi Compatible REST API Documentation & Playground
