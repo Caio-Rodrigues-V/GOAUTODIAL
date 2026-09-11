@@ -1,8 +1,8 @@
 <?php
 /**
  * @file        index.php
- * @brief       Dialog DDM - Voice AI Executive Dashboard (Design System 2.0)
- * @copyright   (c) Dialog DDM - Grupo DDM
+ * @brief       DIALog DDM - Voice AI Executive Dashboard (Design System 2.0)
+ * @copyright   (c) DIALog DDM - Grupo DDM
  */
 
 error_reporting(E_ERROR | E_PARSE);
@@ -68,234 +68,14 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Dialog DDM - Painel Executivo Voice AI</title>
+    <title>DIALog DDM - Visão Geral Voice AI</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
 
     <?php 
         print $ui->standardizedThemeCSS(); 
         print $ui->creamyThemeCSS();
     ?>
-    <link href="css/style.css" rel="stylesheet" type="text/css" />
     <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
-    <style>
-        .ddm-stat-card {
-            background: var(--ddm-surface);
-            border: 1px solid var(--ddm-border);
-            border-radius: var(--ddm-radius-lg);
-            padding: 22px 24px;
-            margin-bottom: 20px;
-            box-shadow: var(--ddm-shadow-xs);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-        .ddm-stat-card:hover {
-            box-shadow: var(--ddm-shadow-sm);
-            border-color: var(--ddm-border-strong);
-            transform: translateY(-2px);
-        }
-        .ddm-stat-card .stat-icon-bg {
-            position: absolute;
-            right: 18px;
-            bottom: 14px;
-            font-size: 42px;
-            color: var(--ddm-surface-subtle);
-            pointer-events: none;
-        }
-        .ddm-stat-card h3 {
-            font-size: 28px;
-            font-weight: 800;
-            margin: 0 0 4px 0;
-            color: var(--ddm-text-primary);
-            letter-spacing: -0.5px;
-            line-height: 1.1;
-        }
-        .ddm-stat-card p {
-            font-size: 11.5px;
-            margin: 0 0 8px 0;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: var(--ddm-text-secondary);
-            letter-spacing: 0.5px;
-        }
-        .ddm-stat-card .stat-subtext {
-            font-size: 12px;
-            color: var(--ddm-text-muted);
-            margin-top: 8px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .stat-progress-bg {
-            height: 6px;
-            background: var(--ddm-surface-subtle);
-            border-radius: 999px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-        .stat-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--ddm-primary), var(--ddm-purple));
-            border-radius: 999px;
-            transition: width 0.4s ease;
-        }
-
-        .ddm-live-beacon {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--ddm-success-light);
-            border: 1px solid var(--ddm-success-border);
-            color: #047857;
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.4px;
-            text-transform: uppercase;
-        }
-        .ddm-live-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--ddm-success);
-            border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulseBeacon 1.5s infinite;
-        }
-        @keyframes pulseBeacon {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .ddm-content-card {
-            background: var(--ddm-surface);
-            border: 1px solid var(--ddm-border);
-            border-radius: var(--ddm-radius-lg);
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: var(--ddm-shadow-xs);
-        }
-        .ddm-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid var(--ddm-border);
-        }
-        .ddm-card-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--ddm-text-primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .ddm-card-title i {
-            color: var(--ddm-primary);
-        }
-
-        .ddm-table th {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--ddm-text-secondary);
-            border-bottom: 2px solid var(--ddm-border) !important;
-            padding: 12px 14px !important;
-        }
-        .ddm-table td {
-            padding: 12px 14px !important;
-            vertical-align: middle !important;
-            border-top: 1px solid var(--ddm-border) !important;
-            color: var(--ddm-text-primary);
-            font-size: 13.5px;
-        }
-        .ddm-table tbody tr:hover {
-            background-color: var(--ddm-surface-subtle) !important;
-        }
-
-        .infra-badge {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 14px;
-            background: var(--ddm-surface-subtle);
-            border: 1px solid var(--ddm-border);
-            border-radius: var(--ddm-radius);
-            margin-bottom: 10px;
-            transition: all 0.2s;
-        }
-        .infra-badge:hover {
-            border-color: var(--ddm-border-strong);
-            background: #F8FAFC;
-        }
-        .infra-badge-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .infra-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-
-        .hero-banner {
-            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-            border-radius: var(--ddm-radius-lg);
-            padding: 24px 28px;
-            color: #FFFFFF;
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-        .hero-banner::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0) 70%);
-            pointer-events: none;
-        }
-        .hero-stats-group {
-            display: flex;
-            gap: 28px;
-            flex-wrap: wrap;
-        }
-        .hero-stat-item {
-            border-left: 2px solid rgba(255, 255, 255, 0.15);
-            padding-left: 16px;
-        }
-        .hero-stat-item .val {
-            font-size: 22px;
-            font-weight: 800;
-            color: #FFFFFF;
-            line-height: 1.2;
-        }
-        .hero-stat-item .lbl {
-            font-size: 11px;
-            color: #94A3B8;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
-        }
-    </style>
 </head>
 
 <?php print $ui->creamyBody(); ?>
@@ -308,68 +88,61 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
             
             <!-- Breadcrumbs -->
             <div class="ddm-breadcrumbs">
-                <a href="index.php"><i class="fa fa-home"></i> Dialog DDM</a>
+                <a href="index.php">DIALog DDM</a>
                 <span class="separator">/</span>
-                <span class="current">Painel Executivo Voice AI</span>
+                <span class="current">Visão Geral & Dashboard</span>
             </div>
 
             <!-- Page Header -->
-            <div class="ddm-header">
-                <div class="ddm-header-left">
-                    <div class="ddm-agent-avatar" style="background: linear-gradient(135deg, #F97316, #EA580C); color: #FFF;">
-                        <i class="fa fa-microphone"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 22px; font-weight: 800; color: var(--ddm-text-primary); letter-spacing: -0.4px;">
-                            Plataforma de Voz com Inteligência Artificial
-                        </div>
-                        <div style="font-size: 13px; color: var(--ddm-text-secondary); margin-top: 2px;">
-                            Operação de Alta Concorrência &bull; <strong>500 Canais SIP</strong> &bull; <strong>100 CPS</strong> &bull; Gateway Vapi Ativo
-                        </div>
-                    </div>
+            <div class="ddm-page-header">
+                <div>
+                    <h1 class="ddm-page-title">Plataforma de Voz com Inteligência Artificial</h1>
+                    <p class="ddm-page-subtitle">Operação de Alta Concorrência &bull; <strong>500 Canais SIP</strong> &bull; <strong>100 CPS</strong> &bull; Gateway Vapi Ativo</p>
                 </div>
-                <div class="ddm-header-actions">
+                <div class="ddm-page-actions">
                     <a href="live_monitor.php" class="ddm-btn ddm-btn-secondary">
-                        <i class="fa fa-line-chart"></i> Monitor ao Vivo
+                        <i data-lucide="activity"></i> Monitor ao Vivo
                     </a>
                     <a href="disparador.php" class="ddm-btn ddm-btn-secondary">
-                        <i class="fa fa-bolt"></i> Disparo em Lote
+                        <i data-lucide="zap"></i> Disparo em Lote
                     </a>
                     <a href="ai_agents.php" class="ddm-btn ddm-btn-primary">
-                        <i class="fa fa-plus-circle"></i> Agentes de Voz
+                        <i data-lucide="bot"></i> Agentes de Voz
                     </a>
                 </div>
             </div>
 
-            <!-- Hero Telemetry Banner -->
-            <div class="hero-banner">
-                <div>
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                        <span class="ddm-live-beacon" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #34D399;">
-                            <span class="ddm-live-dot" style="background: #34D399;"></span> Motor de Voz Operacional
-                        </span>
-                        <span style="font-size: 12px; color: #94A3B8;">&bull; Latência Média de Conversação: <strong>~450ms</strong></span>
+            <!-- Hero Telemetry Banner (SaaS B2B Clean Style) -->
+            <div class="ddm-content-card" style="padding: 24px; margin-bottom: 24px; background: linear-gradient(135deg, #101828 0%, #1D2939 100%); color: #FFFFFF; border: none; box-shadow: 0 10px 20px -5px rgba(16, 24, 40, 0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <span class="ddm-badge" style="background: rgba(18, 183, 106, 0.2); border: 1px solid rgba(18, 183, 106, 0.4); color: #6CE9A6; font-size: 11px;">
+                                <span class="ddm-dot-indicator ddm-dot-success" style="background: #12B76A; margin-right: 4px;"></span> Motor de Voz Operacional
+                            </span>
+                            <span style="font-size: 12px; color: #98A2B3;">Latência Média: <strong style="color:#FFF;">~450ms</strong></span>
+                        </div>
+                        <div style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px;">
+                            Gateway de Telefonia & Inteligência Conversacional
+                        </div>
+                        <div style="font-size: 13px; color: #D0D5DD; max-width: 620px; line-height: 1.5;">
+                            Reconhecimento de fala Deepgram Nova-2, raciocínio Groq LLaMA 3.3 70B e síntese ultrarrealista Cartesia Sonic em português brasileiro.
+                        </div>
                     </div>
-                    <div style="font-size: 17px; font-weight: 700; color: #F8FAFC;">
-                        Gateway de Telefonia & Inteligência Conversacional
-                    </div>
-                    <div style="font-size: 13px; color: #CBD5E1; margin-top: 4px; max-width: 600px;">
-                        Atendimento humanizado com reconhecimento Deepgram Nova-2, raciocínio Groq LLaMA 3.3 70B e síntese Cartesia Sonic em português brasileiro.
-                    </div>
-                </div>
 
-                <div class="hero-stats-group">
-                    <div class="hero-stat-item">
-                        <div class="val" id="hero-active-channels">0 / 500</div>
-                        <div class="lbl">Canais em Uso</div>
-                    </div>
-                    <div class="hero-stat-item">
-                        <div class="val" id="hero-current-cps">0.0</div>
-                        <div class="lbl">CPS Atual</div>
-                    </div>
-                    <div class="hero-stat-item">
-                        <div class="val"><?php echo number_format($activeAgentsCount, 0, ',', '.'); ?></div>
-                        <div class="lbl">Agentes Ativos</div>
+                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                        <div style="border-left: 2px solid rgba(255, 255, 255, 0.15); padding-left: 16px;">
+                            <div style="font-size: 22px; font-weight: 700; color: #FFFFFF;" id="hero-active-channels">0 / 500</div>
+                            <div style="font-size: 11px; color: #98A2B3; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Canais em Uso</div>
+                        </div>
+                        <div style="border-left: 2px solid rgba(255, 255, 255, 0.15); padding-left: 16px;">
+                            <div style="font-size: 22px; font-weight: 700; color: #FFFFFF;" id="hero-current-cps">0.0</div>
+                            <div style="font-size: 11px; color: #98A2B3; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">CPS Atual</div>
+                        </div>
+                        <div style="border-left: 2px solid rgba(255, 255, 255, 0.15); padding-left: 16px;">
+                            <div style="font-size: 22px; font-weight: 700; color: #FFFFFF;"><?php echo number_format($activeAgentsCount, 0, ',', '.'); ?></div>
+                            <div style="font-size: 11px; color: #98A2B3; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Agentes Ativos</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -379,64 +152,76 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                 <!-- Total Calls -->
                 <div class="col-md-3 col-sm-6">
                     <div class="ddm-stat-card">
-                        <p>Total de Ligações AI</p>
-                        <h3><?php echo number_format($totalCalls, 0, ',', '.'); ?></h3>
-                        <div class="stat-progress-bg">
-                            <div class="stat-progress-fill" style="width: <?php echo min(100, max(5, $answerRate)); ?>%;"></div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <span class="ddm-stat-label">Total de Ligações AI</span>
+                            <div style="width: 32px; height: 32px; border-radius: 6px; background: #FFF4EB; color: #FF6B00; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="phone-call" style="width: 16px; height: 16px;"></i>
+                            </div>
                         </div>
-                        <div class="stat-subtext">
-                            <i class="fa fa-phone" style="color: var(--ddm-primary);"></i>
-                            <span><strong><?php echo $answerRate; ?>%</strong> taxa de atendimento</span>
+                        <div class="ddm-stat-value"><?php echo number_format($totalCalls, 0, ',', '.'); ?></div>
+                        <div class="ddm-stat-trend">
+                            <span class="ddm-badge ddm-badge-brand" style="font-size: 11px; padding: 1px 6px;">
+                                <?php echo $answerRate; ?>% atendidas
+                            </span>
+                            <span style="color: #667085; font-size: 12px;"><?php echo number_format($answeredCalls, 0, ',', '.'); ?> completadas</span>
                         </div>
-                        <div class="stat-icon-bg"><i class="fa fa-phone-square"></i></div>
                     </div>
                 </div>
 
                 <!-- Total Minutes -->
                 <div class="col-md-3 col-sm-6">
                     <div class="ddm-stat-card">
-                        <p>Minutos Conversados</p>
-                        <h3><?php echo number_format($totalDurationMin, 0, ',', '.'); ?> <span style="font-size: 15px; font-weight: 600; color: var(--ddm-text-secondary);">min</span></h3>
-                        <div class="stat-progress-bg">
-                            <div class="stat-progress-fill" style="width: 75%; background: linear-gradient(90deg, #10B981, #059669);"></div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <span class="ddm-stat-label">Minutos Conversados</span>
+                            <div style="width: 32px; height: 32px; border-radius: 6px; background: #ECFDF3; color: #027A48; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                            </div>
                         </div>
-                        <div class="stat-subtext">
-                            <i class="fa fa-clock-o" style="color: #10B981;"></i>
-                            <span>Média de <strong><?php echo $avgDuration; ?>s</strong> por chamada</span>
+                        <div class="ddm-stat-value"><?php echo number_format($totalDurationMin, 0, ',', '.'); ?> <span style="font-size: 14px; font-weight: 500; color: #667085;">min</span></div>
+                        <div class="ddm-stat-trend">
+                            <span class="ddm-badge ddm-badge-success" style="font-size: 11px; padding: 1px 6px;">
+                                ~<?php echo $avgDuration; ?>s / chamada
+                            </span>
+                            <span style="color: #667085; font-size: 12px;"><?php echo number_format($totalDurationHours, 1, ',', '.'); ?> horas totais</span>
                         </div>
-                        <div class="stat-icon-bg"><i class="fa fa-clock-o"></i></div>
                     </div>
                 </div>
 
                 <!-- Success / Agreements Rate -->
                 <div class="col-md-3 col-sm-6">
                     <div class="ddm-stat-card">
-                        <p>Acordos & Qualificações</p>
-                        <h3><?php echo number_format($leadsCount, 0, ',', '.'); ?> <span style="font-size: 15px; font-weight: 600; color: var(--ddm-text-secondary);">(<?php echo $leadRate; ?>%)</span></h3>
-                        <div class="stat-progress-bg">
-                            <div class="stat-progress-fill" style="width: <?php echo min(100, max(5, $leadRate)); ?>%; background: linear-gradient(90deg, #8B5CF6, #6D28D9);"></div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <span class="ddm-stat-label">Acordos & Qualificados</span>
+                            <div style="width: 32px; height: 32px; border-radius: 6px; background: #F4EBFF; color: #6941C6; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i>
+                            </div>
                         </div>
-                        <div class="stat-subtext">
-                            <i class="fa fa-check-circle" style="color: #8B5CF6;"></i>
-                            <span>Leads com intenção positiva</span>
+                        <div class="ddm-stat-value"><?php echo number_format($leadsCount, 0, ',', '.'); ?> <span style="font-size: 14px; font-weight: 500; color: #667085;">(<?php echo $leadRate; ?>%)</span></div>
+                        <div class="ddm-stat-trend">
+                            <span class="ddm-badge ddm-badge-neutral" style="font-size: 11px; padding: 1px 6px;">
+                                Intenção Positiva
+                            </span>
+                            <span style="color: #667085; font-size: 12px;">leads convertidos</span>
                         </div>
-                        <div class="stat-icon-bg"><i class="fa fa-thumbs-up"></i></div>
                     </div>
                 </div>
 
                 <!-- Savings / Cost -->
                 <div class="col-md-3 col-sm-6">
                     <div class="ddm-stat-card">
-                        <p>Economia Estimada</p>
-                        <h3 style="color: #047857;">R$ <?php echo number_format($estimatedSavings, 2, ',', '.'); ?></h3>
-                        <div class="stat-progress-bg">
-                            <div class="stat-progress-fill" style="width: 90%; background: linear-gradient(90deg, #047857, #10B981);"></div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <span class="ddm-stat-label">Economia Estimada</span>
+                            <div style="width: 32px; height: 32px; border-radius: 6px; background: #ECFDF3; color: #027A48; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="trending-up" style="width: 16px; height: 16px;"></i>
+                            </div>
                         </div>
-                        <div class="stat-subtext">
-                            <i class="fa fa-money" style="color: #047857;"></i>
-                            <span>vs. Operação Humana Tradicional</span>
+                        <div class="ddm-stat-value" style="color: #027A48;">R$ <?php echo number_format($estimatedSavings, 2, ',', '.'); ?></div>
+                        <div class="ddm-stat-trend">
+                            <span class="ddm-badge ddm-badge-success" style="font-size: 11px; padding: 1px 6px;">
+                                -78% vs Humano
+                            </span>
+                            <span style="color: #667085; font-size: 12px;">eficiência de custo</span>
                         </div>
-                        <div class="stat-icon-bg"><i class="fa fa-line-chart"></i></div>
                     </div>
                 </div>
             </div>
@@ -450,25 +235,29 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                     <div class="ddm-content-card">
                         <div class="ddm-card-header">
                             <div class="ddm-card-title">
-                                <i class="fa fa-history"></i> Últimas Chamadas de Voz IA
+                                <i data-lucide="history" style="width: 18px; height: 18px; color: #FF6B00;"></i>
+                                <span>Últimas Chamadas de Voz IA</span>
                             </div>
-                            <a href="ai_call_logs.php" class="ddm-btn ddm-btn-secondary" style="padding: 5px 12px; font-size: 12px;">
-                                Ver Histórico Completo <i class="fa fa-arrow-right"></i>
+                            <a href="ai_call_logs.php" class="ddm-btn ddm-btn-secondary" style="padding: 6px 12px; font-size: 12.5px;">
+                                <span>Ver Histórico Completo</span>
+                                <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
                             </a>
                         </div>
 
                         <?php if (empty($recentCalls)): ?>
-                            <div style="text-align: center; padding: 40px 20px; color: var(--ddm-text-secondary);">
-                                <i class="fa fa-phone" style="font-size: 38px; color: var(--ddm-border-strong); margin-bottom: 12px;"></i>
-                                <div style="font-size: 15px; font-weight: 600; color: var(--ddm-text-primary);">Nenhuma chamada registrada recentemente</div>
+                            <div style="text-align: center; padding: 48px 20px; color: #667085;">
+                                <div style="width: 48px; height: 48px; border-radius: 50%; background: #F2F4F7; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; color: #98A2B3;">
+                                    <i data-lucide="phone-missed" style="width: 24px; height: 24px;"></i>
+                                </div>
+                                <div style="font-size: 15px; font-weight: 600; color: #101828;">Nenhuma chamada registrada recentemente</div>
                                 <div style="font-size: 13px; margin-top: 4px;">Inicie um disparo em lote ou faça uma chamada de teste através dos Agentes de IA.</div>
-                                <a href="disparador.php" class="ddm-btn ddm-btn-primary" style="margin-top: 16px;">
-                                    <i class="fa fa-bolt"></i> Iniciar Disparo
+                                <a href="disparador.php" class="ddm-btn ddm-btn-primary" style="margin-top: 16px; display: inline-flex;">
+                                    <i data-lucide="zap"></i> Iniciar Disparo
                                 </a>
                             </div>
                         <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table ddm-table">
+                            <div class="table-responsive" style="margin: -20px;">
+                                <table class="ddm-table">
                                     <thead>
                                         <tr>
                                             <th>Telefone</th>
@@ -483,14 +272,14 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                                         <?php foreach ($recentCalls as $call): ?>
                                             <?php 
                                                 $qual = !empty($call['qualification']) ? $call['qualification'] : (!empty($call['tabulation']) ? $call['tabulation'] : 'Não Tabulado');
-                                                $qualBadge = 'background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1;';
+                                                $badgeClass = 'ddm-badge-neutral';
                                                 
                                                 if (stripos($qual, 'Interessado') !== false || stripos($qual, 'Acordo') !== false || stripos($qual, 'Positiv') !== false) {
-                                                    $qualBadge = 'background: #DCFCE7; color: #166534; border: 1px solid #86EFAC;';
+                                                    $badgeClass = 'ddm-badge-success';
                                                 } elseif (stripos($qual, 'Recus') !== false || stripos($qual, 'Negativ') !== false) {
-                                                    $qualBadge = 'background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5;';
+                                                    $badgeClass = 'ddm-badge-error';
                                                 } elseif (stripos($qual, 'Caixa') !== false || stripos($qual, 'Voicemail') !== false) {
-                                                    $qualBadge = 'background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;';
+                                                    $badgeClass = 'ddm-badge-warning';
                                                 }
 
                                                 $dur = isset($call['duration_seconds']) ? (int)$call['duration_seconds'] : 0;
@@ -500,31 +289,31 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                                                 $phone = !empty($call['phone_number']) ? htmlspecialchars($call['phone_number']) : '-';
                                             ?>
                                             <tr>
-                                                <td style="font-weight: 700; font-family: monospace; font-size: 13.5px;">
-                                                    <i class="fa fa-phone" style="color: var(--ddm-text-secondary); margin-right: 4px;"></i>
+                                                <td style="font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
                                                     <?php echo $phone; ?>
                                                 </td>
                                                 <td>
-                                                    <span style="font-weight: 600; color: var(--ddm-text-primary);">
+                                                    <span style="font-weight: 500; color: #101828;">
                                                         <?php echo $agentName; ?>
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span style="font-family: monospace; font-weight: 600; color: var(--ddm-text-secondary);">
+                                                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #475467;">
                                                         <?php echo $durFmt; ?>
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span style="display: inline-block; padding: 3px 10px; border-radius: 9999px; font-size: 11.5px; font-weight: 700; <?php echo $qualBadge; ?>">
+                                                    <span class="ddm-badge <?php echo $badgeClass; ?>">
                                                         <?php echo htmlspecialchars($qual); ?>
                                                     </span>
                                                 </td>
-                                                <td style="font-size: 12.5px; color: var(--ddm-text-secondary);">
+                                                <td style="font-size: 12.5px; color: #667085;">
                                                     <?php echo $callDate; ?>
                                                 </td>
                                                 <td style="text-align: right;">
-                                                    <a href="ai_call_logs.php?call_id=<?php echo isset($call['id']) ? $call['id'] : ''; ?>" class="ddm-btn ddm-btn-secondary" style="padding: 4px 10px; font-size: 12px;" title="Ver detalhes e transcrição">
-                                                        <i class="fa fa-file-text-o"></i> Detalhes
+                                                    <a href="ai_call_logs.php?call_id=<?php echo isset($call['id']) ? $call['id'] : ''; ?>" class="ddm-btn ddm-btn-secondary" style="padding: 4px 8px; font-size: 12px;" title="Ver detalhes e transcrição">
+                                                        <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+                                                        <span>Ver</span>
                                                     </a>
                                                 </td>
                                             </tr>
@@ -539,44 +328,46 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                     <div class="ddm-content-card">
                         <div class="ddm-card-header">
                             <div class="ddm-card-title">
-                                <i class="fa fa-users"></i> Agentes de Voz em Produção
+                                <i data-lucide="bot" style="width: 18px; height: 18px; color: #FF6B00;"></i>
+                                <span>Agentes de Voz em Produção</span>
                             </div>
-                            <a href="ai_agent_edit.php" class="ddm-btn ddm-btn-primary" style="padding: 5px 12px; font-size: 12px;">
-                                <i class="fa fa-plus"></i> Novo Agente
+                            <a href="add_ai_agent.php" class="ddm-btn ddm-btn-primary" style="padding: 6px 12px; font-size: 12.5px;">
+                                <i data-lucide="plus"></i> Novo Agente
                             </a>
                         </div>
 
                         <?php if (empty($agents)): ?>
-                            <div style="text-align: center; padding: 30px 20px; color: var(--ddm-text-secondary);">
+                            <div style="text-align: center; padding: 30px 20px; color: #667085;">
                                 <p>Nenhum agente configurado ainda.</p>
-                                <a href="ai_agent_edit.php" class="ddm-btn ddm-btn-primary">Criar Primeiro Agente</a>
+                                <a href="add_ai_agent.php" class="ddm-btn ddm-btn-primary">Criar Primeiro Agente</a>
                             </div>
                         <?php else: ?>
                             <div class="row">
                                 <?php foreach (array_slice($agents, 0, 4) as $ag): ?>
                                     <div class="col-md-6" style="margin-bottom: 16px;">
-                                        <div style="background: var(--ddm-surface-subtle); border: 1px solid var(--ddm-border); border-radius: var(--ddm-radius); padding: 16px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <div style="background: #F9FAFB; border: 1px solid #EAECF0; border-radius: 8px; padding: 16px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
                                             <div>
                                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                                                    <div style="font-weight: 800; font-size: 15px; color: var(--ddm-text-primary);">
+                                                    <div style="font-weight: 600; font-size: 14.5px; color: #101828;">
                                                         <?php echo htmlspecialchars($ag['agent_name']); ?>
                                                     </div>
-                                                    <span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; <?php echo ($ag['status'] === 'Y') ? 'background: #DCFCE7; color: #166534;' : 'background: #F1F5F9; color: #64748B;'; ?>">
+                                                    <span class="ddm-badge <?php echo ($ag['status'] === 'Y') ? 'ddm-badge-success' : 'ddm-badge-neutral'; ?>">
                                                         <?php echo ($ag['status'] === 'Y') ? 'ATIVO' : 'INATIVO'; ?>
                                                     </span>
                                                 </div>
-                                                <div style="font-size: 12px; color: var(--ddm-text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                                                <div style="font-size: 12.5px; color: #667085; margin-bottom: 12px; line-height: 1.4;">
                                                     <?php echo htmlspecialchars(mb_strimwidth($ag['description'] ?? 'Agente de voz inteligente', 0, 80, '...')); ?>
                                                 </div>
                                             </div>
 
-                                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--ddm-border); padding-top: 10px; font-size: 11.5px; color: var(--ddm-text-muted);">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #EAECF0; padding-top: 10px; font-size: 11.5px; color: #98A2B3;">
                                                 <div>
-                                                    <i class="fa fa-microchip"></i> <?php echo strtoupper($ag['llm_provider'] ?? 'Groq'); ?> &bull; 
-                                                    <i class="fa fa-volume-up"></i> <?php echo ucfirst($ag['voice_provider'] ?? 'Cartesia'); ?>
+                                                    <span style="color: #475467; font-weight: 500;"><?php echo strtoupper($ag['llm_provider'] ?? 'Groq'); ?></span> &bull; 
+                                                    <span><?php echo ucfirst($ag['voice_provider'] ?? 'Cartesia'); ?></span>
                                                 </div>
-                                                <a href="ai_agent_edit.php?id=<?php echo $ag['agent_id']; ?>" style="font-weight: 700; color: var(--ddm-primary);">
-                                                    Editar <i class="fa fa-chevron-right"></i>
+                                                <a href="edit_ai_agent.php?id=<?php echo $ag['agent_id']; ?>" style="font-weight: 600; color: #FF6B00; text-decoration: none; display: flex; align-items: center; gap: 4px;">
+                                                    <span>Configurar</span>
+                                                    <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
                                                 </a>
                                             </div>
                                         </div>
@@ -595,104 +386,93 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                     <div class="ddm-content-card">
                         <div class="ddm-card-header">
                             <div class="ddm-card-title">
-                                <i class="fa fa-server"></i> Infraestrutura & Gateways
+                                <i data-lucide="server" style="width: 18px; height: 18px; color: #FF6B00;"></i>
+                                <span>Infraestrutura & Gateways</span>
                             </div>
                         </div>
 
                         <!-- Vapi API Gateway -->
                         <div class="infra-badge">
                             <div class="infra-badge-left">
-                                <div class="infra-icon" style="background: #EFF6FF; color: #2563EB;">
-                                    <i class="fa fa-plug"></i>
+                                <div class="infra-icon" style="background: #EFF8FF; color: #175CD3;">
+                                    <i data-lucide="plug" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 13px; font-weight: 700; color: var(--ddm-text-primary);">Vapi API Gateway</div>
-                                    <div style="font-size: 11px; color: var(--ddm-text-secondary);">/v1/call/phone &bull; 100% Compatível</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #101828;">Vapi API Gateway</div>
+                                    <div style="font-size: 11px; color: #667085;">/v1/call/phone &bull; 100% Compatível</div>
                                 </div>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; color: #166534; background: #DCFCE7; padding: 2px 8px; border-radius: 999px;">
-                                ONLINE
-                            </span>
+                            <span class="ddm-badge ddm-badge-success">ONLINE</span>
                         </div>
 
                         <!-- SIP Trunk Oktor -->
                         <div class="infra-badge">
                             <div class="infra-badge-left">
-                                <div class="infra-icon" style="background: #FFF7ED; color: #EA580C;">
-                                    <i class="fa fa-phone"></i>
+                                <div class="infra-icon" style="background: #FFF4EB; color: #B93815;">
+                                    <i data-lucide="phone-forwarded" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 13px; font-weight: 700; color: var(--ddm-text-primary);">Tronco SIP Oktor</div>
-                                    <div style="font-size: 11px; color: var(--ddm-text-secondary);">500 Canais &bull; 100 CPS</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #101828;">Tronco SIP Oktor</div>
+                                    <div style="font-size: 11px; color: #667085;">500 Canais &bull; 100 CPS</div>
                                 </div>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; color: #166534; background: #DCFCE7; padding: 2px 8px; border-radius: 999px;">
-                                CONECTADO
-                            </span>
+                            <span class="ddm-badge ddm-badge-success">CONECTADO</span>
                         </div>
 
                         <!-- Deepgram Nova-2 -->
                         <div class="infra-badge">
                             <div class="infra-badge-left">
-                                <div class="infra-icon" style="background: #F0FDF4; color: #16A34A;">
-                                    <i class="fa fa-microphone"></i>
+                                <div class="infra-icon" style="background: #ECFDF3; color: #027A48;">
+                                    <i data-lucide="mic" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 13px; font-weight: 700; color: var(--ddm-text-primary);">Deepgram Nova-2 (STT)</div>
-                                    <div style="font-size: 11px; color: var(--ddm-text-secondary);">Transcrição Real-Time pt-BR</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #101828;">Deepgram Nova-2 (STT)</div>
+                                    <div style="font-size: 11px; color: #667085;">Transcrição Real-Time pt-BR</div>
                                 </div>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; color: #166534; background: #DCFCE7; padding: 2px 8px; border-radius: 999px;">
-                                ~120ms
-                            </span>
+                            <span class="ddm-badge ddm-badge-success">~120ms</span>
                         </div>
 
                         <!-- Groq LLM -->
                         <div class="infra-badge">
                             <div class="infra-badge-left">
-                                <div class="infra-icon" style="background: #FAF5FF; color: #9333EA;">
-                                    <i class="fa fa-bolt"></i>
+                                <div class="infra-icon" style="background: #F4EBFF; color: #6941C6;">
+                                    <i data-lucide="zap" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 13px; font-weight: 700; color: var(--ddm-text-primary);">Groq LLaMA 3.3 70B</div>
-                                    <div style="font-size: 11px; color: var(--ddm-text-secondary);">Raciocínio & Ferramentas de CRM</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #101828;">Groq LLaMA 3.3 70B</div>
+                                    <div style="font-size: 11px; color: #667085;">Raciocínio & Tools de Cobrança</div>
                                 </div>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; color: #166534; background: #DCFCE7; padding: 2px 8px; border-radius: 999px;">
-                                ~150ms
-                            </span>
+                            <span class="ddm-badge ddm-badge-success">~150ms</span>
                         </div>
 
                         <!-- Cartesia Sonic -->
                         <div class="infra-badge">
                             <div class="infra-badge-left">
-                                <div class="infra-icon" style="background: #ECFEFF; color: #0891B2;">
-                                    <i class="fa fa-volume-up"></i>
+                                <div class="infra-icon" style="background: #F0F9FF; color: #026AA2;">
+                                    <i data-lucide="volume-2" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 13px; font-weight: 700; color: var(--ddm-text-primary);">Cartesia Sonic (TTS)</div>
-                                    <div style="font-size: 11px; color: var(--ddm-text-secondary);">Síntese de Voz Ultrarrealista</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #101828;">Cartesia Sonic (TTS)</div>
+                                    <div style="font-size: 11px; color: #667085;">Síntese de Voz Ultrarrealista</div>
                                 </div>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; color: #166534; background: #DCFCE7; padding: 2px 8px; border-radius: 999px;">
-                                ~90ms
-                            </span>
+                            <span class="ddm-badge ddm-badge-success">~90ms</span>
                         </div>
 
                         <!-- DDM Acordos -->
                         <div class="infra-badge">
                             <div class="infra-badge-left">
-                                <div class="infra-icon" style="background: #FEF2F2; color: #DC2626;">
-                                    <i class="fa fa-shield"></i>
+                                <div class="infra-icon" style="background: #FEF3F2; color: #B42318;">
+                                    <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 13px; font-weight: 700; color: var(--ddm-text-primary);">DDM Acordos API</div>
-                                    <div style="font-size: 11px; color: var(--ddm-text-secondary);">Busca de CPF & Negociação</div>
+                                    <div style="font-size: 13px; font-weight: 600; color: #101828;">DDM Acordos API</div>
+                                    <div style="font-size: 11px; color: #667085;">Busca de CPF & Negociação</div>
                                 </div>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; color: #166534; background: #DCFCE7; padding: 2px 8px; border-radius: 999px;">
-                                ATIVO
-                            </span>
+                            <span class="ddm-badge ddm-badge-success">ATIVO</span>
                         </div>
                     </div>
 
@@ -700,24 +480,25 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                     <div class="ddm-content-card">
                         <div class="ddm-card-header">
                             <div class="ddm-card-title">
-                                <i class="fa fa-code"></i> Integração & Desenvolvedor
+                                <i data-lucide="code-2" style="width: 18px; height: 18px; color: #FF6B00;"></i>
+                                <span>Integração & Desenvolvedor</span>
                             </div>
                         </div>
 
-                        <p style="font-size: 12.5px; color: var(--ddm-text-secondary); line-height: 1.5; margin-bottom: 14px;">
-                            Integre seu disparador externo ou CRM diretamente com o motor Dialog DDM utilizando a especificação padrão Vapi.
+                        <p style="font-size: 12.5px; color: #667085; line-height: 1.5; margin-bottom: 14px;">
+                            Integre seu disparador externo ou CRM diretamente com o motor DIALog DDM utilizando a especificação padrão Vapi.
                         </p>
 
-                        <div style="background: #0F172A; color: #E2E8F0; padding: 12px 14px; border-radius: var(--ddm-radius); font-family: monospace; font-size: 12px; margin-bottom: 14px; word-break: break-all;">
-                            <span style="color: #38BDF8;">POST</span> https://dialddm.grupoddm.ia.br/v1/call/phone
+                        <div style="background: #101828; color: #E2E8F0; padding: 12px 14px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; margin-bottom: 14px; word-break: break-all;">
+                            <span style="color: #7CD4FD; font-weight: 600;">POST</span> https://dialddm.grupoddm.ia.br/v1/call/phone
                         </div>
 
                         <div style="display: flex; flex-direction: column; gap: 8px;">
                             <a href="api_docs.php" class="ddm-btn ddm-btn-secondary" style="width: 100%; justify-content: center;">
-                                <i class="fa fa-book"></i> Ver Documentação Completa da API
+                                <i data-lucide="book-open"></i> Ver Documentação Completa
                             </a>
-                            <a href="api_settings.php" class="ddm-btn ddm-btn-secondary" style="width: 100%; justify-content: center;">
-                                <i class="fa fa-key"></i> Chaves de API & Webhooks
+                            <a href="ai_settings.php" class="ddm-btn ddm-btn-secondary" style="width: 100%; justify-content: center;">
+                                <i data-lucide="key"></i> Chaves de API & Webhooks
                             </a>
                         </div>
                     </div>

@@ -5815,6 +5815,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$js .= '<script src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/moment.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/dashboard/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js" type="text/javascript"></script>'."\n";
 		$js .= '<script src="js/select2/select2.full.min.js" type="text/javascript" ></script>'."\n";
+		$js .= '<script src="https://unpkg.com/lucide@latest"></script>'."\n";
 		$js .= "<script type='text/javascript'>
 			try {
 				if (typeof Vue !== 'undefined' && typeof Avatar !== 'undefined' && Avatar && Avatar.Avatar) {

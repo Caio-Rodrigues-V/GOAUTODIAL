@@ -7,7 +7,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-    /* 1. Brand Identity & Primary Accents (Strategic Usage Only) */
+    /* 1. Brand Colors (Strategic Orange Only) */
     --ddm-primary: #FF6B00;
     --ddm-primary-hover: #E85D00;
     --ddm-primary-active: #CC5200;
@@ -54,7 +54,7 @@
     --ddm-brand-border: #FFE4CC;
     --ddm-brand-text: #B93815;
 
-    /* 5. Geometry, Radii & Sizing */
+    /* 5. Geometry & Sizing */
     --ddm-radius-badge: 6px;
     --ddm-radius-input: 8px;
     --ddm-radius-btn: 8px;
@@ -66,7 +66,6 @@
     --ddm-shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
     --ddm-shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.1), 0 1px 2px -1px rgba(16, 24, 40, 0.06);
     --ddm-shadow-md: 0 4px 6px -2px rgba(16, 24, 40, 0.05), 0 10px 15px -3px rgba(16, 24, 40, 0.08);
-    --ddm-shadow-modal: 0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03);
 }
 
 /* ==========================================================================
@@ -98,27 +97,37 @@ body, html {
 }
 
 /* ==========================================================================
-   ENTERPRISE TOPBAR HEADER
+   ENTERPRISE TOPBAR HEADER (Height: 60px)
    ========================================================================== */
 .main-header {
-    background: var(--ddm-surface) !important;
-    border-bottom: 1px solid var(--ddm-border) !important;
-    height: 64px !important;
-    position: sticky !important;
-    top: 0;
-    z-index: 1030;
-    box-shadow: var(--ddm-shadow-xs) !important;
+    background: #FFFFFF !important;
+    border-bottom: 1px solid #EAECF0 !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1030 !important;
+    box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05) !important;
 }
 
 .main-header .navbar {
     background: transparent !important;
     border: none !important;
-    margin-left: 250px !important;
-    height: 64px !important;
+    margin: 0 0 0 250px !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     padding: 0 24px !important;
+    box-shadow: none !important;
 }
 
 .main-header .sidebar-toggle {
@@ -126,13 +135,13 @@ body, html {
     background: transparent !important;
     border: 1px solid var(--ddm-border) !important;
     border-radius: var(--ddm-radius-btn) !important;
-    padding: 8px 10px !important;
+    padding: 6px 8px !important;
     font-size: 14px !important;
     line-height: 1 !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.15s ease !important;
 }
 .main-header .sidebar-toggle:hover {
     background: var(--ddm-surface-subtle) !important;
@@ -156,11 +165,11 @@ body, html {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: var(--ddm-success-light);
-    border: 1px solid var(--ddm-success-border);
-    color: var(--ddm-success-text);
+    background: #ECFDF3;
+    border: 1px solid #D1FADF;
+    color: #027A48;
     padding: 4px 10px;
-    border-radius: var(--ddm-radius-pill);
+    border-radius: 9999px;
     font-size: 12px;
     font-weight: 600;
 }
@@ -169,108 +178,131 @@ body, html {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: var(--ddm-radius-btn);
-    background: var(--ddm-surface);
-    border: 1px solid var(--ddm-border);
-    color: var(--ddm-text-secondary);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EAECF0;
+    color: #667085;
     text-decoration: none !important;
     transition: all 0.15s ease;
 }
 .ddm-header-icon-btn:hover {
-    background: var(--ddm-surface-subtle);
-    color: var(--ddm-text-primary);
-    border-color: var(--ddm-border-strong);
+    background: #F9FAFB;
+    color: #101828;
+    border-color: #D0D5DD;
 }
 
 .ddm-user-menu-btn {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 12px;
-    border-radius: var(--ddm-radius-btn);
-    background: var(--ddm-surface);
-    border: 1px solid var(--ddm-border);
-    color: var(--ddm-text-primary);
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: #FFFFFF;
+    border: 1px solid #EAECF0;
+    color: #101828;
     text-decoration: none !important;
     font-size: 13px;
     font-weight: 600;
     transition: all 0.15s ease;
 }
 .ddm-user-menu-btn:hover {
-    background: var(--ddm-surface-subtle);
-    border-color: var(--ddm-border-strong);
+    background: #F9FAFB;
+    border-color: #D0D5DD;
+}
+
+.main-header .navbar-custom-menu {
+    float: none !important;
+    margin: 0 !important;
+}
+
+.main-header .navbar-nav {
+    margin: 0 !important;
+    float: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.main-header .navbar-nav > li {
+    float: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
 }
 
 /* ==========================================================================
-   ENTERPRISE MINIMALIST SIDEBAR (250px)
+   ENTERPRISE MINIMALIST SIDEBAR (250px, No Bullets, No Blue Clutter)
    ========================================================================== */
-.main-sidebar, .left-side {
+body aside.main-sidebar,
+body .main-sidebar,
+body .left-side,
+body .sidebar-offcanvas {
     width: 250px !important;
-    background: var(--ddm-surface) !important;
-    border-right: 1px solid var(--ddm-border) !important;
+    background: #FFFFFF !important;
+    border-right: 1px solid #EAECF0 !important;
     box-shadow: none !important;
-    padding-top: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
     position: fixed !important;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 1040;
-    overflow-y: auto;
-    transition: transform 0.25s ease;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 1040 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
 }
 
-.right-side {
+/* Strictly remove any bullets/list styles and reset margins from sidebar */
+body .main-sidebar *,
+body .main-sidebar ul,
+body .main-sidebar ol,
+body .main-sidebar li,
+body .ddm-sidebar-content,
+body .ddm-sidebar-content ul,
+body .ddm-sidebar-content li,
+body .ddm-nav-list,
+body .ddm-nav-list li,
+body .ddm-nav-item {
+    list-style: none !important;
+    list-style-type: none !important;
+    list-style-image: none !important;
+    background-image: none !important;
+}
+
+body .main-sidebar ul,
+body .ddm-nav-list,
+body .ddm-sidebar-content ul {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body .right-side,
+body .content-wrapper {
     margin-left: 250px !important;
-    min-height: calc(100vh - 64px) !important;
+    margin-top: 60px !important;
+    background: #F8F9FB !important;
+    min-height: calc(100vh - 60px) !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
 /* Brand Header on Sidebar Top */
 .ddm-sidebar-brand {
-    height: 64px;
+    height: 60px;
     display: flex;
     align-items: center;
     padding: 0 20px;
-    border-bottom: 1px solid var(--ddm-border);
+    border-bottom: 1px solid #EAECF0;
+    background: #FFFFFF;
 }
 .ddm-brand-link {
     display: flex;
     align-items: center;
     gap: 10px;
     text-decoration: none !important;
-}
-.ddm-brand-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--ddm-primary-soft);
-    border: 1px solid var(--ddm-primary-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--ddm-primary);
-}
-.ddm-brand-text {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.ddm-brand-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--ddm-text-primary);
-    letter-spacing: -0.3px;
-}
-.ddm-brand-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: var(--ddm-radius-badge);
-    background: var(--ddm-primary-soft);
-    color: var(--ddm-primary);
-    border: 1px solid var(--ddm-primary-border);
-    letter-spacing: 0.3px;
 }
 
 /* Sidebar Navigation Groups & Links */
@@ -283,72 +315,73 @@ body, html {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.6px;
-    color: var(--ddm-text-muted);
-    padding: 12px 10px 6px 10px;
-    margin-top: 6px;
+    color: #98A2B3 !important;
+    padding: 14px 12px 6px 12px;
+    margin-top: 4px;
 }
 .ddm-nav-group-title:first-child {
     margin-top: 0;
     padding-top: 4px;
 }
 
-.ddm-nav-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
 .ddm-nav-item {
-    margin-bottom: 2px;
+    list-style: none !important;
+    margin-bottom: 2px !important;
 }
 
-.ddm-nav-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: var(--ddm-radius-btn);
-    color: var(--ddm-text-secondary) !important;
+.ddm-nav-item a, .ddm-nav-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 8px 12px !important;
+    border-radius: var(--ddm-radius-btn) !important;
+    color: #475467 !important;
     text-decoration: none !important;
-    font-size: 13.5px;
-    font-weight: 500;
-    transition: all 0.15s ease;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+    background: transparent !important;
+    border: none !important;
 }
 
-.ddm-nav-link .nav-icon {
-    width: 18px;
-    height: 18px;
-    color: var(--ddm-text-secondary);
-    transition: color 0.15s ease;
+.ddm-nav-item a .nav-icon, .ddm-nav-link .nav-icon, 
+.ddm-nav-item svg, .ddm-nav-link svg {
+    width: 18px !important;
+    height: 18px !important;
+    color: #667085 !important;
+    stroke: #667085 !important;
+    transition: color 0.15s ease, stroke 0.15s ease !important;
 }
 
-.ddm-nav-link:hover {
-    background: var(--ddm-surface-subtle);
-    color: var(--ddm-text-primary) !important;
+.ddm-nav-item a:hover, .ddm-nav-link:hover {
+    background: #F9FAFB !important;
+    color: #101828 !important;
 }
-.ddm-nav-link:hover .nav-icon {
-    color: var(--ddm-text-primary);
+.ddm-nav-item a:hover .nav-icon, .ddm-nav-link:hover .nav-icon,
+.ddm-nav-item a:hover svg, .ddm-nav-link:hover svg {
+    color: #101828 !important;
+    stroke: #101828 !important;
 }
 
 /* Active Sidebar Item */
-.ddm-nav-item.active .ddm-nav-link,
-.ddm-nav-link.active {
-    background: var(--ddm-primary-soft) !important;
-    color: var(--ddm-primary-hover) !important;
-    font-weight: 600;
+.ddm-nav-item.active a, .ddm-nav-link.active, .ddm-nav-item.active .ddm-nav-link {
+    background: #FFF4EB !important;
+    color: #E85D00 !important;
+    font-weight: 600 !important;
 }
-.ddm-nav-item.active .ddm-nav-link .nav-icon,
-.ddm-nav-link.active .nav-icon {
-    color: var(--ddm-primary) !important;
+.ddm-nav-item.active a .nav-icon, .ddm-nav-link.active .nav-icon,
+.ddm-nav-item.active a svg, .ddm-nav-link.active svg {
+    color: #FF6B00 !important;
+    stroke: #FF6B00 !important;
 }
 
 /* Sidebar Bottom User & Logout */
 .ddm-sidebar-footer {
     position: sticky;
     bottom: 0;
-    background: var(--ddm-surface);
+    background: #FFFFFF;
     border-top: 1px solid var(--ddm-border);
-    padding: 14px 16px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -411,12 +444,12 @@ body, html {
    PAGE CONTAINER & TYPOGRAPHY HIERARCHY
    ========================================================================== */
 .ddm-container {
-    padding: 32px 32px 64px 32px;
-    max-width: 1440px;
-    margin: 0 auto;
+    padding: 28px 32px 64px 32px !important;
+    max-width: 1400px !important;
+    margin: 0 auto !important;
 }
 
-/* Clean Page Header (No Giant Card Background) */
+/* Clean Page Header */
 .ddm-page-header {
     display: flex;
     justify-content: space-between;
@@ -487,41 +520,41 @@ body, html {
 }
 
 /* ==========================================================================
-   MINIMALIST ENTERPRISE KPI CARDS
+   MINIMALIST ENTERPRISE KPI CARDS (No Giant Icon Backgrounds)
    ========================================================================== */
 .ddm-stat-card {
-    background: var(--ddm-surface);
-    border: 1px solid var(--ddm-border);
-    border-radius: var(--ddm-radius-card);
-    padding: 20px 22px;
-    margin-bottom: 20px;
-    box-shadow: var(--ddm-shadow-xs);
-    position: relative;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: #FFFFFF !important;
+    border: 1px solid #EAECF0 !important;
+    border-radius: 10px !important;
+    padding: 20px 22px !important;
+    margin-bottom: 20px !important;
+    box-shadow: var(--ddm-shadow-xs) !important;
+    position: relative !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 .ddm-stat-card:hover {
-    border-color: var(--ddm-border-strong);
-    box-shadow: var(--ddm-shadow-sm);
+    border-color: #D0D5DD !important;
+    box-shadow: var(--ddm-shadow-sm) !important;
 }
 .ddm-stat-card .stat-label {
     font-size: 12px;
     text-transform: uppercase;
     font-weight: 600;
-    color: var(--ddm-text-secondary);
+    color: #667085;
     letter-spacing: 0.5px;
     margin: 0 0 6px 0;
 }
 .ddm-stat-card .stat-value {
     font-size: 26px;
     font-weight: 700;
-    color: var(--ddm-text-primary);
+    color: #101828;
     letter-spacing: -0.5px;
     line-height: 1.1;
     margin: 0;
 }
 .ddm-stat-card .stat-meta {
     font-size: 12.5px;
-    color: var(--ddm-text-secondary);
+    color: #667085;
     margin-top: 8px;
     display: flex;
     align-items: center;
@@ -529,7 +562,7 @@ body, html {
 }
 
 /* Remove Giant Icon Backgrounds */
-.ddm-stat-card .stat-icon-bg {
+.ddm-stat-card .stat-icon-bg, .stat-icon-bg {
     display: none !important;
 }
 
@@ -537,27 +570,27 @@ body, html {
    BUTTON SYSTEM (Primary, Secondary, Ghost, Danger)
    ========================================================================== */
 .ddm-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 16px;
-    border-radius: var(--ddm-radius-btn);
-    font-size: 13.5px;
-    font-weight: 600;
-    line-height: 1;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    height: 40px !important;
+    padding: 0 16px !important;
+    border-radius: var(--ddm-radius-btn) !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
     text-decoration: none !important;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.15s ease;
-    white-space: nowrap;
+    cursor: pointer !important;
+    border: 1px solid transparent !important;
+    transition: all 0.15s ease !important;
+    white-space: nowrap !important;
 }
 
 .ddm-btn-sm, .ddm-btn-xs {
-    height: 32px;
-    padding: 0 12px;
-    font-size: 12.5px;
+    height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 12.5px !important;
 }
 
 /* Primary Button: Strategic Brand Orange */
@@ -569,7 +602,7 @@ body, html {
 .ddm-btn-primary:hover {
     background: var(--ddm-primary-hover) !important;
     border-color: var(--ddm-primary-hover) !important;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08) !important;
 }
 .ddm-btn-primary:active {
     background: var(--ddm-primary-active) !important;
@@ -577,26 +610,26 @@ body, html {
 
 /* Secondary Button: Clean White with Subtle Border */
 .ddm-btn-secondary {
-    background: var(--ddm-surface) !important;
-    color: var(--ddm-text-primary) !important;
-    border-color: var(--ddm-border) !important;
-    box-shadow: var(--ddm-shadow-xs);
+    background: #FFFFFF !important;
+    color: #344054 !important;
+    border-color: #D0D5DD !important;
+    box-shadow: var(--ddm-shadow-xs) !important;
 }
 .ddm-btn-secondary:hover {
-    background: var(--ddm-surface-subtle) !important;
-    border-color: var(--ddm-border-strong) !important;
-    color: var(--ddm-text-primary) !important;
+    background: #F9FAFB !important;
+    border-color: #98A2B3 !important;
+    color: #101828 !important;
 }
 
 /* Ghost Button */
 .ddm-btn-ghost {
     background: transparent !important;
-    color: var(--ddm-text-secondary) !important;
+    color: #667085 !important;
     border-color: transparent !important;
 }
 .ddm-btn-ghost:hover {
-    background: var(--ddm-surface-subtle) !important;
-    color: var(--ddm-text-primary) !important;
+    background: #F9FAFB !important;
+    color: #101828 !important;
 }
 
 /* Danger Button */
@@ -605,37 +638,33 @@ body, html {
     color: var(--ddm-danger-text) !important;
     border-color: var(--ddm-danger-border) !important;
 }
-.ddm-btn-danger:hover {
-    background: #FEE2E2 !important;
-    color: #991B1B !important;
-}
 
 /* ==========================================================================
    FORM INPUTS & COMPACT FILTER TOOLBAR
    ========================================================================== */
 .ddm-input, .ddm-select, select.ddm-input, textarea.ddm-input {
-    height: 40px;
-    padding: 0 12px;
-    background: var(--ddm-surface);
-    border: 1px solid var(--ddm-border-strong);
-    border-radius: var(--ddm-radius-input);
-    font-size: 13.5px;
-    color: var(--ddm-text-primary);
-    font-family: inherit;
-    transition: all 0.15s ease;
-    width: 100%;
-    outline: none;
+    height: 40px !important;
+    padding: 0 12px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #D0D5DD !important;
+    border-radius: var(--ddm-radius-input) !important;
+    font-size: 13.5px !important;
+    color: #101828 !important;
+    font-family: inherit !important;
+    transition: all 0.15s ease !important;
+    width: 100% !important;
+    outline: none !important;
 }
 textarea.ddm-input {
-    height: auto;
-    padding: 10px 12px;
+    height: auto !important;
+    padding: 10px 12px !important;
 }
 .ddm-input:hover, .ddm-select:hover {
-    border-color: #98A2B3;
+    border-color: #98A2B3 !important;
 }
 .ddm-input:focus, .ddm-select:focus {
-    border-color: var(--ddm-primary);
-    box-shadow: 0 0 0 3px var(--ddm-primary-ring);
+    border-color: var(--ddm-primary) !important;
+    box-shadow: 0 0 0 3px var(--ddm-primary-ring) !important;
 }
 
 .ddm-form-group {
@@ -656,24 +685,19 @@ textarea.ddm-input {
 
 /* Compact Filter Toolbar */
 .ddm-toolbar {
-    background: var(--ddm-surface);
-    border: 1px solid var(--ddm-border);
-    border-radius: var(--ddm-radius-card);
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
+    background: #FFFFFF !important;
+    border: 1px solid #EAECF0 !important;
+    border-radius: var(--ddm-radius-card) !important;
+    padding: 14px 16px !important;
+    margin-bottom: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    box-shadow: var(--ddm-shadow-xs) !important;
 }
-.ddm-toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    flex: 1;
-}
+
 .ddm-search-input-wrapper {
     position: relative;
     min-width: 240px;
@@ -683,7 +707,7 @@ textarea.ddm-input {
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--ddm-text-muted);
+    color: #98A2B3;
     pointer-events: none;
 }
 .ddm-search-input {
@@ -693,52 +717,52 @@ textarea.ddm-input {
 /* ==========================================================================
    ENTERPRISE SAAS TABLES
    ========================================================================== */
-.ddm-table-container {
-    background: var(--ddm-surface);
-    border: 1px solid var(--ddm-border);
-    border-radius: var(--ddm-radius-card);
-    box-shadow: var(--ddm-shadow-xs);
-    overflow: hidden;
-    margin-bottom: 24px;
+.ddm-table-container, .ddm-content-card {
+    background: #FFFFFF !important;
+    border: 1px solid #EAECF0 !important;
+    border-radius: var(--ddm-radius-card) !important;
+    box-shadow: var(--ddm-shadow-xs) !important;
+    overflow: hidden !important;
+    margin-bottom: 24px !important;
 }
 
 .ddm-table {
-    width: 100%;
-    margin-bottom: 0;
-    border-collapse: collapse;
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    border-collapse: collapse !important;
 }
 
 .ddm-table th {
-    background: var(--ddm-surface-subtle) !important;
-    color: var(--ddm-text-secondary) !important;
+    background: #F9FAFB !important;
+    color: #475467 !important;
     font-size: 12px !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.5px !important;
     padding: 12px 16px !important;
     border: none !important;
-    border-bottom: 1px solid var(--ddm-border) !important;
+    border-bottom: 1px solid #EAECF0 !important;
     vertical-align: middle !important;
-    white-space: nowrap;
+    white-space: nowrap !important;
 }
 
 .ddm-table td {
     padding: 14px 16px !important;
     vertical-align: middle !important;
     border: none !important;
-    border-bottom: 1px solid var(--ddm-border) !important;
-    color: var(--ddm-text-primary);
-    font-size: 13.5px;
-    background: transparent;
+    border-bottom: 1px solid #EAECF0 !important;
+    color: #101828 !important;
+    font-size: 13.5px !important;
+    background: transparent !important;
 }
 
 .ddm-table tbody tr {
-    height: 56px;
-    transition: background-color 0.12s ease;
+    height: 56px !important;
+    transition: background-color 0.12s ease !important;
 }
 
 .ddm-table tbody tr:hover {
-    background-color: var(--ddm-surface-hover) !important;
+    background-color: #FAFAFA !important;
 }
 
 .ddm-table tbody tr:last-child td {
@@ -761,33 +785,33 @@ textarea.ddm-input {
 }
 
 .ddm-badge-success {
-    background: var(--ddm-success-light);
-    color: var(--ddm-success-text);
-    border: 1px solid var(--ddm-success-border);
+    background: #ECFDF3 !important;
+    color: #027A48 !important;
+    border: 1px solid #D1FADF !important;
 }
 
 .ddm-badge-warning {
-    background: var(--ddm-warning-light);
-    color: var(--ddm-warning-text);
-    border: 1px solid var(--ddm-warning-border);
+    background: #FFFAEB !important;
+    color: #B54708 !important;
+    border: 1px solid #FEDF89 !important;
 }
 
 .ddm-badge-error {
-    background: var(--ddm-danger-light);
-    color: var(--ddm-danger-text);
-    border: 1px solid var(--ddm-danger-border);
+    background: #FEF3F2 !important;
+    color: #B42318 !important;
+    border: 1px solid #FECDCA !important;
 }
 
 .ddm-badge-neutral {
-    background: var(--ddm-neutral-light);
-    color: var(--ddm-neutral-text);
-    border: 1px solid var(--ddm-neutral-border);
+    background: #F2F4F7 !important;
+    color: #344054 !important;
+    border: 1px solid #EAECF0 !important;
 }
 
 .ddm-badge-brand {
-    background: var(--ddm-brand-light);
-    color: var(--ddm-brand-text);
-    border: 1px solid var(--ddm-brand-border);
+    background: #FFF4EB !important;
+    color: #B93815 !important;
+    border: 1px solid #FFE4CC !important;
 }
 
 .ddm-dot-indicator {
@@ -796,24 +820,53 @@ textarea.ddm-input {
     border-radius: 50%;
     display: inline-block;
 }
-.ddm-dot-success { background: var(--ddm-success); }
-.ddm-dot-warning { background: var(--ddm-warning); }
-.ddm-dot-error { background: var(--ddm-danger); }
-.ddm-dot-neutral { background: var(--ddm-text-muted); }
+.ddm-dot-success { background: #12B76A; }
+.ddm-dot-warning { background: #F79009; }
+.ddm-dot-error { background: #F04438; }
+.ddm-dot-neutral { background: #98A2B3; }
 
-/* ==========================================================================
-   MODALS & DIALOGS
-   ========================================================================== */
+/* Infrastructure Status Item */
+.infra-badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: #F9FAFB;
+    border: 1px solid #EAECF0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.15s ease;
+}
+.infra-badge:hover {
+    background: #FFFFFF;
+    border-color: #D0D5DD;
+}
+.infra-badge-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.infra-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+/* Modals */
 .modal-content {
     border-radius: var(--ddm-radius-modal) !important;
     border: 1px solid var(--ddm-border) !important;
-    box-shadow: var(--ddm-shadow-modal) !important;
+    box-shadow: 0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03) !important;
     overflow: hidden;
 }
 
 .modal-header {
-    background: var(--ddm-surface) !important;
-    border-bottom: 1px solid var(--ddm-border) !important;
+    background: #FFFFFF !important;
+    border-bottom: 1px solid #EAECF0 !important;
     padding: 18px 24px !important;
     display: flex;
     align-items: center;
@@ -822,72 +875,21 @@ textarea.ddm-input {
 .modal-title {
     font-size: 16px !important;
     font-weight: 600 !important;
-    color: var(--ddm-text-primary) !important;
+    color: #101828 !important;
     margin: 0 !important;
 }
 
 .modal-body {
     padding: 24px !important;
-    background: var(--ddm-surface) !important;
+    background: #FFFFFF !important;
 }
 
 .modal-footer {
-    background: var(--ddm-surface-subtle) !important;
-    border-top: 1px solid var(--ddm-border) !important;
+    background: #F9FAFB !important;
+    border-top: 1px solid #EAECF0 !important;
     padding: 16px 24px !important;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 10px;
-}
-
-/* ==========================================================================
-   CHAT / TRANSCRIPT BUBBLES
-   ========================================================================== */
-.ddm-chat-container {
-    max-height: 480px;
-    overflow-y: auto;
-    padding: 20px;
-    background: var(--ddm-surface-subtle);
-    border-radius: var(--ddm-radius-card);
-    border: 1px solid var(--ddm-border);
-}
-
-.ddm-chat-bubble {
-    margin-bottom: 16px;
-    display: flex;
-    flex-direction: column;
-}
-.ddm-chat-bubble.user {
-    align-items: flex-start;
-}
-.ddm-chat-bubble.assistant {
-    align-items: flex-end;
-}
-.ddm-chat-bubble .bubble-content {
-    max-width: 80%;
-    padding: 12px 16px;
-    border-radius: 12px;
-    font-size: 13.5px;
-    line-height: 1.5;
-}
-.ddm-chat-bubble.user .bubble-content {
-    background: #FFFFFF;
-    color: var(--ddm-text-primary);
-    border: 1px solid var(--ddm-border);
-    border-bottom-left-radius: 2px;
-}
-.ddm-chat-bubble.assistant .bubble-content {
-    background: var(--ddm-brand-light);
-    color: #9A3412;
-    border: 1px solid var(--ddm-brand-border);
-    border-bottom-right-radius: 2px;
-}
-.ddm-chat-bubble .bubble-author {
-    font-size: 11px;
-    margin-bottom: 4px;
-    color: var(--ddm-text-secondary);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
 }
