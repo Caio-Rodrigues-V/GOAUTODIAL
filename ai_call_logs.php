@@ -36,7 +36,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Dialog DDM - Histórico & Transcrições de Voz IA</title>
+    <title>DIALog DDM - Histórico & Transcrições de Voz IA</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
 
     <?php 
@@ -44,93 +44,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
         print $ui->creamyThemeCSS();
         print $ui->dataTablesTheme();
     ?>
-    <link href="css/style.css" rel="stylesheet" type="text/css" />
     <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
-    <style>
-        .ddm-stat-card {
-            background: var(--ddm-surface);
-            border: 1px solid var(--ddm-border);
-            border-radius: var(--ddm-radius-lg);
-            padding: 20px 24px;
-            margin-bottom: 20px;
-            box-shadow: var(--ddm-shadow-xs);
-            position: relative;
-            overflow: hidden;
-            transition: all 0.2s;
-        }
-        .ddm-stat-card:hover {
-            box-shadow: var(--ddm-shadow-sm);
-            border-color: var(--ddm-border-strong);
-        }
-        .ddm-stat-card .stat-icon-bg {
-            position: absolute;
-            right: 18px;
-            bottom: 12px;
-            font-size: 42px;
-            color: var(--ddm-surface-subtle);
-            pointer-events: none;
-        }
-        .ddm-stat-card h3 {
-            font-size: 28px;
-            font-weight: 800;
-            margin: 0 0 4px 0;
-            color: var(--ddm-text-primary);
-            letter-spacing: -0.5px;
-        }
-        .ddm-stat-card p {
-            font-size: 12px;
-            margin: 0;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: var(--ddm-text-secondary);
-            letter-spacing: 0.5px;
-        }
-        
-        .chat-container {
-            max-height: 440px;
-            overflow-y: auto;
-            padding: 18px;
-            background: var(--ddm-surface-subtle);
-            border-radius: var(--ddm-radius-md);
-            border: 1px solid var(--ddm-border);
-        }
-        .chat-bubble {
-            margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-        }
-        .chat-bubble.user { align-items: flex-start; }
-        .chat-bubble.assistant { align-items: flex-end; }
-        .chat-bubble.system { align-items: center; }
-        .bubble-content {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 14px;
-            font-size: 13.5px;
-            line-height: 1.5;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-        }
-        .chat-bubble.user .bubble-content {
-            background: #FFFFFF;
-            color: var(--ddm-text-primary);
-            border: 1px solid var(--ddm-border);
-            border-bottom-left-radius: 3px;
-        }
-        .chat-bubble.assistant .bubble-content {
-            background: var(--ddm-primary-light);
-            color: #9A3412;
-            border: 1px solid var(--ddm-primary-border);
-            border-bottom-right-radius: 3px;
-        }
-        .bubble-author {
-            font-size: 11px;
-            margin-bottom: 4px;
-            color: var(--ddm-text-muted);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-    </style>
 </head>
 
 <?php print $ui->creamyBody(); ?>
@@ -143,169 +57,170 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
             
             <!-- Breadcrumbs -->
             <div class="ddm-breadcrumbs">
-                <a href="index.php"><i class="fa fa-home"></i> Dialog DDM</a>
+                <a href="index.php">Dashboard</a>
                 <span class="separator">/</span>
-                <a href="ai_agents.php">Agentes de IA</a>
-                <span class="separator">/</span>
-                <span class="current">Histórico & Gravações</span>
+                <span class="current">Histórico & Transcrições</span>
             </div>
 
-            <!-- Top Header -->
-            <div class="ddm-header">
-                <div class="ddm-header-left">
-                    <div class="ddm-agent-avatar">
-                        <i class="fa fa-history"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 22px; font-weight: 800; color: var(--ddm-text-primary); letter-spacing: -0.4px;">
-                            Histórico & Transcrições de Voz IA
-                        </div>
-                        <div style="font-size: 13px; color: var(--ddm-text-secondary); margin-top: 2px;">
-                            Acompanhe gravações de áudio, transcrições completas e diagnósticos de chamadas em tempo real.
-                        </div>
-                    </div>
+            <!-- Page Header -->
+            <div class="ddm-page-header">
+                <div>
+                    <h1 class="ddm-page-title">Histórico & Transcrições de Voz IA</h1>
+                    <p class="ddm-page-subtitle">Acompanhe gravações de áudio, transcrições completas e diagnósticos de chamadas em tempo real.</p>
                 </div>
                 
-                <div class="ddm-header-actions">
+                <div class="ddm-page-actions">
                     <a href="api_ai_calls.php?action=list" target="_blank" class="ddm-btn ddm-btn-secondary">
-                        <i class="fa fa-code"></i> API REST
+                        <i data-lucide="code-2" style="width:16px;height:16px;"></i>
+                        <span>API REST</span>
                     </a>
                     <button type="button" class="ddm-btn ddm-btn-secondary" onclick="location.reload();">
-                        <i class="fa fa-refresh"></i> Atualizar
+                        <i data-lucide="rotate-cw" style="width:16px;height:16px;"></i>
+                        <span>Atualizar</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Metric Cards -->
+            <!-- Minimalist Metric Cards -->
             <div class="row">
                 <div class="col-md-2 col-sm-4 col-xs-6">
                     <div class="ddm-stat-card">
-                        <i class="fa fa-phone stat-icon-bg"></i>
-                        <p>Total Ligações</p>
-                        <h3><?php echo number_format($stats['total']); ?></h3>
+                        <div class="stat-label">Total Ligações</div>
+                        <div class="stat-value"><?php echo number_format($stats['total']); ?></div>
                     </div>
                 </div>
                 <div class="col-md-2 col-sm-4 col-xs-6">
                     <div class="ddm-stat-card">
-                        <i class="fa fa-check-circle stat-icon-bg"></i>
-                        <p>Taxa Atendimento</p>
-                        <h3 style="color:#059669;">
+                        <div class="stat-label">Taxa Atendimento</div>
+                        <div class="stat-value" style="color:var(--ddm-success-text);">
                             <?php 
                                 $rate = $stats['total'] > 0 ? round(($stats['answered'] / $stats['total']) * 100) : 100;
                                 echo "{$rate}%";
                             ?>
-                        </h3>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-4 col-xs-6">
                     <div class="ddm-stat-card">
-                        <i class="fa fa-clock-o stat-icon-bg"></i>
-                        <p>Duração Total de Voz</p>
-                        <h3>
+                        <div class="stat-label">Duração Total de Voz</div>
+                        <div class="stat-value">
                             <?php 
                                 $min = floor($stats['duration'] / 60);
                                 $sec = $stats['duration'] % 60;
                                 echo sprintf("%02dm %02ds", $min, $sec);
                             ?>
-                        </h3>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-2 col-sm-6 col-xs-6">
                     <div class="ddm-stat-card">
-                        <i class="fa fa-star stat-icon-bg"></i>
-                        <p>Leads Qualificados</p>
-                        <h3 style="color:var(--ddm-primary);"><?php echo number_format($stats['leads']); ?></h3>
+                        <div class="stat-label">Leads Qualificados</div>
+                        <div class="stat-value" style="color:var(--ddm-primary);"><?php echo number_format($stats['leads']); ?></div>
                     </div>
                 </div>
                 <div class="col-md-3 col-sm-6 col-xs-12">
-                    <div class="ddm-stat-card" style="border-left: 3px solid var(--ddm-primary);">
-                        <i class="fa fa-money stat-icon-bg"></i>
-                        <p>Custo Total de IA (Est.)</p>
-                        <h3 style="color:var(--ddm-text-primary);">
+                    <div class="ddm-stat-card">
+                        <div class="stat-label">Custo Total de IA (Est.)</div>
+                        <div class="stat-value">
                             R$ <?php echo number_format((float)($stats['cost'] ?? 0), 2, ',', '.'); ?>
-                        </h3>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Filters and Table Box -->
-            <div class="ddm-section-box" style="padding: 20px 24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom: 20px;">
-                    <form method="GET" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0;">
-                        <div style="min-width: 170px;">
-                            <select name="agent_id" class="ddm-select">
-                                <option value="">Todos os Agentes</option>
-                                <?php foreach ($agents as $a): ?>
-                                    <option value="<?php echo $a['agent_id']; ?>" <?php echo ($agentFilter == $a['agent_id']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($a['agent_name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
+            <!-- Compact Filter Toolbar -->
+            <div class="ddm-toolbar">
+                <form method="GET" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; width:100%; margin:0;">
+                    
+                    <!-- Search Telefone First -->
+                    <div class="ddm-search-input-wrapper" style="min-width: 220px; flex: 1;">
+                        <i data-lucide="search" class="ddm-search-icon" style="width:16px;height:16px;"></i>
+                        <input type="text" name="phone" class="ddm-input ddm-search-input" placeholder="Buscar por telefone..." value="<?php echo htmlspecialchars($phoneFilter ?: ''); ?>">
+                    </div>
 
-                        <div style="min-width: 150px;">
-                            <input type="text" name="phone" class="ddm-input" placeholder="Buscar Telefone..." value="<?php echo htmlspecialchars($phoneFilter ?: ''); ?>">
-                        </div>
+                    <!-- Agente Filter -->
+                    <div style="min-width: 170px;">
+                        <select name="agent_id" class="ddm-select">
+                            <option value="">Todos os Agentes</option>
+                            <?php foreach ($agents as $a): ?>
+                                <option value="<?php echo $a['agent_id']; ?>" <?php echo ($agentFilter == $a['agent_id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($a['agent_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-                        <div style="min-width: 190px;">
-                            <select name="tabulation" class="ddm-select">
-                                <option value="">Todas as Tabulações</option>
-                                <option value="HUMAN_COMPLETED" <?php echo ($tabulationFilter == 'HUMAN_COMPLETED' || $tabulationFilter == 'Conversa Concluída') ? 'selected' : ''; ?>>✅ Conversa Concluída</option>
-                                <option value="BUSY_LATER" <?php echo ($tabulationFilter == 'BUSY_LATER' || $tabulationFilter == 'Ocupado / Pediu Retorno') ? 'selected' : ''; ?>>⏰ Ocupado / Pediu Retorno</option>
-                                <option value="REFUSED" <?php echo ($tabulationFilter == 'REFUSED' || $tabulationFilter == 'Recusa / Não Quer Falar') ? 'selected' : ''; ?>>🛑 Recusa / Não Quer Falar</option>
-                                <option value="WRONG_NUMBER" <?php echo ($tabulationFilter == 'WRONG_NUMBER' || $tabulationFilter == 'Número Errado / Engano') ? 'selected' : ''; ?>>❌ Número Errado / Engano</option>
-                                <option value="CALL_DROPPED" <?php echo ($tabulationFilter == 'CALL_DROPPED' || $tabulationFilter == 'Desligou no Início (< 5s)') ? 'selected' : ''; ?>>⚡ Desligou no Início (< 5s)</option>
-                                <option value="MUTE_SILENCE" <?php echo ($tabulationFilter == 'MUTE_SILENCE' || $tabulationFilter == 'Mudo / Sem Áudio') ? 'selected' : ''; ?>>🔇 Mudo / Sem Áudio</option>
-                                <option value="VOICEMAIL" <?php echo ($tabulationFilter == 'VOICEMAIL' || $tabulationFilter == 'Caixa Postal / Secretária') ? 'selected' : ''; ?>>📵 Caixa Postal / Secretária</option>
-                                <option value="NO_ANSWER" <?php echo ($tabulationFilter == 'NO_ANSWER' || $tabulationFilter == 'Não Atende') ? 'selected' : ''; ?>>⏳ Não Atende (Timeout)</option>
-                                <option value="BUSY" <?php echo ($tabulationFilter == 'BUSY' || $tabulationFilter == 'Ocupado') ? 'selected' : ''; ?>>🔴 Linha Ocupada</option>
-                                <option value="INVALID_NUMBER" <?php echo ($tabulationFilter == 'INVALID_NUMBER' || $tabulationFilter == 'Número Inválido') ? 'selected' : ''; ?>>🚫 Número Inválido</option>
-                                <option value="TRANSFERRED" <?php echo ($tabulationFilter == 'TRANSFERRED' || $tabulationFilter == 'Transferida') ? 'selected' : ''; ?>>↪️ Transferida</option>
-                            </select>
-                        </div>
+                    <!-- Tabulação Filter -->
+                    <div style="min-width: 180px;">
+                        <select name="tabulation" class="ddm-select">
+                            <option value="">Todas as Tabulações</option>
+                            <option value="HUMAN_COMPLETED" <?php echo ($tabulationFilter == 'HUMAN_COMPLETED' || $tabulationFilter == 'Conversa Concluída') ? 'selected' : ''; ?>>Conversa Concluída</option>
+                            <option value="BUSY_LATER" <?php echo ($tabulationFilter == 'BUSY_LATER' || $tabulationFilter == 'Ocupado / Pediu Retorno') ? 'selected' : ''; ?>>Ocupado / Pediu Retorno</option>
+                            <option value="REFUSED" <?php echo ($tabulationFilter == 'REFUSED' || $tabulationFilter == 'Recusa / Não Quer Falar') ? 'selected' : ''; ?>>Recusa / Não Quer Falar</option>
+                            <option value="WRONG_NUMBER" <?php echo ($tabulationFilter == 'WRONG_NUMBER' || $tabulationFilter == 'Número Errado / Engano') ? 'selected' : ''; ?>>Número Errado / Engano</option>
+                            <option value="CALL_DROPPED" <?php echo ($tabulationFilter == 'CALL_DROPPED' || $tabulationFilter == 'Desligou no Início (< 5s)') ? 'selected' : ''; ?>>Desligou no Início (< 5s)</option>
+                            <option value="MUTE_SILENCE" <?php echo ($tabulationFilter == 'MUTE_SILENCE' || $tabulationFilter == 'Mudo / Sem Áudio') ? 'selected' : ''; ?>>Mudo / Sem Áudio</option>
+                            <option value="VOICEMAIL" <?php echo ($tabulationFilter == 'VOICEMAIL' || $tabulationFilter == 'Caixa Postal / Secretária') ? 'selected' : ''; ?>>Caixa Postal / Secretária</option>
+                            <option value="NO_ANSWER" <?php echo ($tabulationFilter == 'NO_ANSWER' || $tabulationFilter == 'Não Atende') ? 'selected' : ''; ?>>Não Atende</option>
+                            <option value="BUSY" <?php echo ($tabulationFilter == 'BUSY' || $tabulationFilter == 'Ocupado') ? 'selected' : ''; ?>>Linha Ocupada</option>
+                            <option value="INVALID_NUMBER" <?php echo ($tabulationFilter == 'INVALID_NUMBER' || $tabulationFilter == 'Número Inválido') ? 'selected' : ''; ?>>Número Inválido</option>
+                            <option value="TRANSFERRED" <?php echo ($tabulationFilter == 'TRANSFERRED' || $tabulationFilter == 'Transferida') ? 'selected' : ''; ?>>Transferida</option>
+                        </select>
+                    </div>
 
-                        <div style="min-width: 170px;">
-                            <select name="status" class="ddm-select">
-                                <option value="">Todos os Status</option>
-                                <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>✅ Atendida (Humano)</option>
-                                <option value="no_answer" <?php echo ($statusFilter == 'no_answer') ? 'selected' : ''; ?>>⏳ Não Atendeu / Mudo</option>
-                                <option value="voicemail" <?php echo ($statusFilter == 'voicemail') ? 'selected' : ''; ?>>📵 Caixa Postal</option>
-                                <option value="busy" <?php echo ($statusFilter == 'busy') ? 'selected' : ''; ?>>🔴 Ocupada / Rejeitada</option>
-                                <option value="dropped" <?php echo ($statusFilter == 'dropped') ? 'selected' : ''; ?>>⚡ Queda de Ligação</option>
-                                <option value="invalid_number" <?php echo ($statusFilter == 'invalid_number') ? 'selected' : ''; ?>>🚫 Número Inválido</option>
-                                <option value="ringing" <?php echo ($statusFilter == 'ringing') ? 'selected' : ''; ?>>📞 Chamando</option>
-                            </select>
-                        </div>
+                    <!-- Status Filter -->
+                    <div style="min-width: 160px;">
+                        <select name="status" class="ddm-select">
+                            <option value="">Todos os Status</option>
+                            <option value="completed" <?php echo ($statusFilter == 'completed') ? 'selected' : ''; ?>>Atendida</option>
+                            <option value="no_answer" <?php echo ($statusFilter == 'no_answer') ? 'selected' : ''; ?>>Não Atendeu</option>
+                            <option value="voicemail" <?php echo ($statusFilter == 'voicemail') ? 'selected' : ''; ?>>Caixa Postal</option>
+                            <option value="busy" <?php echo ($statusFilter == 'busy') ? 'selected' : ''; ?>>Ocupada</option>
+                            <option value="dropped" <?php echo ($statusFilter == 'dropped') ? 'selected' : ''; ?>>Queda</option>
+                            <option value="invalid_number" <?php echo ($statusFilter == 'invalid_number') ? 'selected' : ''; ?>>Número Inválido</option>
+                            <option value="ringing" <?php echo ($statusFilter == 'ringing') ? 'selected' : ''; ?>>Chamando</option>
+                        </select>
+                    </div>
 
-                        <button type="submit" class="ddm-btn ddm-btn-primary ddm-btn-sm"><i class="fa fa-filter"></i> Filtrar</button>
-                        <a href="ai_call_logs.php" class="ddm-btn ddm-btn-secondary ddm-btn-sm"><i class="fa fa-eraser"></i> Limpar</a>
-                    </form>
-                </div>
+                    <!-- Actions -->
+                    <button type="submit" class="ddm-btn ddm-btn-secondary" style="height:40px;">
+                        <i data-lucide="filter" style="width:15px;height:15px;"></i>
+                        <span>Filtrar</span>
+                    </button>
+                    <a href="ai_call_logs.php" class="ddm-btn ddm-btn-ghost" style="height:40px;">
+                        <span>Limpar</span>
+                    </a>
+                </form>
+            </div>
 
+            <!-- Calls Table Container -->
+            <div class="ddm-table-container">
                 <div style="overflow-x:auto;">
-                    <table class="table table-bordered table-striped ddm-tools-table" id="callLogsTable" width="100%">
+                    <table class="table ddm-table" id="callLogsTable" width="100%">
                         <thead>
                             <tr>
-                                <th style="width: 50px;">ID</th>
+                                <th style="width: 60px;">ID</th>
                                 <th>Data & Hora</th>
                                 <th>Telefone Destino</th>
-                                <th>Agente de IA</th>
+                                <th>Agente IA</th>
                                 <th>Duração</th>
                                 <th>Custo</th>
-                                <th>Pipeline</th>
                                 <th>Tabulação IA</th>
                                 <th>Sentimento</th>
                                 <th>Status</th>
-                                <th style="text-align:center; width: 140px;">Gravação</th>
-                                <th style="text-align:right; width: 150px;">Ações</th>
+                                <th style="text-align:center; width: 120px;">Gravação</th>
+                                <th style="text-align:right; width: 140px;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($callLogs)): ?>
                                 <tr>
-                                    <td colspan="12" style="text-align:center; padding:40px; color:var(--ddm-text-muted);">
-                                        <i class="fa fa-phone-square" style="font-size:36px; display:block; margin-bottom:12px;"></i>
-                                        Nenhuma chamada registrada no período selecionado.
+                                    <td colspan="11" style="text-align:center; padding:48px 20px;">
+                                        <div style="width:48px; height:48px; border-radius:12px; background:var(--ddm-surface-subtle); display:flex; align-items:center; justify-content:center; margin:0 auto 14px auto; color:var(--ddm-text-muted);">
+                                            <i data-lucide="phone-missed" style="width:24px;height:24px;"></i>
+                                        </div>
+                                        <div style="color:var(--ddm-text-primary); font-size:15px; font-weight:600;">Nenhuma chamada registrada no período</div>
+                                        <div style="color:var(--ddm-text-secondary); font-size:13px; margin-top:4px;">Ajuste os filtros de busca ou inicie um novo disparo em lote.</div>
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -331,16 +246,16 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                     $costVal = isset($c['cost_estimate']) ? (float)$c['cost_estimate'] : 0.00;
                                 ?>
                                     <tr>
-                                        <td><span class="ddm-badge ddm-badge-id">#<?php echo $c['id']; ?></span></td>
-                                        <td style="font-size:12px; color:var(--ddm-text-secondary);"><?php echo date('d/m/Y H:i:s', strtotime($c['created_at'])); ?></td>
-                                        <td><strong><?php echo htmlspecialchars($c['phone_number']); ?></strong></td>
+                                        <td><span class="ddm-badge ddm-badge-neutral" style="font-family:monospace;">#<?php echo $c['id']; ?></span></td>
+                                        <td style="font-size:12.5px; color:var(--ddm-text-secondary);"><?php echo date('d/m/Y H:i', strtotime($c['created_at'])); ?></td>
+                                        <td><strong style="font-family:monospace; font-size:13.5px;"><?php echo htmlspecialchars($c['phone_number']); ?></strong></td>
                                         <td>
-                                            <span style="font-weight:700; color:var(--ddm-text-primary); font-size:13px;">
+                                            <span style="font-weight:600; color:var(--ddm-text-primary);">
                                                 <?php echo htmlspecialchars($c['agent_name'] ?: "Agente #{$c['agent_id']}"); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="ddm-badge">
+                                            <span style="font-family:monospace; color:var(--ddm-text-secondary); font-weight:600;">
                                                 <?php 
                                                     $dur = (int)$c['duration_seconds'];
                                                     echo sprintf("%02d:%02d", floor($dur / 60), $dur % 60);
@@ -348,80 +263,76 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="ddm-badge ddm-badge-orange" title="Custo estimado total da chamada">
+                                            <span style="font-size:12.5px; color:var(--ddm-text-secondary);">
                                                 R$ <?php echo number_format($costVal, 4, ',', '.'); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="ddm-badge ddm-badge-id"><i class="fa fa-bolt"></i> <?php echo htmlspecialchars($c['llm_provider'] ?: 'groq'); ?></span>
-                                            <span class="ddm-badge ddm-badge-orange"><i class="fa fa-volume-up"></i> <?php echo htmlspecialchars($c['voice_provider'] ?: 'cartesia'); ?></span>
-                                        </td>
-                                        <td>
                                             <?php if ($tabCode == 'HUMAN_COMPLETED' || stripos($tabulation, 'Concluída') !== false || stripos($tabulation, 'Venda') !== false || stripos($tabulation, 'Interessado') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-active" title="[HUMAN_COMPLETED] Conversa com diálogo completo"><i class="fa fa-check-circle text-green"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                                <span class="ddm-badge ddm-badge-success">
+                                                    <span class="ddm-dot-indicator ddm-dot-success"></span> <?php echo htmlspecialchars($tabulation); ?>
+                                                </span>
                                             <?php elseif ($tabCode == 'BUSY_LATER' || stripos($tabulation, 'Retornar') !== false || stripos($tabulation, 'Ocupado') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-orange" title="[BUSY_LATER] Cliente pediu retorno"><i class="fa fa-clock-o"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                                <span class="ddm-badge ddm-badge-warning">
+                                                    <span class="ddm-dot-indicator ddm-dot-warning"></span> <?php echo htmlspecialchars($tabulation); ?>
+                                                </span>
                                             <?php elseif ($tabCode == 'REFUSED' || stripos($tabulation, 'Recusa') !== false || stripos($tabulation, 'Sem Interesse') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-inactive" title="[REFUSED] Cliente recusou"><i class="fa fa-hand-stop-o"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif ($tabCode == 'WRONG_NUMBER' || stripos($tabulation, 'Errado') !== false || stripos($tabulation, 'Engano') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-inactive" title="[WRONG_NUMBER] Número errado"><i class="fa fa-user-times"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif ($tabCode == 'CALL_DROPPED' || stripos($tabulation, 'Início') !== false || stripos($tabulation, 'Drop') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-orange" title="[CALL_DROPPED] Desligou no início"><i class="fa fa-phone"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif ($tabCode == 'MUTE_SILENCE' || stripos($tabulation, 'Mudo') !== false): ?>
-                                                <span class="ddm-badge" style="background:#f1f5f9; color:#475569;" title="[MUTE_SILENCE] Sem áudio / mudo"><i class="fa fa-volume-off"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                                <span class="ddm-badge ddm-badge-error">
+                                                    <span class="ddm-dot-indicator ddm-dot-error"></span> <?php echo htmlspecialchars($tabulation); ?>
+                                                </span>
                                             <?php elseif ($tabCode == 'VOICEMAIL' || stripos($tabulation, 'Caixa') !== false): ?>
-                                                <span class="ddm-badge" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe;" title="[VOICEMAIL] Caixa Postal"><i class="fa fa-microphone-slash"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif ($tabCode == 'TRANSFERRED' || stripos($tabulation, 'Transferida') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-id" title="[TRANSFERRED] Transferida"><i class="fa fa-exchange"></i> <?php echo htmlspecialchars($tabulation); ?></span>
-                                            <?php elseif ($tabCode == 'INVALID_NUMBER' || stripos($tabulation, 'Inválido') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-inactive" title="[INVALID_NUMBER] Número Inválido"><i class="fa fa-ban"></i> <?php echo htmlspecialchars($tabulation); ?></span>
+                                                <span class="ddm-badge ddm-badge-warning">
+                                                    <span class="ddm-dot-indicator ddm-dot-warning"></span> Caixa Postal
+                                                </span>
                                             <?php else: ?>
-                                                <span class="ddm-badge"><?php echo htmlspecialchars($tabulation); ?></span>
+                                                <span class="ddm-badge ddm-badge-neutral">
+                                                    <?php echo htmlspecialchars($tabulation); ?>
+                                                </span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($sentiment == 'Positivo'): ?>
-                                                <span class="ddm-badge ddm-badge-active" title="Sentimento do Cliente: Positivo">😊 Positivo</span>
+                                                <span class="ddm-badge ddm-badge-success">Positivo</span>
                                             <?php elseif ($sentiment == 'Negativo'): ?>
-                                                <span class="ddm-badge ddm-badge-inactive" title="Sentimento do Cliente: Negativo">😠 Negativo</span>
+                                                <span class="ddm-badge ddm-badge-error">Negativo</span>
                                             <?php else: ?>
-                                                <span class="ddm-badge" title="Sentimento do Cliente: Neutro">😐 Neutro</span>
+                                                <span class="ddm-badge ddm-badge-neutral">Neutro</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($st == 'completed'): ?>
-                                                <span class="ddm-badge ddm-badge-active" title="Chamada atendida por humano com diálogo"><span class="ddm-dot-indicator ddm-dot-active"></span> Atendida</span>
+                                                <span class="ddm-badge ddm-badge-success">Atendida</span>
                                             <?php elseif ($st == 'no_answer'): ?>
-                                                <span class="ddm-badge" style="background:#fef3c7; color:#92400e; border:1px solid #fde68a;" title="Não atendeu / Linha mudo"><i class="fa fa-phone-slash"></i> Não Atendeu</span>
+                                                <span class="ddm-badge ddm-badge-warning">Não Atendeu</span>
                                             <?php elseif ($st == 'voicemail'): ?>
-                                                <span class="ddm-badge" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe;" title="Caixa Postal da operadora"><i class="fa fa-microphone-slash"></i> Caixa Postal</span>
+                                                <span class="ddm-badge ddm-badge-warning">Caixa Postal</span>
                                             <?php elseif ($st == 'busy'): ?>
-                                                <span class="ddm-badge ddm-badge-inactive" title="Linha ocupada ou rejeitada"><span class="ddm-dot-indicator ddm-dot-inactive"></span> Ocupada / Rejeitada</span>
+                                                <span class="ddm-badge ddm-badge-neutral">Ocupada</span>
                                             <?php elseif ($st == 'dropped'): ?>
-                                                <span class="ddm-badge ddm-badge-orange" title="Queda rápida no início"><i class="fa fa-phone"></i> Queda</span>
+                                                <span class="ddm-badge ddm-badge-warning">Queda</span>
                                             <?php elseif ($st == 'invalid_number'): ?>
-                                                <span class="ddm-badge ddm-badge-inactive" title="Número inválido ou inexistente"><i class="fa fa-ban"></i> Inválido</span>
-                                            <?php elseif ($st == 'ringing'): ?>
-                                                <span class="ddm-badge ddm-badge-id" title="Chamando no aparelho"><i class="fa fa-bell-o"></i> Chamando...</span>
+                                                <span class="ddm-badge ddm-badge-error">Inválido</span>
                                             <?php else: ?>
-                                                <span class="ddm-badge"><i class="fa fa-phone"></i> <?php echo htmlspecialchars($st); ?></span>
+                                                <span class="ddm-badge ddm-badge-neutral"><?php echo htmlspecialchars($st); ?></span>
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align:center; white-space:nowrap;">
                                             <?php if (!empty($recUrl)): ?>
                                                 <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-quick-play" data-audio="<?php echo htmlspecialchars($recUrl); ?>" title="Ouvir Gravação">
-                                                    <i class="fa fa-play text-orange"></i> Áudio
+                                                    <i data-lucide="play" style="width:12px;height:12px;color:var(--ddm-primary);"></i>
+                                                    <span>Áudio</span>
                                                 </button>
                                                 <a href="<?php echo htmlspecialchars($recUrl); ?>" download="gravacao_call_#<?php echo $c['id']; ?>_<?php echo $c['phone_number']; ?>.wav" class="ddm-btn ddm-btn-secondary ddm-btn-xs" title="Baixar Áudio (.wav)">
-                                                    <i class="fa fa-download text-green"></i>
+                                                    <i data-lucide="download" style="width:12px;height:12px;"></i>
                                                 </a>
                                             <?php else: ?>
-                                                <span style="color:var(--ddm-text-muted); font-size:11px;">Sem áudio</span>
+                                                <span style="color:var(--ddm-text-muted); font-size:12px;">Sem áudio</span>
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align:right;">
                                             <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-view-transcript" data-id="<?php echo $c['id']; ?>">
-                                                <i class="fa fa-comments text-orange"></i> Diálogo & IA
+                                                <i data-lucide="message-square" style="width:12px;height:12px;color:var(--ddm-primary);"></i>
+                                                <span>Diálogo & IA</span>
                                             </button>
                                         </td>
                                     </tr>
@@ -439,23 +350,29 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
 <!-- Modal de Transcrição Completa da Conversa, Análise de IA e Player de Áudio -->
 <div class="modal fade" id="transcriptModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content" style="border-radius: var(--ddm-radius-lg); border: 1px solid var(--ddm-border); overflow:hidden; box-shadow: var(--ddm-shadow-xl);">
-            <div class="modal-header" style="background: var(--ddm-surface); border-bottom: 1px solid var(--ddm-border); padding: 18px 24px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:32px; height:32px; border-radius:8px; background:var(--ddm-primary-soft); display:flex; align-items:center; justify-content:center; color:var(--ddm-primary);">
+                        <i data-lucide="message-square" style="width:16px;height:16px;"></i>
+                    </div>
+                    <h4 class="modal-title" id="transcriptModalTitle">
+                        Detalhes, Diagnóstico de IA & Transcrição da Chamada
+                    </h4>
+                </div>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title" id="transcriptModalTitle" style="font-weight:800; font-size:16px; color:var(--ddm-text-primary);">
-                    <i class="fa fa-comments text-orange"></i> Detalhes, Análise de IA & Transcrição da Chamada
-                </h4>
             </div>
-            <div class="modal-body" style="padding: 24px; background: var(--ddm-surface);">
+            <div class="modal-body">
                 <div id="callDetailsHeader" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--ddm-border); font-size:13px; color:var(--ddm-text-secondary);">
                     <!-- Preenchido via JS -->
                 </div>
 
                 <!-- Análise Inteligente da Chamada (OpenAI / Groq) -->
-                <div id="modalAnalysisSection" style="margin-bottom:18px; padding:16px 20px; background:var(--ddm-surface-subtle); border-radius:var(--ddm-radius-md); border:1px solid var(--ddm-border);">
+                <div id="modalAnalysisSection" style="margin-bottom:18px; padding:16px 20px; background:var(--ddm-surface-subtle); border-radius:var(--ddm-radius-card); border:1px solid var(--ddm-border);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-                        <span style="font-weight:700; font-size:13px; color:var(--ddm-text-primary); display:flex; align-items:center; gap:6px;">
-                            <i class="fa fa-magic text-orange"></i> Diagnóstico Inteligente & Tabulação (IA)
+                        <span style="font-weight:600; font-size:13px; color:var(--ddm-text-primary); display:flex; align-items:center; gap:6px;">
+                            <i data-lucide="sparkles" style="width:15px;height:15px;color:var(--ddm-primary);"></i>
+                            Diagnóstico & Tabulação (IA)
                         </span>
                         <div id="modalBadgesContainer" style="display:flex; gap:6px;">
                             <!-- Badges preenchidos via JS -->
@@ -465,37 +382,40 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                         <!-- Resumo Executivo preenchido via JS -->
                     </div>
                     <div id="modalActionContainer" style="font-size:12px; color:var(--ddm-text-secondary); background:var(--ddm-surface); border:1px dashed var(--ddm-border); border-radius:6px; padding:8px 12px; display:none;">
-                        <strong style="color:var(--ddm-primary);"><i class="fa fa-arrow-circle-right"></i> Próxima Ação Sugerida:</strong> <span id="modalActionText"></span>
+                        <strong style="color:var(--ddm-primary);"><i data-lucide="arrow-right" style="width:12px;height:12px;"></i> Próxima Ação Sugerida:</strong> <span id="modalActionText"></span>
                     </div>
                 </div>
 
                 <!-- Player e Download de Áudio da Gravação -->
-                <div id="modalAudioSection" style="margin-bottom:18px; padding:16px 20px; background:var(--ddm-surface-subtle); border-radius:var(--ddm-radius-md); border:1px solid var(--ddm-border); display:none;">
+                <div id="modalAudioSection" style="margin-bottom:18px; padding:16px 20px; background:var(--ddm-surface-subtle); border-radius:var(--ddm-radius-card); border:1px solid var(--ddm-border); display:none;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-weight:700; font-size:13px; color:var(--ddm-text-primary); display:flex; align-items:center; gap:6px;">
-                            <i class="fa fa-volume-up text-orange"></i> Gravação Completa da Chamada
+                        <span style="font-weight:600; font-size:13px; color:var(--ddm-text-primary); display:flex; align-items:center; gap:6px;">
+                            <i data-lucide="volume-2" style="width:15px;height:15px;color:var(--ddm-primary);"></i>
+                            Gravação da Chamada
                         </span>
-                        <a id="btnDownloadAudio" href="#" download="gravacao_chamada.wav" class="ddm-btn ddm-btn-primary ddm-btn-xs">
-                            <i class="fa fa-download"></i> Baixar Áudio (.wav)
+                        <a id="btnDownloadAudio" href="#" download="gravacao_chamada.wav" class="ddm-btn ddm-btn-secondary ddm-btn-xs">
+                            <i data-lucide="download" style="width:13px;height:13px;"></i>
+                            <span>Baixar (.wav)</span>
                         </a>
                     </div>
-                    <audio id="modalAudioPlayer" controls style="width:100%; height:38px; outline:none; border-radius:6px;"></audio>
+                    <audio id="modalAudioPlayer" controls style="width:100%; height:36px; outline:none;"></audio>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span style="font-weight:700; font-size:12px; color:var(--ddm-text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Diálogo da Conversa</span>
+                    <span style="font-weight:600; font-size:12px; color:var(--ddm-text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Diálogo da Conversa</span>
                     <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs" id="btnCopyTranscript">
-                        <i class="fa fa-copy"></i> Copiar Texto
+                        <i data-lucide="copy" style="width:13px;height:13px;"></i>
+                        <span>Copiar Diálogo</span>
                     </button>
                 </div>
 
-                <div class="chat-container" id="chatDialogueContainer">
+                <div class="ddm-chat-container" id="chatDialogueContainer">
                     <div style="text-align:center; padding:25px; color:var(--ddm-text-muted);">
-                        <i class="fa fa-spinner fa-spin fa-2x"></i><br>Carregando diálogo...
+                        Carregando diálogo...
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="background: var(--ddm-surface-subtle); border-top: 1px solid var(--ddm-border); padding: 14px 24px;">
+            <div class="modal-footer">
                 <button type="button" class="ddm-btn ddm-btn-secondary" data-dismiss="modal">Fechar</button>
             </div>
         </div>
@@ -506,6 +426,8 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
 <script type="text/javascript">
 $(document).ready(function() {
     var rawTranscriptText = '';
+
+    if (typeof lucide !== 'undefined') { lucide.createIcons(); }
 
     // Quick Play Audio from table
     $('.btn-quick-play').on('click', function() {
@@ -520,7 +442,7 @@ $(document).ready(function() {
     $('.btn-view-transcript').on('click', function() {
         var callId = $(this).data('id');
         $('#transcriptModal').modal('show');
-        $('#chatDialogueContainer').html('<div style="text-align:center; padding:30px; color:var(--ddm-text-muted);"><i class="fa fa-spinner fa-spin fa-2x"></i><br>Carregando diálogo...</div>');
+        $('#chatDialogueContainer').html('<div style="text-align:center; padding:30px; color:var(--ddm-text-muted);">Carregando diálogo...</div>');
         $('#callDetailsHeader').html('');
         $('#modalBadgesContainer').html('');
         $('#modalCallSummary').html('<em>Carregando análise...</em>');
@@ -556,27 +478,24 @@ $(document).ready(function() {
                     var summary = c.call_summary || 'Conversa concluída pelo agente de voz IA.';
                     var action = c.action_needed || '';
 
-                    var tabBadgeClass = 'ddm-badge';
-                    if (tab.toLowerCase().indexOf('venda') !== -1 || tab.toLowerCase().indexOf('interessado') !== -1) {
-                        tabBadgeClass = 'ddm-badge ddm-badge-active';
-                    } else if (tab.toLowerCase().indexOf('retornar') !== -1 || tab.toLowerCase().indexOf('agendamento') !== -1) {
-                        tabBadgeClass = 'ddm-badge ddm-badge-orange';
+                    var tabBadgeClass = 'ddm-badge ddm-badge-neutral';
+                    if (tab.toLowerCase().indexOf('venda') !== -1 || tab.toLowerCase().indexOf('interessado') !== -1 || tab.toLowerCase().indexOf('concluída') !== -1) {
+                        tabBadgeClass = 'ddm-badge ddm-badge-success';
+                    } else if (tab.toLowerCase().indexOf('retornar') !== -1 || tab.toLowerCase().indexOf('agendamento') !== -1 || tab.toLowerCase().indexOf('ocupado') !== -1) {
+                        tabBadgeClass = 'ddm-badge ddm-badge-warning';
                     } else if (tab.toLowerCase().indexOf('sem interesse') !== -1 || tab.toLowerCase().indexOf('recusa') !== -1 || tab.toLowerCase().indexOf('caixa') !== -1) {
-                        tabBadgeClass = 'ddm-badge ddm-badge-inactive';
+                        tabBadgeClass = 'ddm-badge ddm-badge-error';
                     }
 
-                    var sentEmoji = '😐';
-                    var sentBadgeClass = 'ddm-badge';
+                    var sentBadgeClass = 'ddm-badge ddm-badge-neutral';
                     if (sent === 'Positivo') {
-                        sentEmoji = '😊';
-                        sentBadgeClass = 'ddm-badge ddm-badge-active';
+                        sentBadgeClass = 'ddm-badge ddm-badge-success';
                     } else if (sent === 'Negativo') {
-                        sentEmoji = '😠';
-                        sentBadgeClass = 'ddm-badge ddm-badge-inactive';
+                        sentBadgeClass = 'ddm-badge ddm-badge-error';
                     }
 
-                    var badgesHtml = '<span class="' + tabBadgeClass + '">📌 ' + tab + '</span> ' +
-                                     '<span class="' + sentBadgeClass + '">' + sentEmoji + ' ' + sent + '</span>';
+                    var badgesHtml = '<span class="' + tabBadgeClass + '">' + tab + '</span> ' +
+                                     '<span class="' + sentBadgeClass + '">' + sent + '</span>';
                     $('#modalBadgesContainer').html(badgesHtml);
 
                     $('#modalCallSummary').html('<strong>Resumo da Ligação:</strong> ' + $('<div>').text(summary).html());
@@ -603,18 +522,18 @@ $(document).ready(function() {
                     var textLines = [];
 
                     if (list.length === 0) {
-                        html = '<div style="text-align:center; padding:30px; color:var(--ddm-text-muted);"><i class="fa fa-info-circle fa-2x"></i><br>Nenhum diálogo textual gravado para esta chamada.</div>';
+                        html = '<div style="text-align:center; padding:30px; color:var(--ddm-text-muted);">Nenhum diálogo textual gravado para esta chamada.</div>';
                     } else {
                         list.forEach(function(msg) {
                             if (msg.role === 'system') return;
 
                             var isUser = (msg.role === 'user');
                             var roleClass = isUser ? 'user' : 'assistant';
-                            var authorName = isUser ? '👤 Cliente' : '🤖 ' + (c.agent_name || 'Agente IA');
+                            var authorName = isUser ? 'Cliente' : (c.agent_name || 'Agente IA');
 
                             textLines.push(authorName + ': ' + msg.content);
 
-                            html += '<div class="chat-bubble ' + roleClass + '">';
+                            html += '<div class="ddm-chat-bubble ' + roleClass + '">';
                             html += '  <div class="bubble-author">' + authorName + '</div>';
                             html += '  <div class="bubble-content">' + $('<div>').text(msg.content).html() + '</div>';
                             html += '</div>';
@@ -624,6 +543,7 @@ $(document).ready(function() {
                     rawTranscriptText = textLines.join('\n\n');
                     $('#chatDialogueContainer').html(html);
                     $('#chatDialogueContainer').scrollTop($('#chatDialogueContainer')[0].scrollHeight);
+                    if (typeof lucide !== 'undefined') { lucide.createIcons(); }
                 } else {
                     $('#chatDialogueContainer').html('<div class="alert alert-danger">' + res.message + '</div>');
                 }
@@ -639,9 +559,11 @@ $(document).ready(function() {
         if (!rawTranscriptText) return;
         navigator.clipboard.writeText(rawTranscriptText).then(function() {
             var btn = $('#btnCopyTranscript');
-            btn.html('<i class="fa fa-check text-green"></i> Copiado!');
+            btn.html('<i data-lucide="check" style="width:13px;height:13px;color:var(--ddm-success-text);"></i> <span>Copiado!</span>');
+            if (typeof lucide !== 'undefined') { lucide.createIcons(); }
             setTimeout(function() {
-                btn.html('<i class="fa fa-copy"></i> Copiar Texto');
+                btn.html('<i data-lucide="copy" style="width:13px;height:13px;"></i> <span>Copiar Diálogo</span>');
+                if (typeof lucide !== 'undefined') { lucide.createIcons(); }
             }, 2000);
         });
     });

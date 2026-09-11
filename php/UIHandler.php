@@ -1449,35 +1449,48 @@ error_reporting(E_ERROR | E_PARSE);
 		// module topbar elements
 		$mh = \creamy\ModuleHandler::getInstance();
 		$moduleTopbarElements = $mh->applyHookOnActiveModules(CRM_MODULE_HOOK_TOPBAR, null, CRM_MODULE_MERGING_STRATEGY_APPEND);
-		// header elements
-		$logo = $this->creamyHeaderLogo();
-		$name = $this->creamyHeaderName();
-			//<a href="./index.php" class="logo"><img src="'.$logo.'" width="auto" height="32"> '.$name.'</a>
-		// return header
-		$avatarElement = $this->getVueAvatar($user->getUserName(), $user->getUserAvatar(), 22, true);
+		$avatarElement = $this->getVueAvatar($user->getUserName(), $user->getUserAvatar(), 24, true);
+
 		return '<header class="main-header">
-				<a href="./index.php" id="logo-home" class="logo"><img src="'.$logo.'" width="auto" height="45" style="padding-top:10px;"></a>
 	            <nav class="navbar navbar-static-top" role="navigation">
-	                <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
-	                    <span class="sr-only">Toggle navigation</span>
-	                    <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
-	                </a>
-	                <div class="navbar-custom-menu">
-	                    <ul class="nav navbar-nav">
-	                    		'.$moduleTopbarElements.'
-	                    		'.$this->getTopbarMessagesMenu($user).'
-		                    	'.$this->getTopbarNotificationsMenu($user).'
-		                    	<li>
-			                    	<a href="#" class="visible-xs" data-toggle="control-sidebar" style="padding-top: 17px; padding-bottom: 18px;"><i class="fa fa-cogs"></i></a>
-										<a href="#" class="hidden-xs" data-toggle="control-sidebar" style="padding-top: 14px; padding-bottom: 14px;">
-											'.$avatarElement.'
-											<span> '.$user->getUserName().' <i class="caret"></i></span>
-										</a>
-				               </li>
-	                    </ul>
+	                <div class="ddm-header-nav-left">
+	                    <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button" title="Alternar Menu">
+	                        <i data-lucide="menu" style="width:18px;height:18px;"></i>
+	                    </a>
+	                    <div class="hidden-xs" style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:600; color:var(--ddm-text-primary);">
+	                        <span>DIALog DDM</span>
+	                        <span style="color:var(--ddm-text-muted); font-size:12px;">/</span>
+	                        <span style="color:var(--ddm-text-secondary); font-weight:500;">Voice AI Platform</span>
+	                    </div>
+	                </div>
+
+	                <div class="ddm-header-nav-right">
+	                    <span class="ddm-header-live-pill hidden-xs">
+	                        <span class="ddm-dot-indicator ddm-dot-success"></span>
+	                        <span>500 Canais SIP</span>
+	                    </span>
+
+	                    <a href="./api_docs.php" class="ddm-header-icon-btn hidden-xs" title="Documentação da API Vapi">
+	                        <i data-lucide="code-2" style="width:18px;height:18px;"></i>
+	                    </a>
+
+	                    <div class="navbar-custom-menu" style="float:none;">
+	                        <ul class="nav navbar-nav" style="margin:0; display:flex; align-items:center; gap:8px;">
+	                            '.$moduleTopbarElements.'
+	                            '.$this->getTopbarMessagesMenu($user).'
+	                            '.$this->getTopbarNotificationsMenu($user).'
+	                            <li>
+	                                <a href="#" class="ddm-user-menu-btn" data-toggle="control-sidebar">
+	                                    '.$avatarElement.'
+	                                    <span class="hidden-xs"> '.$user->getUserName().'</span>
+	                                    <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--ddm-text-secondary);"></i>
+	                                </a>
+	                            </li>
+	                        </ul>
+	                    </div>
 	                </div>
 	            </nav>
-	        </header>
+	        </header>';
 	        <div class="preloader">
 	        	<div class="pull-right close-preloader" style="display:none;">
     				<a type="button" class="close-preloader-button" aria-label="Close" style="color:white;"><i class="fa fa-close fa-lg"></i></a>
@@ -1998,62 +2011,91 @@ error_reporting(E_ERROR | E_PARSE);
 	 * @param $userid the id of the user.
 	 */
 	public function getSidebar($userid, $username, $userrole, $avatar, $usergroup = NULL) {
-		$usergroup = (!isset($usergroup) ? $_SESSION['usergroup'] : $usergroup);
+		$currentPage = basename($_SERVER['PHP_SELF']);
 
-		// 1. Voice AI Agents Hub
-		$aiVoiceArea = '<li class="treeview active"><a href="#"><i class="fa fa-magic text-purple"></i> <span>Agentes de IA</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-		$aiVoiceArea .= $this->getSidebarItem("./ai_agents.php", "users", "Meus Agentes");
-		$aiVoiceArea .= $this->getSidebarItem("./add_ai_agent.php", "plus-circle", "Criar Agente");
-		$aiVoiceArea .= $this->getSidebarItem("./live_monitor.php", "heartbeat text-red", "Monitor em Tempo Real (Live)");
-		$aiVoiceArea .= $this->getSidebarItem("./batch_dialer.php", "rocket", "Disparo em Lote (Batch)");
-		$aiVoiceArea .= $this->getSidebarItem("./ai_call_logs.php", "phone", "Histórico & Transcrições");
-		$aiVoiceArea .= $this->getSidebarItem("./api_docs.php", "code text-aqua", "Documentação API (Vapi Spec)");
-		$aiVoiceArea .= $this->getSidebarItem("./ai_settings.php", "key", "Configurações & Chaves API");
-		$aiVoiceArea .= '</ul></li>';
+		$result = '<aside class="main-sidebar sidebar-offcanvas">
+			<div class="ddm-sidebar-brand">
+				<a href="./index.php" class="ddm-brand-link">
+					<div class="ddm-brand-icon">
+						<i data-lucide="phone-call" style="width:18px;height:18px;"></i>
+					</div>
+					<div class="ddm-brand-text">
+						<span class="ddm-brand-title">DIALog</span>
+						<span class="ddm-brand-badge">DDM</span>
+					</div>
+				</a>
+			</div>
+			
+			<div class="ddm-sidebar-content">
+				
+				<!-- VISÃO GERAL -->
+				<div class="ddm-nav-group-title">VISÃO GERAL</div>
+				<ul class="ddm-nav-list">
+					' . $this->getEnterpriseSidebarItem("./index.php", "layout-dashboard", "Dashboard", $currentPage === 'index.php') . '
+				</ul>
 
-		// 2. Call Logs & Analytics
-		$callreports = $this->getSidebarItem("./ai_call_logs.php", "file-audio-o text-aqua", "Histórico & Gravações");
+				<!-- AGENTES -->
+				<div class="ddm-nav-group-title">AGENTES</div>
+				<ul class="ddm-nav-list">
+					' . $this->getEnterpriseSidebarItem("./ai_agents.php", "bot", "Meus Agentes", in_array($currentPage, array('ai_agents.php', 'edit_ai_agent.php'))) . '
+					' . $this->getEnterpriseSidebarItem("./add_ai_agent.php", "plus-circle", "Criar Agente", $currentPage === 'add_ai_agent.php') . '
+					' . $this->getEnterpriseSidebarItem("./live_monitor.php", "activity", "Monitor em Tempo Real", $currentPage === 'live_monitor.php') . '
+					' . $this->getEnterpriseSidebarItem("./disparador.php", "zap", "Disparo em Lote", in_array($currentPage, array('disparador.php', 'batch_dialer.php'))) . '
+				</ul>
 
-		// 3. Telephony & SIP Trunks
-		$telephonyArea = $this->getSidebarItem("./settingscarriers.php", "phone text-green", "Troncos SIP (Oktor)");
+				<!-- CHAMADAS -->
+				<div class="ddm-nav-group-title">CHAMADAS</div>
+				<ul class="ddm-nav-list">
+					' . $this->getEnterpriseSidebarItem("./ai_call_logs.php", "file-text", "Histórico & Transcrições", $currentPage === 'ai_call_logs.php') . '
+					' . $this->getEnterpriseSidebarItem("./callrecordings.php", "disc", "Histórico & Gravações", in_array($currentPage, array('callrecordings.php', 'audiofiles.php'))) . '
+				</ul>
 
-		// 4. Wallet & Billing
-		$creditsArea = $this->getSidebarItem("./credits.php", "credit-card", "Créditos & Faturamento");
+				<!-- DESENVOLVEDORES -->
+				<div class="ddm-nav-group-title">DESENVOLVEDORES</div>
+				<ul class="ddm-nav-list">
+					' . $this->getEnterpriseSidebarItem("./api_docs.php", "code-2", "Documentação API", $currentPage === 'api_docs.php') . '
+					' . $this->getEnterpriseSidebarItem("./ai_settings.php", "key", "Chaves de API", $currentPage === 'ai_settings.php') . '
+					' . $this->getEnterpriseSidebarItem("./settingscarriers.php", "server", "Troncos SIP", in_array($currentPage, array('settingscarriers.php', 'addsettingscarrier.php', 'editsettingscarrier.php'))) . '
+				</ul>
 
-		// 5. Settings / Administration
-		$settings = '<li class="treeview"><a href="#"><i class="fa fa-gear text-yellow"></i> <span>Configurações</span><i class="fa fa-angle-left pull-right"></i></a><ul class="treeview-menu">';
-		$settings .= $this->getSidebarItem("./ai_settings.php", "sliders", "Provedores de IA (API)");
-		$settings .= $this->getSidebarItem("./telephonyusers.php", "user", "Usuários do Painel");
-		$settings .= $this->getSidebarItem("./settingsservers.php", "server", "Servidores & Rede");
-		$settings .= $this->getSidebarItem("./adminsettings.php", "wrench", "Sistema Geral");
-		$settings .= '</ul></li>';
+				<!-- CONTA -->
+				<div class="ddm-nav-group-title">CONTA</div>
+				<ul class="ddm-nav-list">
+					' . $this->getEnterpriseSidebarItem("./credits.php", "credit-card", "Créditos & Faturamento", $currentPage === 'credits.php') . '
+					' . $this->getEnterpriseSidebarItem("./adminsettings.php", "settings", "Configurações", in_array($currentPage, array('adminsettings.php', 'telephonyusers.php', 'settingsservers.php'))) . '
+				</ul>
 
-		$avatarElement = $this->getVueAvatar($username, $avatar, 40);
-		$result = '<aside class="main-sidebar sidebar-offcanvas"><section class="sidebar">
-	            <div class="user-panel hidden">
-	                <div class="pull-left image">
-	                    <a href="edituser.php">'.$avatarElement.'</a>
-	                </div>
-	                <div class="pull-left info">
-	                    <p>'.$this->lh->translationFor("hello").', '.$username.'</p>
-	                    <a href="edituser.php"><i class="fa fa-circle text-success"></i> '.$this->lh->translationFor("online").'</a>
-	                </div>
-	            </div>
-	            <ul class="sidebar-menu"><li class="header">DIAL GO VOICE AI</li>';
+			</div>
 
-		// Dashboard
-		$result .= $this->getSidebarItem("./index.php", "dashboard", "Dashboard");
-
-		// Core Voice AI sections
-		$result .= $aiVoiceArea;
-		$result .= $callreports;
-		$result .= $telephonyArea;
-		$result .= $creditsArea;
-		$result .= $settings;
-
-		$result .= '</ul></section></aside>';
+			<div class="ddm-sidebar-footer">
+				<div class="ddm-sidebar-user">
+					<div class="ddm-user-avatar">
+						' . strtoupper(substr($username, 0, 2)) . '
+					</div>
+					<div class="ddm-user-info">
+						<div class="ddm-user-name">' . htmlspecialchars($username) . '</div>
+						<div class="ddm-user-status"><span class="ddm-status-dot"></span> Online</div>
+					</div>
+				</div>
+				<a href="./logout.php" class="ddm-logout-btn" title="Sair do Sistema">
+					<i data-lucide="log-out" style="width:16px;height:16px;"></i>
+				</a>
+			</div>
+		</aside>';
 
 		return $result;
+	}
+
+	public function getEnterpriseSidebarItem($url, $icon, $title, $isActive = false, $badge = null) {
+		$activeClass = $isActive ? ' active' : '';
+		$badgeHtml = $badge ? '<span class="ddm-badge ddm-badge-neutral" style="margin-left:auto;font-size:10.5px;padding:2px 6px;">'.$badge.'</span>' : '';
+		return '<li class="ddm-nav-item' . $activeClass . '">
+			<a href="' . $url . '" class="ddm-nav-link' . $activeClass . '">
+				<i data-lucide="' . $icon . '" class="nav-icon"></i>
+				<span>' . $title . '</span>
+				' . $badgeHtml . '
+			</a>
+		</li>';
 	}
 
 	 /** Agent Sidebar */
@@ -5766,6 +5808,9 @@ error_reporting(E_ERROR | E_PARSE);
 	 */
 	public function standardizedThemeCSS() {
 		$css = "";
+		$css .= '<script src="https://unpkg.com/lucide@latest"></script>'."\n";
+		$css .= '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />'."\n";
+		$css .= '<link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />'."\n";
 		$css .= '<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />'."\n"; // bootstrap basic css
 		$css .= '<link href="css/creamycrm.css" rel="stylesheet" type="text/css" />'."\n"; // creamycrm css
 		$css .= '<link href="css/circle-buttons.css" rel="stylesheet" type="text/css" />'."\n"; // circle buttons css
@@ -5850,6 +5895,15 @@ error_reporting(E_ERROR | E_PARSE);
 					new Vue(goOptions);
 				}
 			} catch(e) { console.warn('Avatar Vue init:', e); }
+
+			if (typeof lucide !== 'undefined') {
+				lucide.createIcons();
+			}
+			$(document).ready(function() {
+				if (typeof lucide !== 'undefined') {
+					lucide.createIcons();
+				}
+			});
 		</script>\n";
 
 		return $js;
