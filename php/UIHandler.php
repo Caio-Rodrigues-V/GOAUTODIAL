@@ -2015,14 +2015,8 @@ error_reporting(E_ERROR | E_PARSE);
 
 		$result = '<aside class="main-sidebar sidebar-offcanvas">
 			<div class="ddm-sidebar-brand">
-				<a href="./index.php" class="ddm-brand-link">
-					<div class="ddm-brand-icon">
-						<i data-lucide="phone-call" style="width:18px;height:18px;"></i>
-					</div>
-					<div class="ddm-brand-text">
-						<span class="ddm-brand-title">DIALog</span>
-						<span class="ddm-brand-badge">DDM</span>
-					</div>
+				<a href="./index.php" class="ddm-brand-link" style="display:flex; align-items:center;">
+					<img src="img/brand/logo_compact_color.svg" alt="DIALog DDM" style="height: 32px; width: auto; max-width: 190px;" />
 				</a>
 			</div>
 			
@@ -5808,6 +5802,9 @@ error_reporting(E_ERROR | E_PARSE);
 	 */
 	public function standardizedThemeCSS() {
 		$css = "";
+		$css .= '<link rel="icon" type="image/png" sizes="32x32" href="img/brand/favicon-32.png">'."\n";
+		$css .= '<link rel="icon" type="image/png" sizes="16x16" href="img/brand/favicon-32.png">'."\n";
+		$css .= '<link rel="apple-touch-icon" sizes="180x180" href="img/brand/favicon-180.png">'."\n";
 		$css .= '<script src="https://unpkg.com/lucide@latest"></script>'."\n";
 		$css .= '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />'."\n";
 		$css .= '<link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />'."\n";

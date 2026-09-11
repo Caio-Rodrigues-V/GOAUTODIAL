@@ -116,80 +116,103 @@
 	$uname = htmlentities($uname);
 	$upass = htmlentities($upass);
 ?>
-<html>
-    <head>
+<!DOCTYPE html>
+<html lang="pt-BR">
         <meta charset="UTF-8">
-        <title><?php $lh->translateText("system_access"); ?> </title>
+        <title>DIALog DDM - Acesso à Plataforma</title>
         <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
         
+        <link rel="icon" type="image/png" sizes="32x32" href="img/brand/favicon-32.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="img/brand/favicon-180.png">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-        <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css" />
-        <!-- Theme style -->
-        <link href="./css/creamycrm.css" rel="stylesheet" type="text/css" />
+        <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
 
-        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-        <!--[if lt IE 9]>
-          <script src="js/html5shiv.js"></script>
-          <script src="js/respond.min.js"></script>
-        <![endif]-->
-    <script src="js/jquery.min.js"></script>
-    <script src="js/bootstrap.min.js" type="text/javascript"></script>
-   	
-	<?php if(ECCS_BLIND_MODE === 'y'){ ?>
-	<link href="./css/customizations/eccs_admin.css" rel="stylesheet" type="text/css" />
-	<?php }?>
- 
-	</head>
-  <body class="login-page" style="overflow: hidden;">
-    <div class="login-box" id="login-box">
-	  <div class="margin text-center">
-		<img src="<?php echo $ui->creamyHeaderLogo();?>" width="auto" height="64">
-	  </div>
-	<!-- ECCS CUSTOMIZATION -->
-      <center>
-	<div id="div1" class="login-logo" style="">
-        <?php $lh->translateText("welcome_to"); ?><?php print($ui->creamyHeaderName()); ?>!
-      </div><!-- /.login-logo -->
-      <div class="login-box-body">
-        <p id="p1" style="" class="login-box-msg"><?php $lh->translateText("sign_in"); ?></p>
-        <form action="" method="post">
-          <div class="form-group has-feedback">
-            <input id="input1" type="text" style="" class="form-control" name="username" placeholder="<?php $lh->translateText("username_or_email"); ?>" value="<?=$uname?>"/>
-            <span class="glyphicon glyphicon-envelope form-control-feedback"></span>
-          </div>
-          <div class="form-group has-feedback">
-            <input id="input2" type="password" style="" name="password" class="form-control" placeholder="<?php $lh->translateText("password"); ?>" value="<?=$upass?>"/>
-            <span class="glyphicon glyphicon-lock form-control-feedback"></span>
-          </div>
-	    	<div name="error-message" style="color: red;">
-	    	<?php
-	    		if (isset($error)) { print ("<p>".$error."</p>"); }
-	    	?>
-	    	</div>
-          <div class="row">
-            <div class="col-xs-3"></div>
-            <div class="col-xs-6">
-              <button id="btn1" type="submit" style="" name="submit" class="btn btn-primary btn-block btn-flat"><?php $lh->translateText("access"); ?></button>
-            </div><!-- /.col -->
-            <div class="col-xs-3"></div>
-          </div>
-        </form>
-	<!--<p class="text-center"><?php $lh->translateText("forgotten_password"); ?> <a href="lostpassword.php"><?php $lh->translateText("click_here"); ?>.</a></p>-->
-      </div><!-- /.login-box-body -->
-    </div><!-- /.login-box -->
-	</center>
-	<footer>
-		<div style="text-align: center; font-weight: 600; margin-top: -40px;">Copyright &copy; <?=date("Y")?> <a href="https://goautodial.com" target="_blank">GOautodial Inc.</a> All rights reserved.</div>
-	</footer>
-   <!--<div class="margin text-center">
-        <span><?php $lh->translateText("never_heard_of_creamy"); ?></span>
-        <br/>
-        <button class="btn bg-red btn-flat" onclick="window.location.href='http://creamycrm.com'"><i class="fa fa-globe"></i></button>
-        <button class="btn bg-light-blue btn-flat" onclick="window.location.href='https://github.com/DigitalLeaves/Creamy'"><i class="fa fa-github"></i></button>
-        <button class="btn bg-aqua btn-flat" onclick="window.location.href='https://twitter.com/creamythecrm'"><i class="fa fa-twitter"></i></button>
-    </div>-->
+        <script src="js/jquery.min.js"></script>
+        <script src="js/bootstrap.min.js" type="text/javascript"></script>
 
-	<?php unset($error); ?>
-  </body>
+        <style>
+            body.login-page {
+                background: #F8F9FB !important;
+                font-family: 'Inter', -apple-system, sans-serif !important;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0;
+                padding: 20px;
+            }
+            .login-card {
+                background: #FFFFFF;
+                border: 1px solid #EAECF0;
+                border-radius: 12px;
+                padding: 40px 36px;
+                width: 100%;
+                max-width: 440px;
+                box-shadow: 0 4px 6px -2px rgba(16, 24, 40, 0.05), 0 10px 15px -3px rgba(16, 24, 40, 0.08);
+            }
+            .login-brand-header {
+                text-align: center;
+                margin-bottom: 28px;
+            }
+            .login-brand-header img {
+                height: 48px;
+                width: auto;
+                margin-bottom: 12px;
+            }
+            .login-title {
+                font-size: 20px;
+                font-weight: 700;
+                color: #101828;
+                margin: 0 0 6px 0;
+                letter-spacing: -0.3px;
+            }
+            .login-subtitle {
+                font-size: 13.5px;
+                color: #667085;
+                margin: 0;
+            }
+            .login-footer {
+                text-align: center;
+                margin-top: 24px;
+                font-size: 12px;
+                color: #98A2B3;
+            }
+        </style>
+    </head>
+    <body class="login-page">
+        <div class="login-card">
+            <div class="login-brand-header">
+                <img src="img/brand/logo_horizontal_color.svg" alt="DIALog DDM" />
+                <h1 class="login-title">Acesse sua Conta</h1>
+                <p class="login-subtitle">Plataforma de Voz com Inteligência Artificial</p>
+            </div>
+
+            <form action="" method="post">
+                <div class="ddm-form-group">
+                    <label class="ddm-form-label">Usuário ou E-mail:</label>
+                    <input type="text" name="username" class="ddm-input" placeholder="seu.usuario" value="<?=$uname?>" required autofocus />
+                </div>
+
+                <div class="ddm-form-group">
+                    <label class="ddm-form-label">Senha:</label>
+                    <input type="password" name="password" class="ddm-input" placeholder="••••••••" value="<?=$upass?>" required />
+                </div>
+
+                <?php if (!empty($error)): ?>
+                    <div style="background:#FEF3F2; color:#B42318; border:1px solid #FECDCA; border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:16px;">
+                        <?=$error?>
+                    </div>
+                <?php endif; ?>
+
+                <button type="submit" name="submit" class="ddm-btn ddm-btn-primary" style="width:100%; height:42px; font-size:14px; margin-top:8px;">
+                    Acessar Plataforma
+                </button>
+            </form>
+
+            <div class="login-footer">
+                DIALog DDM &bull; Grupo DDM &bull; Voice AI & Telephony
+            </div>
+        </div>
+    </body>
 </html>
