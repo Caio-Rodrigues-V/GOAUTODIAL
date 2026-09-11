@@ -11,6 +11,9 @@ require_once('AIAgentHandler.php');
 header('Content-Type: application/json');
 
 $rawInput = file_get_contents('php://input');
+if (empty($rawInput)) {
+    $rawInput = @file_get_contents('php://stdin');
+}
 $data = json_decode($rawInput, true);
 
 if (!$data) {

@@ -63,7 +63,12 @@ $apiKeys = array(
 
 $dialNumber = "59083{$e164}";
 
-$agent['callback_url'] = 'http://127.0.0.1/php/SaveAICallLog.php';
+$proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? "https://" : "http://";
+$host = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : (!empty($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '127.0.0.1');
+$scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+$cleanDir = str_replace('\\', '/', $scriptDir);
+if ($cleanDir === '/' || $cleanDir === '.') $cleanDir = '';
+$agent['callback_url'] = "{$proto}{$host}{$cleanDir}/SaveAICallLog.php";
 
 // 1. Send HTTP request to Python Direct SIP Server
 $ch = curl_init($dialEndpoint);

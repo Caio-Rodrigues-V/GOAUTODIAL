@@ -256,16 +256,16 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                                 </a>
                             </div>
                         <?php else: ?>
-                            <div class="table-responsive" style="margin: -20px;">
-                                <table class="ddm-table">
+                            <div class="table-responsive" style="margin: 0; overflow-x: auto;">
+                                <table class="ddm-table" style="width: 100%;">
                                     <thead>
                                         <tr>
-                                            <th>Telefone</th>
-                                            <th>Agente de Voz</th>
-                                            <th>Duração</th>
-                                            <th>Qualificação</th>
-                                            <th>Data / Hora</th>
-                                            <th style="text-align: right;">Ações</th>
+                                            <th style="min-width: 130px;">Telefone</th>
+                                            <th style="min-width: 140px;">Agente de Voz</th>
+                                            <th style="min-width: 80px;">Duração</th>
+                                            <th style="min-width: 150px;">Qualificação</th>
+                                            <th style="min-width: 130px;">Data / Hora</th>
+                                            <th style="text-align: right; min-width: 80px; white-space: nowrap;">Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -310,7 +310,7 @@ $estimatedSavings = max(0, $estimatedHumanCost - $estimatedAiCost);
                                                 <td style="font-size: 12.5px; color: #667085;">
                                                     <?php echo $callDate; ?>
                                                 </td>
-                                                <td style="text-align: right;">
+                                                <td style="text-align: right; white-space: nowrap;">
                                                     <a href="ai_call_logs.php?call_id=<?php echo isset($call['id']) ? $call['id'] : ''; ?>" class="ddm-btn ddm-btn-secondary" style="padding: 4px 8px; font-size: 12px;" title="Ver detalhes e transcrição">
                                                         <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
                                                         <span>Ver</span>

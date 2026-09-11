@@ -533,6 +533,33 @@ class DirectSIPEngine:
                 except Exception:
                     continue
 
+            # 2. Fallback Direto: Executar PHP CLI localmente se HTTP der 404 ou falhar
+            if not saved:
+                php_candidates = [
+                    os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "php", "SaveAICallLog.php")),
+                    "/var/www/html/php/SaveAICallLog.php",
+                    "/var/www/html/goautodial/php/SaveAICallLog.php"
+                ]
+                for php_script in php_candidates:
+                    if os.path.exists(php_script):
+                        try:
+                            import subprocess
+                            proc = subprocess.run(
+                                ["php", php_script],
+                                input=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+                                capture_output=True,
+                                timeout=10
+                            )
+                            if proc.returncode == 0:
+                                logger.info(f"✅ Log da chamada salvo com sucesso no CRM via execução PHP local ({php_script})!")
+                                saved = True
+                                break
+                            else:
+                                err_msg = proc.stderr.decode('utf-8', errors='ignore')
+                                logger.warning(f"PHP CLI retornou código {proc.returncode}: {err_msg}")
+                        except Exception as p_err:
+                            logger.warning(f"Erro ao executar fallback PHP CLI local: {p_err}")
+
             # Grava backup local em JSON Lines para segurança
             try:
                 os.makedirs("recordings", exist_ok=True)

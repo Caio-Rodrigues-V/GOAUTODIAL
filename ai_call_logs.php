@@ -199,17 +199,17 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                     <table class="table ddm-table" id="callLogsTable" width="100%">
                         <thead>
                             <tr>
-                                <th style="width: 60px;">ID</th>
-                                <th>Data & Hora</th>
-                                <th>Telefone Destino</th>
-                                <th>Agente IA</th>
-                                <th>Duração</th>
-                                <th>Custo</th>
-                                <th>Tabulação IA</th>
-                                <th>Sentimento</th>
-                                <th>Status</th>
-                                <th style="text-align:center; width: 120px;">Gravação</th>
-                                <th style="text-align:right; width: 140px;">Ações</th>
+                                <th style="width: 60px; min-width: 60px;">ID</th>
+                                <th style="min-width: 130px;">Data & Hora</th>
+                                <th style="min-width: 140px;">Telefone Destino</th>
+                                <th style="min-width: 140px;">Agente IA</th>
+                                <th style="min-width: 80px;">Duração</th>
+                                <th style="min-width: 90px;">Custo</th>
+                                <th style="min-width: 150px;">Tabulação IA</th>
+                                <th style="min-width: 90px;">Sentimento</th>
+                                <th style="min-width: 100px;">Status</th>
+                                <th style="text-align:center; width: 130px; min-width: 130px; white-space: nowrap;">Gravação</th>
+                                <th style="text-align:right; width: 140px; min-width: 140px; white-space: nowrap;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -329,7 +329,7 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                                 <span style="color:var(--ddm-text-muted); font-size:12px;">Sem áudio</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td style="text-align:right;">
+                                        <td style="text-align:right; white-space:nowrap;">
                                             <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-view-transcript" data-id="<?php echo $c['id']; ?>">
                                                 <i data-lucide="message-square" style="width:12px;height:12px;color:var(--ddm-primary);"></i>
                                                 <span>Diálogo & IA</span>
