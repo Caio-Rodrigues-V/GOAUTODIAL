@@ -2007,6 +2007,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$aiVoiceArea .= $this->getSidebarItem("./live_monitor.php", "heartbeat text-red", "Monitor em Tempo Real (Live)");
 		$aiVoiceArea .= $this->getSidebarItem("./batch_dialer.php", "rocket", "Disparo em Lote (Batch)");
 		$aiVoiceArea .= $this->getSidebarItem("./ai_call_logs.php", "phone", "Histórico & Transcrições");
+		$aiVoiceArea .= $this->getSidebarItem("./api_docs.php", "code text-aqua", "Documentação API (Vapi Spec)");
 		$aiVoiceArea .= $this->getSidebarItem("./ai_settings.php", "key", "Configurações & Chaves API");
 		$aiVoiceArea .= '</ul></li>';
 

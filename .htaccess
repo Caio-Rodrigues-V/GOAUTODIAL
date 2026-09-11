@@ -6,6 +6,10 @@
     RewriteCond %{REQUEST_URI} ^system.*
     RewriteRule ^(.*)$ /index.php/$1 [L]
 
+    # Vapi Compatible API Gateway Routing (/v1/*)
+    RewriteRule ^v1/(.*)$ api_vapi_compat.php/$1 [QSA,L]
+    RewriteRule ^v1$ api_vapi_compat.php [QSA,L]
+
     #Checks to see if the user is attempting to access a valid file,
     #such as an image or css document, if this isn't true it sends the
     #request to index.php
@@ -13,7 +17,7 @@
     RewriteCond %{REQUEST_FILENAME} !-d
 
     #This last condition enables access to the images and css folders, and the robots.txt file
-    RewriteCond $1 !^(index\.php|login|images|img|js|css|public|data|simplepie|application|system|cache)
+    RewriteCond $1 !^(index\.php|login|images|img|js|css|public|data|simplepie|application|system|cache|v1|api_vapi_compat\.php)
     RewriteRule ^(.*)$ index.php/$1 [L]
 </IfModule>
 

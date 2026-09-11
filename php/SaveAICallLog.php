@@ -104,12 +104,74 @@ if (!empty($webhookUrl)) {
     $serverHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '129.121.42.250';
     $fullRecordingUrl = !empty($recordingUrl) ? "http://{$serverHost}/" . ltrim($recordingUrl, '/') : '';
 
+    // Formata transcricao em texto puro e mensagens para formato Vapi
+    $rawTrans = json_decode($logData['transcript_json'], true) ?: array();
+    $plainTranscript = '';
+    $artifactMessages = array();
+    foreach ($rawTrans as $t) {
+        $role = isset($t['role']) ? $t['role'] : (isset($t['sender']) && strpos(strtolower($t['sender']), 'ia') !== false ? 'assistant' : 'user');
+        $text = isset($t['message']) ? $t['message'] : (isset($t['text']) ? $t['text'] : (isset($t['content']) ? $t['content'] : ''));
+        if ($text) {
+            $plainTranscript .= ($role === 'assistant' ? "Sofia: {$text}\n" : "Cliente: {$text}\n");
+            $artifactMessages[] = array(
+                'role' => $role,
+                'message' => $text,
+                'content' => $text
+            );
+        }
+    }
+
+    $metadataMerged = isset($data['metadata']) && is_array($data['metadata']) ? $data['metadata'] : array();
+    if (!empty($data['contact_id'])) $metadataMerged['contactId'] = $data['contact_id'];
+    if (!empty($data['campaign_contact_id'])) $metadataMerged['campaignContactId'] = $data['campaign_contact_id'];
+    if (!empty($data['campaign_id'])) $metadataMerged['campaignId'] = $data['campaign_id'];
+
+    $vapiEndedReason = 'customer-ended-call';
+    if ($logData['status'] == 'voicemail') {
+        $vapiEndedReason = 'voicemail';
+    } elseif ($logData['status'] == 'no_answer') {
+        $vapiEndedReason = 'no-answer';
+    } elseif ($logData['status'] == 'busy') {
+        $vapiEndedReason = 'busy';
+    } elseif ($logData['status'] == 'dropped') {
+        $vapiEndedReason = 'dropped';
+    }
+
     $webhookPayload = array(
         'event' => 'call.completed',
+        'message' => array(
+            'type' => 'end-of-call-report',
+            'status' => 'ended',
+            'endedReason' => $vapiEndedReason,
+            'call' => array(
+                'id' => $logData['call_id'],
+                'status' => 'ended',
+                'metadata' => $metadataMerged
+            ),
+            'customer' => array(
+                'number' => $logData['phone_number'],
+                'metadata' => $metadataMerged
+            ),
+            'metadata' => $metadataMerged,
+            'transcript' => trim($plainTranscript),
+            'artifact' => array(
+                'transcript' => trim($plainTranscript),
+                'recordingUrl' => $fullRecordingUrl,
+                'messages' => $artifactMessages
+            ),
+            'analysis' => array(
+                'summary' => $logData['call_summary'],
+                'sentiment' => $logData['sentiment'],
+                'tabulation' => $logData['tabulation'],
+                'tabulation_code' => $logData['tabulation_code']
+            ),
+            'cost' => (float)$logData['cost_estimate'],
+            'durationSeconds' => $logData['duration_seconds']
+        ),
         'call_id' => $logData['call_id'],
-        'contactId' => isset($data['contact_id']) && $data['contact_id'] !== '' ? $data['contact_id'] : (isset($data['metadata']['contactId']) ? $data['metadata']['contactId'] : null),
-        'campaignContactId' => isset($data['campaign_contact_id']) && $data['campaign_contact_id'] !== '' ? $data['campaign_contact_id'] : (isset($data['metadata']['campaignContactId']) ? $data['metadata']['campaignContactId'] : null),
-        'campaignId' => isset($data['campaign_id']) && $data['campaign_id'] !== '' ? $data['campaign_id'] : (isset($data['metadata']['campaignId']) ? $data['metadata']['campaignId'] : null),
+        'contactId' => isset($metadataMerged['contactId']) ? $metadataMerged['contactId'] : null,
+        'campaignContactId' => isset($metadataMerged['campaignContactId']) ? $metadataMerged['campaignContactId'] : null,
+        'campaignId' => isset($metadataMerged['campaignId']) ? $metadataMerged['campaignId'] : null,
         'agent_id' => $logData['agent_id'],
         'agent_name' => $logData['agent_name'],
         'phone_number' => $logData['phone_number'],
@@ -123,7 +185,7 @@ if (!empty($webhookUrl)) {
         'cost_estimate_brl' => $logData['cost_estimate'],
         'recording_url' => $fullRecordingUrl,
         'transcript' => json_decode($logData['transcript_json'], true) ?: array(),
-        'metadata' => isset($data['metadata']) ? $data['metadata'] : array(),
+        'metadata' => $metadataMerged,
         'created_at' => $logData['created_at'],
         'ended_at' => $logData['ended_at']
     );
@@ -132,7 +194,7 @@ if (!empty($webhookUrl)) {
         $ch = curl_init($webhookUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'User-Agent: DIAL-GO-VoiceAI-Webhook/1.0'));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'User-Agent: DialogDDM-VoiceAI-Webhook/1.0'));
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($webhookPayload));
         curl_setopt($ch, CURLOPT_TIMEOUT, 4);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
