@@ -27,7 +27,7 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>DIAL GO - Monitor em Tempo Real (500 Canais)</title>
+    <title>Dialog DDM - Monitor em Tempo Real</title>
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
 
     <?php 
@@ -37,183 +37,133 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
     <link href="css/style.css" rel="stylesheet" type="text/css" />
     <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
     <style>
-        .live-badge-beacon {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.35);
-            color: #34d399;
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .live-pulse-dot {
-            width: 9px;
-            height: 9px;
-            background: #10b981;
-            border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulseDot 1.5s infinite;
-        }
-        @keyframes pulseDot {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .monitor-metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-        @media (max-width: 1199px) {
-            .monitor-metrics-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 576px) {
-            .monitor-metrics-grid { grid-template-columns: 1fr; }
-        }
-
-        .metric-card-live {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 20px;
+        .ddm-stat-card {
+            background: var(--ddm-surface);
+            border: 1px solid var(--ddm-border);
+            border-radius: var(--ddm-radius-lg);
+            padding: 22px 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--ddm-shadow-xs);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-            transition: transform 0.2s, border-color 0.2s;
+            transition: all 0.2s;
         }
-        .metric-card-live:hover {
-            transform: translateY(-2px);
-            border-color: #6366f1;
+        .ddm-stat-card:hover {
+            box-shadow: var(--ddm-shadow-sm);
+            border-color: var(--ddm-border-strong);
         }
-        .metric-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
+        .ddm-stat-card .stat-icon-bg {
+            position: absolute;
+            right: 18px;
+            bottom: 14px;
+            font-size: 42px;
+            color: var(--ddm-surface-subtle);
+            pointer-events: none;
         }
-        .metric-card-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #94a3b8;
+        .ddm-stat-card h3 {
+            font-size: 30px;
+            font-weight: 800;
+            margin: 0 0 4px 0;
+            color: var(--ddm-text-primary);
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+        }
+        .ddm-stat-card p {
+            font-size: 11.5px;
+            margin: 0 0 10px 0;
             text-transform: uppercase;
+            font-weight: 700;
+            color: var(--ddm-text-secondary);
             letter-spacing: 0.5px;
         }
-        .metric-card-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-        }
-        .metric-card-value {
-            font-size: 32px;
-            font-weight: 800;
-            color: #f8fafc;
-            line-height: 1.1;
-            margin-bottom: 6px;
-        }
-        .metric-card-subtext {
+        .ddm-stat-card .stat-subtext {
             font-size: 12px;
-            color: #64748b;
+            color: var(--ddm-text-muted);
+            margin-top: 8px;
+            font-weight: 500;
         }
-        .metric-progress-bar-bg {
+        .stat-progress-bg {
             height: 6px;
-            background: #334155;
+            background: var(--ddm-surface-subtle);
             border-radius: 999px;
-            margin-top: 12px;
+            margin-top: 10px;
             overflow: hidden;
         }
-        .metric-progress-bar-fill {
+        .stat-progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #10b981, #6366f1);
+            background: linear-gradient(90deg, var(--ddm-primary), var(--ddm-purple));
             border-radius: 999px;
             width: 0%;
             transition: width 0.4s ease;
         }
 
-        .monitor-table-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 24px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        .ddm-live-beacon {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--ddm-success-light);
+            border: 1px solid var(--ddm-success-border);
+            color: #047857;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+        .ddm-live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--ddm-success);
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulseBeacon 1.5s infinite;
+        }
+        @keyframes pulseBeacon {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        .live-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 8px;
+        .ddm-agent-table-card {
+            background: var(--ddm-surface);
+            border: 1px solid var(--ddm-border);
+            border-radius: var(--ddm-radius-lg);
+            padding: 24px;
+            box-shadow: var(--ddm-shadow-xs);
         }
-        .live-table th {
-            color: #64748b;
-            font-size: 12px;
+        .ddm-table th {
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 8px 16px;
-            border: none;
+            color: var(--ddm-text-secondary);
+            border-bottom: 2px solid var(--ddm-border) !important;
+            padding: 12px 14px !important;
         }
-        .live-table td {
-            background: #0f172a;
-            padding: 14px 16px;
-            color: #e2e8f0;
-            font-size: 14px;
-            border: none;
-            border-top: 1px solid #1e293b;
-            border-bottom: 1px solid #1e293b;
+        .ddm-table td {
+            padding: 14px !important;
+            vertical-align: middle !important;
+            border-top: 1px solid var(--ddm-border) !important;
+            color: var(--ddm-text-primary);
+            font-size: 13.5px;
         }
-        .live-table tr td:first-child {
-            border-left: 1px solid #1e293b;
-            border-top-left-radius: 10px;
-            border-bottom-left-radius: 10px;
-        }
-        .live-table tr td:last-child {
-            border-right: 1px solid #1e293b;
-            border-top-right-radius: 10px;
-            border-bottom-right-radius: 10px;
+        .ddm-table tbody tr:hover {
+            background-color: var(--ddm-surface-subtle) !important;
         }
 
-        .status-badge-live {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-        .status-badge-ringing {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
-        }
-        .status-badge-incall {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .empty-monitor-state {
+        .empty-state-box {
             text-align: center;
-            padding: 60px 20px;
-            color: #64748b;
+            padding: 50px 20px;
         }
-        .empty-monitor-icon {
-            font-size: 48px;
-            color: #334155;
-            margin-bottom: 16px;
+        .empty-state-icon {
+            font-size: 44px;
+            color: var(--ddm-border-strong);
+            margin-bottom: 14px;
         }
     </style>
 </head>
+
 <?php print $ui->creamyBody(); ?>
 <div class="wrapper">
     <?php print $ui->creamyHeader($user); ?>
@@ -232,118 +182,108 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
             </div>
 
             <!-- Top Header -->
-            <div class="ddm-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 24px;">
-                <div class="ddm-header-left" style="display: flex; align-items: center; gap: 16px;">
-                    <div class="ddm-agent-avatar" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+            <div class="ddm-header">
+                <div class="ddm-header-left">
+                    <div class="ddm-agent-avatar">
                         <i class="fa fa-line-chart"></i>
                     </div>
                     <div>
-                        <div style="font-size: 22px; font-weight: 800; color: #f8fafc; letter-spacing: -0.4px;">
+                        <div style="font-size: 22px; font-weight: 800; color: var(--ddm-text-primary); letter-spacing: -0.4px;">
                             Monitor em Tempo Real
                         </div>
-                        <div style="font-size: 13px; color: #94a3b8;">
-                            Capacidade Total: <strong>500 Canais</strong> &bull; <strong>100 CPS</strong> (Oktor SIP Trunking)
+                        <div style="font-size: 13px; color: var(--ddm-text-secondary); margin-top: 2px;">
+                            Capacidade: <strong>500 Canais Simultâneos</strong> &bull; <strong>100 CPS</strong> (Tronco SIP Oktor Telecom)
                         </div>
                     </div>
                 </div>
-                <div>
-                    <span class="live-badge-beacon">
-                        <span class="live-pulse-dot"></span>
+                <div class="ddm-header-actions">
+                    <span class="ddm-live-beacon">
+                        <span class="ddm-live-dot"></span>
                         <span id="live_indicator_text">Ao Vivo &bull; 1.0s</span>
                     </span>
+                    <button type="button" class="ddm-btn ddm-btn-secondary" onclick="fetchLiveTelemetry();">
+                        <i class="fa fa-refresh"></i> Atualizar
+                    </button>
                 </div>
             </div>
 
-            <!-- Metric Cards -->
-            <div class="monitor-metrics-grid">
-                <!-- Card 1: Canais Ocupados -->
-                <div class="metric-card-live">
-                    <div class="metric-card-header">
-                        <span class="metric-card-title">Canais Simultâneos</span>
-                        <div class="metric-card-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
-                            <i class="fa fa-phone"></i>
+            <!-- 4 Hero Metric Cards -->
+            <div class="row">
+                <!-- Card 1: Canais Simultâneos -->
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="ddm-stat-card" style="border-left: 3px solid #6366F1;">
+                        <i class="fa fa-phone stat-icon-bg" style="color: rgba(99, 102, 241, 0.08);"></i>
+                        <p>Canais Simultâneos</p>
+                        <h3 id="val_active_channels">0 <small style="font-size: 16px; font-weight: 600; color: var(--ddm-text-muted);">/ 500</small></h3>
+                        <div class="stat-progress-bg">
+                            <div class="stat-progress-fill" id="bar_channel_fill" style="background: linear-gradient(90deg, #6366F1, #8B5CF6);"></div>
                         </div>
-                    </div>
-                    <div class="metric-card-value" id="val_active_channels">0 <span style="font-size: 16px; font-weight: 500; color: #64748b;">/ 500</span></div>
-                    <div class="metric-card-subtext" id="val_channel_pct">0.0% de utilização</div>
-                    <div class="metric-progress-bar-bg">
-                        <div class="metric-progress-bar-fill" id="bar_channel_fill"></div>
+                        <div class="stat-subtext" id="val_channel_pct">0.0% de utilização</div>
                     </div>
                 </div>
 
-                <!-- Card 2: Velocidade de Disparo CPS -->
-                <div class="metric-card-live">
-                    <div class="metric-card-header">
-                        <span class="metric-card-title">Velocidade de Disparo</span>
-                        <div class="metric-card-icon" style="background: rgba(236, 72, 153, 0.15); color: #f472b6;">
-                            <i class="fa fa-bolt"></i>
+                <!-- Card 2: CPS -->
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="ddm-stat-card" style="border-left: 3px solid var(--ddm-primary);">
+                        <i class="fa fa-bolt stat-icon-bg" style="color: rgba(249, 115, 22, 0.08);"></i>
+                        <p>Velocidade de Disparo</p>
+                        <h3 id="val_current_cps">0 <small style="font-size: 16px; font-weight: 600; color: var(--ddm-text-muted);">CPS</small></h3>
+                        <div class="stat-progress-bg">
+                            <div class="stat-progress-fill" id="bar_cps_fill" style="background: linear-gradient(90deg, var(--ddm-primary), #F59E0B);"></div>
                         </div>
-                    </div>
-                    <div class="metric-card-value" id="val_current_cps">0 <span style="font-size: 16px; font-weight: 500; color: #64748b;">CPS</span></div>
-                    <div class="metric-card-subtext" id="val_cps_subtext">Máx suportado: 100 CPS (6.000/min)</div>
-                    <div class="metric-progress-bar-bg">
-                        <div class="metric-progress-bar-fill" id="bar_cps_fill" style="background: linear-gradient(90deg, #ec4899, #f59e0b);"></div>
+                        <div class="stat-subtext" id="val_cps_subtext">Limite: 100 CPS (6.000/min)</div>
                     </div>
                 </div>
 
-                <!-- Card 3: Tocando no Aparelho -->
-                <div class="metric-card-live">
-                    <div class="metric-card-header">
-                        <span class="metric-card-title">Tocando (Ringing)</span>
-                        <div class="metric-card-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
-                            <i class="fa fa-bell-o"></i>
+                <!-- Card 3: Tocando (Ringing) -->
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="ddm-stat-card" style="border-left: 3px solid var(--ddm-warning);">
+                        <i class="fa fa-bell-o stat-icon-bg" style="color: rgba(245, 158, 11, 0.08);"></i>
+                        <p>Tocando (Ringing)</p>
+                        <h3 id="val_ringing_count" style="color: var(--ddm-warning);">0</h3>
+                        <div class="stat-progress-bg">
+                            <div class="stat-progress-fill" id="bar_ringing_fill" style="background: var(--ddm-warning);"></div>
                         </div>
-                    </div>
-                    <div class="metric-card-value" id="val_ringing_count">0</div>
-                    <div class="metric-card-subtext">Aguardando atendimento do cliente</div>
-                    <div class="metric-progress-bar-bg">
-                        <div class="metric-progress-bar-fill" id="bar_ringing_fill" style="background: #fbbf24;"></div>
+                        <div class="stat-subtext">Aguardando atendimento</div>
                     </div>
                 </div>
 
-                <!-- Card 4: Falando com a IA -->
-                <div class="metric-card-live">
-                    <div class="metric-card-header">
-                        <span class="metric-card-title">Em Conversa com a IA</span>
-                        <div class="metric-card-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-                            <i class="fa fa-comments-o"></i>
+                <!-- Card 4: Falando com IA -->
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="ddm-stat-card" style="border-left: 3px solid var(--ddm-success);">
+                        <i class="fa fa-microphone stat-icon-bg" style="color: rgba(16, 185, 129, 0.08);"></i>
+                        <p>Em Conversa com a IA</p>
+                        <h3 id="val_in_call_count" style="color: var(--ddm-success);">0</h3>
+                        <div class="stat-progress-bg">
+                            <div class="stat-progress-fill" id="bar_incall_fill" style="background: var(--ddm-success);"></div>
                         </div>
-                    </div>
-                    <div class="metric-card-value" id="val_in_call_count">0</div>
-                    <div class="metric-card-subtext">Diálogos ativos em tempo real</div>
-                    <div class="metric-progress-bar-bg">
-                        <div class="metric-progress-bar-fill" id="bar_incall_fill" style="background: #34d399;"></div>
+                        <div class="stat-subtext">Diálogos ativos em tempo real</div>
                     </div>
                 </div>
             </div>
 
             <!-- Tabela de Chamadas Ativas -->
-            <div class="monitor-table-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="ddm-agent-table-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                     <div>
-                        <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #f8fafc;">
-                            <i class="fa fa-microphone text-purple"></i> Chamadas em Andamento
+                        <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: var(--ddm-text-primary);">
+                            <i class="fa fa-headphones text-orange"></i> Chamadas em Andamento
                         </h3>
-                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 13px;">Sessões de voz ativas no motor SIP</p>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-default" onclick="fetchLiveTelemetry()" style="background: #0f172a; border-color: #334155; color: #94a3b8;">
-                            <i class="fa fa-refresh"></i> Atualizar
-                        </button>
+                        <p style="margin: 3px 0 0 0; color: var(--ddm-text-secondary); font-size: 13px;">Sessões de voz ativas no motor SIP da infraestrutura</p>
                     </div>
                 </div>
 
                 <div id="live_calls_container">
-                    <div class="empty-monitor-state" id="empty_state_view">
-                        <div class="empty-monitor-icon"><i class="fa fa-headphones"></i></div>
-                        <h4 style="color: #94a3b8; font-weight: 700; margin-bottom: 6px;">Nenhuma chamada ativa no momento</h4>
-                        <p style="color: #64748b; font-size: 14px; max-width: 450px; margin: 0 auto;">
+                    <div class="empty-state-box" id="empty_state_view">
+                        <div class="empty-state-icon"><i class="fa fa-phone-square"></i></div>
+                        <h4 style="color: var(--ddm-text-primary); font-weight: 700; margin-bottom: 6px; font-size: 16px;">Nenhuma chamada ativa no momento</h4>
+                        <p style="color: var(--ddm-text-muted); font-size: 13.5px; max-width: 480px; margin: 0 auto; line-height: 1.5;">
                             Todos os 500 canais SIP da Oktor Telecom estão livres e prontos para receber disparos individuais, via API ou em lote.
                         </p>
                     </div>
 
                     <div class="table-responsive" id="table_state_view" style="display: none;">
-                        <table class="live-table">
+                        <table class="table ddm-table">
                             <thead>
                                 <tr>
                                     <th>Telefone Destino</th>
@@ -361,6 +301,7 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
                     </div>
                 </div>
             </div>
+
         </div>
     </aside>
 </div>
@@ -393,11 +334,11 @@ function fetchLiveTelemetry() {
         var inCall = data.in_call_count || 0;
 
         // Atualiza Cards
-        $('#val_active_channels').html(activeChannels + ' <span style="font-size: 16px; font-weight: 500; color: #64748b;">/ ' + maxChannels + '</span>');
+        $('#val_active_channels').html(activeChannels + ' <small style="font-size: 16px; font-weight: 600; color: var(--ddm-text-muted);">/ ' + maxChannels + '</small>');
         $('#val_channel_pct').text(pct + '% de utilização');
-        $('#bar_channel_fill').css('width', Math.min(100, Math.max(2, pct)) + '%');
+        $('#bar_channel_fill').css('width', Math.min(100, Math.max(0, pct)) + '%');
 
-        $('#val_current_cps').html(cps + ' <span style="font-size: 16px; font-weight: 500; color: #64748b;">CPS</span>');
+        $('#val_current_cps').html(cps + ' <small style="font-size: 16px; font-weight: 600; color: var(--ddm-text-muted);">CPS</small>');
         $('#bar_cps_fill').css('width', Math.min(100, (cps / 100) * 100) + '%');
 
         $('#val_ringing_count').text(ringing);
@@ -420,21 +361,21 @@ function fetchLiveTelemetry() {
                 var c = calls[i];
                 var statusBadge = '';
                 if (c.status === 'in_call' || c.answered) {
-                    statusBadge = '<span class="status-badge-live status-badge-incall"><i class="fa fa-microphone"></i> Em Conversa</span>';
+                    statusBadge = '<span class="ddm-badge ddm-badge-active"><span class="ddm-dot-indicator ddm-dot-active"></span> Em Conversa</span>';
                 } else if (c.status === 'ringing') {
-                    statusBadge = '<span class="status-badge-live status-badge-ringing"><i class="fa fa-bell-o"></i> Tocando...</span>';
+                    statusBadge = '<span class="ddm-badge" style="background: var(--ddm-warning-light); color: #B45309; border-color: var(--ddm-warning-border);"><i class="fa fa-bell-o"></i> Tocando...</span>';
                 } else {
-                    statusBadge = '<span class="status-badge-live" style="background: rgba(99,102,241,0.15); color: #818cf8;"><i class="fa fa-spinner fa-spin"></i> Conectando</span>';
+                    statusBadge = '<span class="ddm-badge ddm-badge-orange"><i class="fa fa-spinner fa-spin"></i> Conectando</span>';
                 }
 
                 html += '<tr>' +
-                    '<td style="font-weight: 700;"><i class="fa fa-mobile text-muted" style="margin-right: 6px; font-size: 16px;"></i> ' + formatPhone(c.phone_number) + '</td>' +
-                    '<td style="color: #cbd5e1;"><span class="badge" style="background: #334155; font-weight: 600;">' + (c.agent_name || 'Agente IA') + '</span></td>' +
+                    '<td style="font-weight: 700;"><i class="fa fa-phone text-muted" style="margin-right: 6px;"></i> ' + formatPhone(c.phone_number) + '</td>' +
+                    '<td><span class="ddm-badge ddm-badge-id">' + (c.agent_name || 'Agente IA') + '</span></td>' +
                     '<td>' + statusBadge + '</td>' +
-                    '<td style="font-family: monospace; font-size: 15px; font-weight: 700; color: #38bdf8;">' + c.duration_formatted + '</td>' +
-                    '<td style="color: #94a3b8; font-size: 13px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><em>"' + (c.last_dialogue || '') + '"</em></td>' +
+                    '<td style="font-family: \'JetBrains Mono\', monospace; font-size: 13.5px; font-weight: 700; color: var(--ddm-primary);">' + c.duration_formatted + '</td>' +
+                    '<td style="color: var(--ddm-text-secondary); font-size: 13px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><em>"' + (c.last_dialogue || 'Iniciando áudio...') + '"</em></td>' +
                     '<td style="text-align: right;">' +
-                        '<button class="btn btn-xs btn-danger" onclick="hangupCall(\'' + c.call_id + '\')" title="Desconectar Chamada" style="border-radius: 6px; padding: 4px 10px;">' +
+                        '<button class="ddm-btn ddm-btn-secondary ddm-btn-xs" onclick="hangupCall(\'' + c.call_id + '\')" title="Desconectar Chamada" style="color: var(--ddm-danger) !important; border-color: var(--ddm-danger-border);">' +
                             '<i class="fa fa-phone"></i> Encerrar' +
                         '</button>' +
                     '</td>' +
@@ -443,7 +384,7 @@ function fetchLiveTelemetry() {
             $('#live_calls_tbody').html(html);
         }
     }).fail(function() {
-        $('#live_indicator_text').html('<span style="color: #ef4444;">Motor Offline</span>');
+        $('#live_indicator_text').html('<span style="color: var(--ddm-danger);">Motor Offline</span>');
     });
 }
 
