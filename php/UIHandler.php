@@ -1490,6 +1490,7 @@ error_reporting(E_ERROR | E_PARSE);
 	                    </div>
 	                </div>
 	            </nav>
+	            <script>if(typeof lucide !== "undefined"){lucide.createIcons();}</script>
 	        </header>';
 	}
 
@@ -1585,8 +1586,8 @@ error_reporting(E_ERROR | E_PARSE);
 	public function creamyThemeCSS() {
 		$theme = $this->db->getSettingValueForKey(CRM_SETTING_THEME);
 		if (empty($theme)) { $theme = CRM_SETTING_DEFAULT_THEME; }
-		$return  = '<link href="css/skins/skin-'.$theme.'.min.css" rel="stylesheet" type="text/css" />';
-		//$return .= "//{$_SERVER['SCRIPT_FILENAME']}\n";
+		$return  = '<link href="css/skins/skin-'.$theme.'.min.css" rel="stylesheet" type="text/css" />'."\n";
+		$return .= '<link href="css/dialog_ddm.css?v=2.5" rel="stylesheet" type="text/css" />'."\n";
 		return $return;
 	}
 
@@ -2010,6 +2011,7 @@ error_reporting(E_ERROR | E_PARSE);
 					<i data-lucide="log-out" style="width:16px;height:16px;"></i>
 				</a>
 			</div>
+			<script>if(typeof lucide !== "undefined"){lucide.createIcons();}</script>
 		</aside>';
 
 		return $result;
@@ -5740,9 +5742,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$css .= '<link rel="icon" type="image/png" sizes="32x32" href="img/brand/favicon-32.png">'."\n";
 		$css .= '<link rel="icon" type="image/png" sizes="16x16" href="img/brand/favicon-32.png">'."\n";
 		$css .= '<link rel="apple-touch-icon" sizes="180x180" href="img/brand/favicon-180.png">'."\n";
-		$css .= '<script src="https://unpkg.com/lucide@latest"></script>'."\n";
 		$css .= '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />'."\n";
-		$css .= '<link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />'."\n";
 		$css .= '<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />'."\n"; // bootstrap basic css
 		$css .= '<link href="css/creamycrm.css" rel="stylesheet" type="text/css" />'."\n"; // creamycrm css
 		$css .= '<link href="css/circle-buttons.css" rel="stylesheet" type="text/css" />'."\n"; // circle buttons css
@@ -5764,14 +5764,18 @@ error_reporting(E_ERROR | E_PARSE);
 		//for chat
 		$agent_chat_status = $this->API_getAgentChatActivation();
 		if($agent_chat_status){
-   $css .= '<link href="modules/GoChat/css/style.css" rel="stylesheet" type="text/css"/>'."\n";
-  }
+			$css .= '<link href="modules/GoChat/css/style.css" rel="stylesheet" type="text/css"/>'."\n";
+		}
+
+		// Dialog DDM Design System 2.0 (Loaded LAST to override all legacy styles)
+		$css .= '<link href="css/dialog_ddm.css?v=2.5" rel="stylesheet" type="text/css" />'."\n";
 
 		/* JS that needs to be declared first */
 		$css .= '<script src="js/jquery.min.js"></script>'."\n"; // required JS
 		$css .= '<script src="js/bootstrap.min.js" type="text/javascript"></script>'."\n"; // required JS
 		$css .= '<script src="js/jquery-ui.min.js" type="text/javascript"></script>'."\n"; // required JS
 		$css .= '<script src="js/calendar_db.js" type="text/javascript" ></script>'."\n";
+		$css .= '<script src="https://unpkg.com/lucide@latest"></script>'."\n";
 
 		if($agent_chat_status){
 		    $css .= '<script src="modules/GoChat/js/chat.js"></script>'."\n";

@@ -536,29 +536,31 @@ body .content-wrapper {
     border-color: #D0D5DD !important;
     box-shadow: var(--ddm-shadow-sm) !important;
 }
-.ddm-stat-card .stat-label {
-    font-size: 12px;
-    text-transform: uppercase;
-    font-weight: 600;
-    color: #667085;
-    letter-spacing: 0.5px;
-    margin: 0 0 6px 0;
+.ddm-stat-card .stat-label, .ddm-stat-label {
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    font-weight: 600 !important;
+    color: #667085 !important;
+    letter-spacing: 0.5px !important;
+    margin: 0 0 6px 0 !important;
+    display: block !important;
 }
-.ddm-stat-card .stat-value {
-    font-size: 26px;
-    font-weight: 700;
-    color: #101828;
-    letter-spacing: -0.5px;
-    line-height: 1.1;
-    margin: 0;
+.ddm-stat-card .stat-value, .ddm-stat-value {
+    font-size: 26px !important;
+    font-weight: 700 !important;
+    color: #101828 !important;
+    letter-spacing: -0.5px !important;
+    line-height: 1.1 !important;
+    margin: 0 0 6px 0 !important;
 }
-.ddm-stat-card .stat-meta {
-    font-size: 12.5px;
-    color: #667085;
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+.ddm-stat-card .stat-meta, .ddm-stat-trend {
+    font-size: 12.5px !important;
+    color: #667085 !important;
+    margin-top: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
 }
 
 /* Remove Giant Icon Backgrounds */
