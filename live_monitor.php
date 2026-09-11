@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * @file        live_monitor.php
  * @brief       DIAL GO Voice AI - Live Real-Time Channels Monitor (500 Channels / 100 CPS)
@@ -214,19 +214,37 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
         }
     </style>
 </head>
-<body class="skin-blue sidebar-mini">
+<?php print $ui->creamyBody(); ?>
 <div class="wrapper">
-    <?php print $ui->generateHeader($user); ?>
+    <?php print $ui->creamyHeader($user); ?>
     <?php print $ui->getSidebar($user->getUserId(), $user->getUserName(), $user->getUserRole(), $user->getUserAvatar()); ?>
 
-    <div class="content-wrapper">
-        <section class="content-header" style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <h1 style="margin: 0; font-weight: 800; font-size: 26px; color: #f8fafc;">
-                        <i class="fa fa-line-chart text-purple"></i> Monitor em Tempo Real
-                        <small style="color: #94a3b8; font-size: 14px; margin-left: 10px;">Capacidade: 500 Canais &bull; 100 CPS (Oktor SIP)</small>
-                    </h1>
+    <aside class="right-side">
+        <div class="ddm-container">
+            
+            <!-- Breadcrumbs -->
+            <div class="ddm-breadcrumbs">
+                <a href="index.php"><i class="fa fa-home"></i> Dialog DDM</a>
+                <span class="separator">/</span>
+                <a href="ai_agents.php">Agentes de IA</a>
+                <span class="separator">/</span>
+                <span class="current">Monitor em Tempo Real</span>
+            </div>
+
+            <!-- Top Header -->
+            <div class="ddm-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 24px;">
+                <div class="ddm-header-left" style="display: flex; align-items: center; gap: 16px;">
+                    <div class="ddm-agent-avatar" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                        <i class="fa fa-line-chart"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 22px; font-weight: 800; color: #f8fafc; letter-spacing: -0.4px;">
+                            Monitor em Tempo Real
+                        </div>
+                        <div style="font-size: 13px; color: #94a3b8;">
+                            Capacidade Total: <strong>500 Canais</strong> &bull; <strong>100 CPS</strong> (Oktor SIP Trunking)
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <span class="live-badge-beacon">
@@ -235,9 +253,7 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
                     </span>
                 </div>
             </div>
-        </section>
 
-        <section class="content">
             <!-- Metric Cards -->
             <div class="monitor-metrics-grid">
                 <!-- Card 1: Canais Ocupados -->
@@ -345,8 +361,8 @@ if ($user && $user->getUserRole() == CRM_DEFAULTS_USER_ROLE_AGENT) {
                     </div>
                 </div>
             </div>
-        </section>
-    </div>
+        </div>
+    </aside>
 </div>
 
 <script src="js/jquery-2.1.1.min.js"></script>
