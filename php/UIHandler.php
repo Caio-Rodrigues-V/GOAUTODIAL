@@ -1958,7 +1958,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$result = '<aside class="main-sidebar sidebar-offcanvas">
 			<div class="ddm-sidebar-brand">
 				<a href="./index.php" class="ddm-brand-link" style="display:flex; align-items:center;">
-					<img src="img/brand/logo_compact_color.svg" alt="DIALog DDM" style="height: 32px; width: auto; max-width: 190px;" />
+					<img src="img/brand/logo_compact_color.svg?v=2.6.0" alt="DIALog DDM" style="height: 46px; width: auto; max-width: 220px;" />
 				</a>
 			</div>
 			

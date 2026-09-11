@@ -303,7 +303,7 @@ body .content-wrapper {
 
 /* Brand Header on Sidebar Top */
 .ddm-sidebar-brand {
-    height: 60px;
+    height: 72px;
     display: flex;
     align-items: center;
     padding: 0 20px;
@@ -736,26 +736,33 @@ textarea.ddm-input {
     border: 1px solid #EAECF0 !important;
     border-radius: var(--ddm-radius-card) !important;
     box-shadow: var(--ddm-shadow-xs) !important;
-    overflow-x: auto !important;
+    overflow-x: hidden !important;
     margin-bottom: 24px !important;
     width: 100% !important;
     box-sizing: border-box !important;
+}
+
+@media (max-width: 1024px) {
+    .ddm-table-container, .ddm-content-card {
+        overflow-x: auto !important;
+    }
 }
 
 .ddm-table {
     width: 100% !important;
     margin-bottom: 0 !important;
     border-collapse: collapse !important;
+    table-layout: auto !important;
 }
 
 .ddm-table th {
     background: #F9FAFB !important;
     color: #475467 !important;
-    font-size: 12px !important;
+    font-size: 11.5px !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    padding: 12px 16px !important;
+    letter-spacing: 0.4px !important;
+    padding: 10px 8px !important;
     border: none !important;
     border-bottom: 1px solid #EAECF0 !important;
     vertical-align: middle !important;
@@ -763,17 +770,17 @@ textarea.ddm-input {
 }
 
 .ddm-table td {
-    padding: 14px 16px !important;
+    padding: 10px 8px !important;
     vertical-align: middle !important;
     border: none !important;
     border-bottom: 1px solid #EAECF0 !important;
     color: #101828 !important;
-    font-size: 13.5px !important;
+    font-size: 13px !important;
     background: transparent !important;
 }
 
 .ddm-table tbody tr {
-    height: 56px !important;
+    height: 48px !important;
     transition: background-color 0.12s ease !important;
 }
 

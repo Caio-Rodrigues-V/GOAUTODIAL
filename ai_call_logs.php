@@ -195,21 +195,21 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
 
             <!-- Calls Table Container -->
             <div class="ddm-table-container">
-                <div style="overflow-x:auto;">
-                    <table class="table ddm-table" id="callLogsTable" width="100%">
+                <div class="ddm-table-responsive" style="width: 100%;">
+                    <table class="table ddm-table" id="callLogsTable" width="100%" style="width:100%; table-layout:auto;">
                         <thead>
                             <tr>
-                                <th style="width: 60px; min-width: 60px;">ID</th>
-                                <th style="min-width: 130px;">Data & Hora</th>
-                                <th style="min-width: 140px;">Telefone Destino</th>
-                                <th style="min-width: 140px;">Agente IA</th>
-                                <th style="min-width: 80px;">Duração</th>
-                                <th style="min-width: 90px;">Custo</th>
-                                <th style="min-width: 150px;">Tabulação IA</th>
-                                <th style="min-width: 90px;">Sentimento</th>
-                                <th style="min-width: 100px;">Status</th>
-                                <th style="text-align:center; width: 130px; min-width: 130px; white-space: nowrap;">Gravação</th>
-                                <th style="text-align:right; width: 140px; min-width: 140px; white-space: nowrap;">Ações</th>
+                                <th style="width: 45px; text-align:center;">ID</th>
+                                <th style="width: 105px;">Data & Hora</th>
+                                <th style="width: 110px;">Telefone</th>
+                                <th style="width: 110px;">Agente IA</th>
+                                <th style="width: 60px;">Duração</th>
+                                <th style="width: 70px;">Custo</th>
+                                <th style="width: 135px;">Tabulação IA</th>
+                                <th style="width: 75px;">Sentimento</th>
+                                <th style="width: 75px;">Status</th>
+                                <th style="text-align:center; width: 80px;">Gravação</th>
+                                <th style="text-align:right; width: 85px;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -246,16 +246,16 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                     $costVal = isset($c['cost_estimate']) ? (float)$c['cost_estimate'] : 0.00;
                                 ?>
                                     <tr>
-                                        <td><span class="ddm-badge ddm-badge-neutral" style="font-family:monospace;">#<?php echo $c['id']; ?></span></td>
-                                        <td style="font-size:12.5px; color:var(--ddm-text-secondary);"><?php echo date('d/m/Y H:i', strtotime($c['created_at'])); ?></td>
-                                        <td><strong style="font-family:monospace; font-size:13.5px;"><?php echo htmlspecialchars($c['phone_number']); ?></strong></td>
+                                        <td style="text-align:center;"><span class="ddm-badge ddm-badge-neutral" style="font-family:monospace; font-size:11px; padding:2px 5px;">#<?php echo $c['id']; ?></span></td>
+                                        <td style="font-size:12px; color:var(--ddm-text-secondary); white-space:nowrap;"><?php echo date('d/m/Y H:i', strtotime($c['created_at'])); ?></td>
+                                        <td><strong style="font-family:monospace; font-size:12.5px;"><?php echo htmlspecialchars($c['phone_number']); ?></strong></td>
                                         <td>
-                                            <span style="font-weight:600; color:var(--ddm-text-primary);">
+                                            <span style="font-weight:600; font-size:12.5px; color:var(--ddm-text-primary);">
                                                 <?php echo htmlspecialchars($c['agent_name'] ?: "Agente #{$c['agent_id']}"); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span style="font-family:monospace; color:var(--ddm-text-secondary); font-weight:600;">
+                                            <span style="font-family:monospace; color:var(--ddm-text-secondary); font-weight:600; font-size:12px;">
                                                 <?php 
                                                     $dur = (int)$c['duration_seconds'];
                                                     echo sprintf("%02d:%02d", floor($dur / 60), $dur % 60);
@@ -263,76 +263,76 @@ $callLogs = $aiHandler->getCallLogs(100, 0, $agentFilter, $phoneFilter, $statusF
                                             </span>
                                         </td>
                                         <td>
-                                            <span style="font-size:12.5px; color:var(--ddm-text-secondary);">
+                                            <span style="font-size:12px; color:var(--ddm-text-secondary); font-weight:500;">
                                                 R$ <?php echo number_format($costVal, 4, ',', '.'); ?>
                                             </span>
                                         </td>
                                         <td>
                                             <?php if ($tabCode == 'HUMAN_COMPLETED' || stripos($tabulation, 'Concluída') !== false || stripos($tabulation, 'Venda') !== false || stripos($tabulation, 'Interessado') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-success">
+                                                <span class="ddm-badge ddm-badge-success" style="font-size:11px; padding:2px 6px;">
                                                     <span class="ddm-dot-indicator ddm-dot-success"></span> <?php echo htmlspecialchars($tabulation); ?>
                                                 </span>
                                             <?php elseif ($tabCode == 'BUSY_LATER' || stripos($tabulation, 'Retornar') !== false || stripos($tabulation, 'Ocupado') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-warning">
+                                                <span class="ddm-badge ddm-badge-warning" style="font-size:11px; padding:2px 6px;">
                                                     <span class="ddm-dot-indicator ddm-dot-warning"></span> <?php echo htmlspecialchars($tabulation); ?>
                                                 </span>
                                             <?php elseif ($tabCode == 'REFUSED' || stripos($tabulation, 'Recusa') !== false || stripos($tabulation, 'Sem Interesse') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-error">
+                                                <span class="ddm-badge ddm-badge-error" style="font-size:11px; padding:2px 6px;">
                                                     <span class="ddm-dot-indicator ddm-dot-error"></span> <?php echo htmlspecialchars($tabulation); ?>
                                                 </span>
                                             <?php elseif ($tabCode == 'VOICEMAIL' || stripos($tabulation, 'Caixa') !== false): ?>
-                                                <span class="ddm-badge ddm-badge-warning">
+                                                <span class="ddm-badge ddm-badge-warning" style="font-size:11px; padding:2px 6px;">
                                                     <span class="ddm-dot-indicator ddm-dot-warning"></span> Caixa Postal
                                                 </span>
                                             <?php else: ?>
-                                                <span class="ddm-badge ddm-badge-neutral">
+                                                <span class="ddm-badge ddm-badge-neutral" style="font-size:11px; padding:2px 6px;">
                                                     <?php echo htmlspecialchars($tabulation); ?>
                                                 </span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($sentiment == 'Positivo'): ?>
-                                                <span class="ddm-badge ddm-badge-success">Positivo</span>
+                                                <span class="ddm-badge ddm-badge-success" style="font-size:11px; padding:2px 6px;">Positivo</span>
                                             <?php elseif ($sentiment == 'Negativo'): ?>
-                                                <span class="ddm-badge ddm-badge-error">Negativo</span>
+                                                <span class="ddm-badge ddm-badge-error" style="font-size:11px; padding:2px 6px;">Negativo</span>
                                             <?php else: ?>
-                                                <span class="ddm-badge ddm-badge-neutral">Neutro</span>
+                                                <span class="ddm-badge ddm-badge-neutral" style="font-size:11px; padding:2px 6px;">Neutro</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($st == 'completed'): ?>
-                                                <span class="ddm-badge ddm-badge-success">Atendida</span>
+                                                <span class="ddm-badge ddm-badge-success" style="font-size:11px; padding:2px 6px;">Atendida</span>
                                             <?php elseif ($st == 'no_answer'): ?>
-                                                <span class="ddm-badge ddm-badge-warning">Não Atendeu</span>
+                                                <span class="ddm-badge ddm-badge-warning" style="font-size:11px; padding:2px 6px;">Não Atendeu</span>
                                             <?php elseif ($st == 'voicemail'): ?>
-                                                <span class="ddm-badge ddm-badge-warning">Caixa Postal</span>
+                                                <span class="ddm-badge ddm-badge-warning" style="font-size:11px; padding:2px 6px;">Caixa Postal</span>
                                             <?php elseif ($st == 'busy'): ?>
-                                                <span class="ddm-badge ddm-badge-neutral">Ocupada</span>
+                                                <span class="ddm-badge ddm-badge-neutral" style="font-size:11px; padding:2px 6px;">Ocupada</span>
                                             <?php elseif ($st == 'dropped'): ?>
-                                                <span class="ddm-badge ddm-badge-warning">Queda</span>
+                                                <span class="ddm-badge ddm-badge-warning" style="font-size:11px; padding:2px 6px;">Queda</span>
                                             <?php elseif ($st == 'invalid_number'): ?>
-                                                <span class="ddm-badge ddm-badge-error">Inválido</span>
+                                                <span class="ddm-badge ddm-badge-error" style="font-size:11px; padding:2px 6px;">Inválido</span>
                                             <?php else: ?>
-                                                <span class="ddm-badge ddm-badge-neutral"><?php echo htmlspecialchars($st); ?></span>
+                                                <span class="ddm-badge ddm-badge-neutral" style="font-size:11px; padding:2px 6px;"><?php echo htmlspecialchars($st); ?></span>
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align:center; white-space:nowrap;">
                                             <?php if (!empty($recUrl)): ?>
-                                                <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-quick-play" data-audio="<?php echo htmlspecialchars($recUrl); ?>" title="Ouvir Gravação">
-                                                    <i data-lucide="play" style="width:12px;height:12px;color:var(--ddm-primary);"></i>
+                                                <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-quick-play" data-audio="<?php echo htmlspecialchars($recUrl); ?>" title="Ouvir Gravação" style="padding:3px 7px; font-size:11px;">
+                                                    <i data-lucide="play" style="width:11px;height:11px;color:var(--ddm-primary);"></i>
                                                     <span>Áudio</span>
                                                 </button>
-                                                <a href="<?php echo htmlspecialchars($recUrl); ?>" download="gravacao_call_#<?php echo $c['id']; ?>_<?php echo $c['phone_number']; ?>.wav" class="ddm-btn ddm-btn-secondary ddm-btn-xs" title="Baixar Áudio (.wav)">
-                                                    <i data-lucide="download" style="width:12px;height:12px;"></i>
+                                                <a href="<?php echo htmlspecialchars($recUrl); ?>" download="gravacao_call_#<?php echo $c['id']; ?>_<?php echo $c['phone_number']; ?>.wav" class="ddm-btn ddm-btn-secondary ddm-btn-xs" title="Baixar Áudio (.wav)" style="padding:3px 6px;">
+                                                    <i data-lucide="download" style="width:11px;height:11px;"></i>
                                                 </a>
                                             <?php else: ?>
-                                                <span style="color:var(--ddm-text-muted); font-size:12px;">Sem áudio</span>
+                                                <span style="color:var(--ddm-text-muted); font-size:11.5px;">—</span>
                                             <?php endif; ?>
                                         </td>
                                         <td style="text-align:right; white-space:nowrap;">
-                                            <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-view-transcript" data-id="<?php echo $c['id']; ?>">
-                                                <i data-lucide="message-square" style="width:12px;height:12px;color:var(--ddm-primary);"></i>
-                                                <span>Diálogo & IA</span>
+                                            <button type="button" class="ddm-btn ddm-btn-secondary ddm-btn-xs btn-view-transcript" data-id="<?php echo $c['id']; ?>" style="padding:3px 7px; font-size:11px;">
+                                                <i data-lucide="message-square" style="width:11px;height:11px;color:var(--ddm-primary);"></i>
+                                                <span>Diálogo</span>
                                             </button>
                                         </td>
                                     </tr>
