@@ -1571,12 +1571,16 @@ error_reporting(E_ERROR | E_PARSE);
 	 */
 	public function creamyBody() {
 		$theme = $this->db->getSettingValueForKey(CRM_SETTING_THEME);
-		if (empty($theme)) { $theme = CRM_SETTING_DEFAULT_THEME; }
+		if (empty($theme) || strpos($theme, '/') !== false || strpos($theme, ':') !== false || strlen($theme) > 30) { 
+			$theme = CRM_SETTING_DEFAULT_THEME; 
+		}
 		return '<body class="skin-'.$theme.' sidebar-mini fixed ">';
 	}
 	public function creamyAgentBody() {
 		$theme = $this->db->getSettingValueForKey(CRM_SETTING_THEME);
-		if (empty($theme)) { $theme = CRM_SETTING_DEFAULT_THEME; }
+		if (empty($theme) || strpos($theme, '/') !== false || strpos($theme, ':') !== false || strlen($theme) > 30) { 
+			$theme = CRM_SETTING_DEFAULT_THEME; 
+		}
 		return '<body class="skin-'.$theme.' sidebar-collapse fixed">';
 	}
 	/**
@@ -1585,7 +1589,9 @@ error_reporting(E_ERROR | E_PARSE);
 	 */
 	public function creamyThemeCSS() {
 		$theme = $this->db->getSettingValueForKey(CRM_SETTING_THEME);
-		if (empty($theme)) { $theme = CRM_SETTING_DEFAULT_THEME; }
+		if (empty($theme) || strpos($theme, '/') !== false || strpos($theme, ':') !== false || strlen($theme) > 30) { 
+			$theme = CRM_SETTING_DEFAULT_THEME; 
+		}
 		$return  = '<link href="css/skins/skin-'.$theme.'.min.css" rel="stylesheet" type="text/css" />'."\n";
 		$return .= '<link href="css/dialog_ddm.css?v=2.6.0" rel="stylesheet" type="text/css" />'."\n";
 		return $return;
@@ -1970,7 +1976,7 @@ error_reporting(E_ERROR | E_PARSE);
 					' . $this->getEnterpriseSidebarItem("./ai_agents.php", "bot", "Meus Agentes", in_array($currentPage, array('ai_agents.php', 'edit_ai_agent.php'))) . '
 					' . $this->getEnterpriseSidebarItem("./add_ai_agent.php", "plus-circle", "Criar Agente", $currentPage === 'add_ai_agent.php') . '
 					' . $this->getEnterpriseSidebarItem("./live_monitor.php", "activity", "Monitor em Tempo Real", $currentPage === 'live_monitor.php') . '
-					' . $this->getEnterpriseSidebarItem("./disparador.php", "zap", "Disparo em Lote", in_array($currentPage, array('disparador.php', 'batch_dialer.php'))) . '
+					' . $this->getEnterpriseSidebarItem("./batch_dialer.php", "zap", "Disparo em Lote", in_array($currentPage, array('disparador.php', 'batch_dialer.php'))) . '
 				</ul>
 
 				<!-- CHAMADAS -->

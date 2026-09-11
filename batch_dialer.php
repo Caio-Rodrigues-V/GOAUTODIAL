@@ -42,7 +42,7 @@ $prefilledConcurrency = isset($_REQUEST['concurrency']) ? (int)$_REQUEST['concur
         print $ui->creamyThemeCSS();
     ?>
     <link href="css/style.css" rel="stylesheet" type="text/css" />
-    <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
+    <link href="css/dialog_ddm.css?v=2.6.0" rel="stylesheet" type="text/css" />
     <style>
         .batch-grid {
             display: grid;
