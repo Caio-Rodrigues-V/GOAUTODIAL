@@ -266,7 +266,19 @@ if (($segments[0] === 'call' && (isset($segments[1]) && $segments[1] === 'phone'
     curl_close($ch);
 
     $dialRes = json_decode($resp, true) ?: array();
-    $callId = isset($dialRes['call_id']) ? $dialRes['call_id'] : 'call_' . uniqid();
+
+    if ($httpCode !== 200 || empty($dialRes['call_id'])) {
+        http_response_code(502);
+        echo json_encode(array(
+            'error' => 'Bad Gateway',
+            'message' => 'O Motor Direct SIP (ai_engine) nao respondeu na porta 8765. Certifique-se de que python3 server.py esta rodando no VPS.',
+            'details' => $dialRes,
+            'http_code' => $httpCode
+        ));
+        exit;
+    }
+
+    $callId = $dialRes['call_id'];
 
     // 5. Resposta identica ao Vapi call object
     http_response_code(201);
