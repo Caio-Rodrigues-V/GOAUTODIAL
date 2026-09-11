@@ -87,7 +87,7 @@ $recording_audio_format = !empty($agent['recording_audio_format']) ? $agent['rec
         print $ui->creamyThemeCSS();
     ?>
     <link href="css/style.css" rel="stylesheet" type="text/css" />
-    <link href="css/dialog_ddm.css" rel="stylesheet" type="text/css" />
+    <link href="css/dialog_ddm.css?v=2.6.0" rel="stylesheet" type="text/css" />
 </head>
 
 <?php print $ui->creamyBody(); ?>

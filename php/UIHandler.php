@@ -1587,7 +1587,7 @@ error_reporting(E_ERROR | E_PARSE);
 		$theme = $this->db->getSettingValueForKey(CRM_SETTING_THEME);
 		if (empty($theme)) { $theme = CRM_SETTING_DEFAULT_THEME; }
 		$return  = '<link href="css/skins/skin-'.$theme.'.min.css" rel="stylesheet" type="text/css" />'."\n";
-		$return .= '<link href="css/dialog_ddm.css?v=2.5" rel="stylesheet" type="text/css" />'."\n";
+		$return .= '<link href="css/dialog_ddm.css?v=2.6.0" rel="stylesheet" type="text/css" />'."\n";
 		return $return;
 	}
 
@@ -1976,8 +1976,7 @@ error_reporting(E_ERROR | E_PARSE);
 				<!-- CHAMADAS -->
 				<div class="ddm-nav-group-title">CHAMADAS</div>
 				<ul class="ddm-nav-list">
-					' . $this->getEnterpriseSidebarItem("./ai_call_logs.php", "file-text", "Histórico & Transcrições", $currentPage === 'ai_call_logs.php') . '
-					' . $this->getEnterpriseSidebarItem("./callrecordings.php", "disc", "Histórico & Gravações", in_array($currentPage, array('callrecordings.php', 'audiofiles.php'))) . '
+					' . $this->getEnterpriseSidebarItem("./ai_call_logs.php", "phone-call", "Histórico de Chamadas", $currentPage === 'ai_call_logs.php') . '
 				</ul>
 
 				<!-- DESENVOLVEDORES -->
@@ -5768,7 +5767,7 @@ error_reporting(E_ERROR | E_PARSE);
 		}
 
 		// Dialog DDM Design System 2.0 (Loaded LAST to override all legacy styles)
-		$css .= '<link href="css/dialog_ddm.css?v=2.5" rel="stylesheet" type="text/css" />'."\n";
+		$css .= '<link href="css/dialog_ddm.css?v=2.6.0" rel="stylesheet" type="text/css" />'."\n";
 
 		/* JS that needs to be declared first */
 		$css .= '<script src="js/jquery.min.js"></script>'."\n"; // required JS

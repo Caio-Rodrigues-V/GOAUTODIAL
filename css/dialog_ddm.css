@@ -283,10 +283,22 @@ body .right-side,
 body .content-wrapper {
     margin-left: 250px !important;
     margin-top: 60px !important;
+    width: calc(100% - 250px) !important;
+    max-width: calc(100% - 250px) !important;
     background: #F8F9FB !important;
     min-height: calc(100vh - 60px) !important;
     padding: 0 !important;
     border: none !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+    body .right-side,
+    body .content-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
 }
 
 /* Brand Header on Sidebar Top */
@@ -724,8 +736,10 @@ textarea.ddm-input {
     border: 1px solid #EAECF0 !important;
     border-radius: var(--ddm-radius-card) !important;
     box-shadow: var(--ddm-shadow-xs) !important;
-    overflow: hidden !important;
+    overflow-x: auto !important;
     margin-bottom: 24px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 .ddm-table {
