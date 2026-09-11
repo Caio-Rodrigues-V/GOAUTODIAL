@@ -330,6 +330,68 @@ async def media_stream_endpoint(websocket: WebSocket, agent_id: int):
         except:
             pass
 
+@app.get("/api/monitor/live")
+async def get_live_monitor():
+    """
+    Retorna telemetria em tempo real dos 500 canais e métricas de CPS da Oktor Telecom.
+    """
+    now = time.time()
+    active_list = []
+    for cid, call in list(sip_engine.active_calls.items()):
+        duration = int(now - call.answered_time) if call.answered_time > 0 else int(now - call.start_time)
+        user_speech = [m.get("content", "") for m in call.conversation_history if m.get("role") == "user"]
+        last_turn = user_speech[-1] if user_speech else ""
+        
+        status_label = "ringing"
+        if call.answered_time > 0 or call.status == "answered":
+            status_label = "in_call"
+        elif call.status == "initiating":
+            status_label = "initiating"
+
+        active_list.append({
+            "call_id": call.call_id,
+            "phone_number": call.phone_number,
+            "destination": call.dial_string,
+            "agent_id": call.agent_id,
+            "agent_name": (call.agent_config or {}).get("agent_name", f"Agente #{call.agent_id}"),
+            "status": status_label,
+            "duration_seconds": duration,
+            "duration_formatted": f"{duration//60:02d}:{duration%60:02d}",
+            "started_at": time.strftime("%H:%M:%S", time.localtime(call.start_time)),
+            "answered": call.answered_time > 0,
+            "last_dialogue": last_turn[:60] if last_turn else "Aguardando primeira fala..."
+        })
+
+    # Cálculo dinâmico de CPS
+    cps_1s = len([t for t in sip_engine.call_timestamps if now - t <= 1.0])
+    cps_60s = len([t for t in sip_engine.call_timestamps if now - t <= 60.0])
+
+    return {
+        "status": "online",
+        "max_channels": 500,
+        "max_cps": 100,
+        "active_channels": len(sip_engine.active_calls),
+        "channel_utilization_pct": round((len(sip_engine.active_calls) / 500.0) * 100, 1),
+        "current_cps": cps_1s,
+        "calls_last_minute": cps_60s,
+        "total_calls_today": sip_engine.total_calls_today,
+        "ringing_count": len([c for c in sip_engine.active_calls.values() if c.status == "ringing" and c.answered_time == 0]),
+        "in_call_count": len([c for c in sip_engine.active_calls.values() if c.answered_time > 0 or c.status == "answered"]),
+        "active_calls": active_list,
+        "timestamp": now
+    }
+
+@app.post("/api/monitor/hangup/{call_id:path}")
+async def hangup_live_call(call_id: str):
+    """
+    Derruba uma chamada ativa em tempo real.
+    """
+    if call_id in sip_engine.active_calls:
+        logger.info(f"🛑 [Live Monitor]: Desconexão manual solicitada para {call_id}")
+        await sip_engine.send_bye(call_id)
+        return {"status": "success", "message": f"Chamada {call_id} encerrada com sucesso."}
+    return {"status": "error", "message": "Chamada não encontrada ou já finalizada."}
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8765))
     logger.info(f"Iniciando Dial GO Voice AI Server na porta {port}...")

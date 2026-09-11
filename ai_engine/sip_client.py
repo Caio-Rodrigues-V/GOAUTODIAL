@@ -142,6 +142,8 @@ class DirectSIPEngine:
         self.port = port
         self.public_ip = "127.0.0.1"
         self.active_calls: Dict[str, OktorSIPCall] = {}
+        self.call_timestamps: List[float] = []
+        self.total_calls_today: int = 0
         self.transport = None
 
     async def detect_public_ip(self):
@@ -179,6 +181,11 @@ class DirectSIPEngine:
             logger.info(f"SIP Engine ativo na porta alternativa {self.port}")
 
     async def dial(self, agent_id: int, phone_number: str, agent_config: Dict[str, Any] = None, api_keys: Dict[str, str] = None) -> Dict[str, Any]:
+        now = time.time()
+        self.call_timestamps.append(now)
+        self.call_timestamps = [t for t in self.call_timestamps if now - t <= 60.0]
+        self.total_calls_today += 1
+
         call = OktorSIPCall(agent_id, phone_number, agent_config=agent_config, api_keys=api_keys, local_ip=self.public_ip, local_port=self.port)
         self.active_calls[call.call_id] = call
         
